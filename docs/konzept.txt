@@ -1,0 +1,21 @@
+crabdrive - Cloud-Storage / Plattform (mit potenziellen Erweiterungen) und Verschlüsselung
+==========================================================================================
+
+- Features:
+   - User Management
+   - Storage Management: Speichere Ordnerstruktur für jeden Nutzer, Versioning
+   - API (evtl. mehrere Protokolle: HTTPS, SFTP)
+   - User Interface um Ordnerstruktur anzuzeigen, Dateien hochladen, Dateien zu teilen
+
+- Evtl. Erweiterungen:
+   - E2E Encryption
+   - Suche mit Dateinamen und Dateiinhalt (evtl. Problem mit Encryption)
+
+- Systementwurf:
+   - Axum oder Actix für den Server
+        - API, Contracts und Intefaces definieren!
+        - StorageManagement Repository: Zuständig für Versioning, Dateibaum, Ordnerbaum, Metadaten (LastModified, Permissions, Encryption-Metadaten, etc.)
+        - File Repository: Dateien speichern (mit Unique ID) und Dateien zurückgeben (nach Unique ID)
+   - Speicherstrategie für Dateien (kleine Dateien in Datenbanken, große auf Disk (On-File)?
+   - Beim Sharing, Zugriff auf Node und deren Children
+   - Web Client kommuniziert mit WASM (in Rust, Hauptteil der Client-Buisness Logik) mit minimalen UI-spezifischen JS/TS Anteil
