@@ -13,8 +13,3 @@ BRANCHES & PULL REQUESTS
 - Branches with name abbr. as prefix, f.e. for John Smith: smi/fix-unsafe-code
 - Before merging pull requests, the code must be formatted according to the style guidelines (using cargo format)
 - Minimum of TWO reviewers are required before a pull request can be merged into master
-- Branches with name abbr. as prefix, f.e. for John Smith: smi/fix-unsafe-code
-- Commit messages should be written in a descriptive, imperative style
-- Commit messages should be written according to the Conventional Commit specificiation <https://www.conventionalcommits.org/en/v1.0.0/>
-- Minimum of TWO reviewers required before merging pull request into master
-- Before merging pull requests, the code must be formatted according to the style guidelines
