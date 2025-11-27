@@ -11,7 +11,7 @@
   lang: "en",
   region: "us",
   font: "Inter",
-  size: 60pt
+  size: 60pt,
 )
 
 #show raw: set text(
@@ -19,32 +19,36 @@
 )
 
 #set page(
-    paper: "presentation-16-9",
-    width: 67.74cm,
-    height: 38.1cm
+  paper: "presentation-16-9",
+  width: 67.74cm,
+  height: 38.1cm,
 )
 
 
 #slide[
   #place(bottom, dy: -1.5em)[
     #text("Group 7", size: 60pt)
-    #heading(text("crabdrive", fill: color.rgb("#D34516")))
+    #heading(text("crabdrive", fill: color.rgb("#be1931")))
     #v(.2em)
     A cloud storage platform
   ]
+  #place(bottom + right, image("../assets/logo.svg", width: 20cm))
 ]
 
 #slide[
-  #underline([Core features])
+  #grid(
+    columns: (auto, auto),
+    align: horizon,
+    [
+      #underline([Features])
 
-  - Web interface for viewing and managing files
-  - Sharing files with other users
-  - File versioning
-
-  #underline([Optional features])
-
-  - End-To-End Encryption
-  - Collaborative Editing
+      - Web interface for viewing and managing files
+      - File encryption
+      - Sharing files with other users
+      - File versioning
+    ],
+    image("../assets/visualization.svg")
+  )
 ]
 
 
@@ -71,7 +75,7 @@
           enclose: ((1, 2.25), (1, 3.75)),
           place(top + left, text("Cache Layer", size: 45pt), dy: -3cm, dx: -1cm),
           stroke: (dash: "dashed"),
-          inset: .5em
+          inset: .5em,
         )
         node((1, 2.25), [File], name: <filecache>, width: 120mm)
         node((1, 3.75), [Metadata], name: <metadatacache>, width: 120mm)
@@ -130,7 +134,11 @@
   *Notes*
   #set text(size: 40pt)
 
-  - crabdrive should behave similarly to other Cloud Platform providers (Google Drive, OneDrive, etc.)
-  - We use *`axum`* or *`arctix`* as a server
+  - crabdrive should behave similarly to other cloud platform providers (Google Drive, OneDrive, etc.)
+  - File encryption is zero trust (meaning no one -- even with access to the server -- can read your files)
+  - We use *`axum`* or *`arctix`* as server framework/library
+  - Cache Layer for performance improvements; minimize disk operations (disk is bottleneck, in memory is faster)
   - The filetree is stored inside a SQL Database
+  - Files are stored inside custom object storage
+  - File versioning allows for restoring file contents from a specific point in time
 ]
