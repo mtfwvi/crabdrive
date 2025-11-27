@@ -13,9 +13,9 @@ crabdrive - Cloud-Storage / Plattform (mit potenziellen Erweiterungen) und Versc
 
 - Systementwurf:
    - Axum oder Actix für den Server
-        - API, Contracts und Intefaces definieren!
+        - API, Contracts und Interfaces definieren!
         - StorageManagement Repository: Zuständig für Versioning, Dateibaum, Ordnerbaum, Metadaten (LastModified, Permissions, Encryption-Metadaten, etc.)
         - File Repository: Dateien speichern (mit Unique ID) und Dateien zurückgeben (nach Unique ID)
    - Speicherstrategie für Dateien (kleine Dateien in Datenbanken, große auf Disk (On-File)?
    - Beim Sharing, Zugriff auf Node und deren Children
-   - Web Client kommuniziert mit WASM (in Rust, Hauptteil der Client-Buisness Logik) mit minimalen UI-spezifischen JS/TS Anteil
+   - Web Client kommuniziert mit WASM (in Rust, Hauptteil der Client-Business-Logik) mit minimalen UI-spezifischen JS/TS Anteil

@@ -3,7 +3,7 @@ COMMITING
 - Commit messages must be written in a descriptive, imperative style:
     GOOD: feat(server): Add new API endpoints
     BAD:  new api endpoint
-- Commit messages must be written according to the Conventional Commit specificiation <https://www.conventionalcommits.org/en/v1.0.0/>
+- Commit messages must be written according to the Conventional Commit specification <https://www.conventionalcommits.org/en/v1.0.0/>
     <type>(optional scope): <description>
 
 BRANCHES & PULL REQUESTS
