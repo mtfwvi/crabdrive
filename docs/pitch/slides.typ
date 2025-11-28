@@ -132,13 +132,22 @@
 
 
   *Notes*
-  #set text(size: 40pt)
+  #set text(size: 35pt)
 
   - crabdrive should behave similarly to other cloud platform providers (Google Drive, OneDrive, etc.)
+
+  #underline("Features")
+
   - File encryption is zero trust (meaning no one -- even with access to the server -- can read your files)
-  - We use *`axum`* or *`arctix`* as server framework/library
-  - Cache Layer for performance improvements; minimize disk operations (disk is bottleneck, in memory is faster)
+  - File versioning allows for restoring file contents from a specific point in time
+
+  #underline("Architecture")
+
+  - Cache Layer for performance improvements; minimize disk operations (disk is bottleneck, data loaded in memory is faster)
   - The filetree is stored inside a SQL Database
   - Files are stored inside custom object storage
-  - File versioning allows for restoring file contents from a specific point in time
+
+  #underline("Libraries")
+
+  - We use *`axum`* or *`arctix`* as a server framework/library
 ]
