@@ -11,15 +11,15 @@ async fn cc_signal() {
 
 #[tokio::main]
 async fn main() {
-    const ADDR: &'static str = "127.0.0.1:2722";
+    let addr = std::env::var("CRABDRIVE_ADDR").unwrap_or("127.0.0.1:2722".to_string());
 
     let app = Router::new().route("/", get(|| async { "Hello Crabdrive!" }));
-    if let Ok(listener) =  tokio::net::TcpListener::bind(ADDR).await {
-        println!("Server running on http://{ADDR}");
+    if let Ok(listener) =  tokio::net::TcpListener::bind(&addr).await {
+        println!("Server running on http://{}", &addr);
         axum::serve(listener, app)
             .with_graceful_shutdown(cc_signal())
             .await.unwrap();
     } else {
-        panic!("Cannot bind TcpListener")
+        panic!("Cannot bind TcpListener. Is the port in use?")
     }
 }
