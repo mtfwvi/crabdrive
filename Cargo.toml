@@ -1,5 +1,12 @@
 [workspace]
 resolver = "3"
 members = [
-    # "src/component_name"
+    "server"
 ]
+
+[workspace.package]
+name = "crabdrive"
+description = "A cloud storage platform"
+repository = "https://github.com/mtfwvi/crabdrive"
+version = "0.1.0"
+edition = "2024"
