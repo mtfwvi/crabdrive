@@ -1,3 +1,5 @@
+mod user;
+
 use axum::{Router, routing::get};
 use tokio::signal;
 
