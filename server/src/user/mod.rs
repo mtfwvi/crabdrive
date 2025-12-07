@@ -1,1 +1,1 @@
-mod persistence;
+pub mod persistence;
