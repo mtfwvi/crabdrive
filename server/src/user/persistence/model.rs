@@ -1,9 +1,5 @@
 use crate::storage::node::persistence::model::NodeId;
-
-pub struct DataAmount {
-    // TODO: Move to commons/model
-    pub byte_count: u64,
-}
+use crabdrive_common::model::data_amount::DataAmount;
 
 pub type UserId = i32;
 
