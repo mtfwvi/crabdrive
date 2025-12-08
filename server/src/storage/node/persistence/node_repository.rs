@@ -1,17 +1,17 @@
-use crate::storage::node::persistence::model::{Node, NodeId};
-use crate::user::persistence::model::UserId;
-
-type EncryptedMetadata = (Vec<u8>, [u8; 12]);
+use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
+use crate::storage::node::persistence::model::node_entity::NodeEntity;
+use crabdrive_common::node::NodeId;
+use crabdrive_common::user::UserId;
 
 pub(crate) trait NodeRepository {
     fn create_node(
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
         owner: UserId,
-        is_folder: bool
+        is_folder: bool,
     ) -> NodeId;
 
-    fn update_node(node: Node) -> anyhow::Result<()>;
+    fn update_node(node: NodeEntity) -> anyhow::Result<()>;
 
     fn update_metadata(node_id: NodeId, metadata: Vec<u8>) -> anyhow::Result<()>;
 
@@ -35,5 +35,5 @@ pub(crate) trait NodeRepository {
         to_metadata: EncryptedMetadata,
     ) -> anyhow::Result<()>;
 
-    fn get_children(parent: NodeId) -> anyhow::Result<Vec<Node>>;
+    fn get_children(parent: NodeId) -> anyhow::Result<Vec<NodeEntity>>;
 }

@@ -1,8 +1,8 @@
-use crate::user::persistence::model::UserId;
+use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::node::NodeId;
+use crabdrive_common::user::UserId;
 
-pub type NodeId = u64;
-
-pub struct Node {
+pub struct NodeEntity {
     id: NodeId,
     parent_id: Option<NodeId>,
     owner_id: UserId,
@@ -12,8 +12,7 @@ pub struct Node {
     /// - folder/file name
     /// - encryption keys of all child metadata
     /// - folder/file metadata (last accessed, ???)
-    encrypted_metadata: Vec<u8>,
-    iv: [u8; 12],
+    metadata: EncryptedMetadata,
 
     // TODO decide if we should temporarily store deleted nodes in "trash" folder
     // this could be realized by setting the deleted boolean and an according timestamp
