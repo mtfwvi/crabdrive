@@ -13,7 +13,7 @@ CREATE TABLE users (
     root_node INTEGER NULL
     trash_key BINARY NOT NULL REFERENCES encryptionKey(ekey)
     trash_node BINARY NOT NULL REFERENCES encryptionKey(ekey)
-    
+     
 );
 
 
