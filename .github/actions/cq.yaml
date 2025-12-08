@@ -24,9 +24,6 @@ jobs:
           toolchain: 1.85.0
           components: clippy, rustfmt
 
-      - name: Cache dependencies
-        uses: Swatinem/rust-cache@v2
-
       - name: Check for compilation errors and warnings
         run: cargo check --all-targets
 
