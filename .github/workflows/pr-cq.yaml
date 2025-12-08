@@ -20,6 +20,9 @@ jobs:
     if: >
       github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
 
@@ -32,6 +35,9 @@ jobs:
     if: >
       github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
         with:
@@ -46,6 +52,9 @@ jobs:
     if: >
       github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Setup Rust
         uses: ./.github/actions/setup-rust
 
