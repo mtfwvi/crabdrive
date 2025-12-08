@@ -13,7 +13,7 @@ jobs:
     name: Check
     runs-on: ubuntu-latest
     if: >
-      !github.event.pull_request.draft
+      github.event_name != 'pull_request' || !github.event.pull_request.draft
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -24,15 +24,11 @@ jobs:
           toolchain: 1.90.0
           components: clippy, rustfmt
 
-      - name: Check for linter errors / warnings
-        uses: giraffate/clippy-action@v1
-        with:
-          reporter: github-pr-check
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          clippy_flags: --all-targets --all-features
-
       - name: Check formatting
         run: cargo fmt --all --check
+
+      - name: Check for linter errors / warnings
+        run: cargo clippy --all-targets --all-features
 
       - name: Run tests
         run: cargo test --all-features --all-targets --no-fail-fast
