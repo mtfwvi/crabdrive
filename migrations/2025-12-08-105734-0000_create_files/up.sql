@@ -6,8 +6,6 @@ CREATE TABLE files (
     mime_type TEXT NOT NULL,
     folder_id INTEGER,
     owner_id INTEGER NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
     FOREIGN KEY (folder_id) REFERENCES folders(id) ON DELETE CASCADE,
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
 );

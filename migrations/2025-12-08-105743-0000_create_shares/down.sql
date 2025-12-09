@@ -1,1 +1,1 @@
-DROP TABLES share;
+DROP TABLE share;

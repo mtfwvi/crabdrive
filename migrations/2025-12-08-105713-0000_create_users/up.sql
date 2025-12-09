@@ -3,8 +3,6 @@ CREATE TABLE users (
     username TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
     storage_limit INTEGER,
     masterkey BINARY NOT NULL REFERENCES encryptionKey(ekey)
     private_key BINARY NOT NULL REFERENCES encryptionKey(ekey)
@@ -13,12 +11,12 @@ CREATE TABLE users (
     root_node INTEGER NULL
     trash_key BINARY NOT NULL REFERENCES encryptionKey(ekey)
     trash_node BINARY NOT NULL REFERENCES encryptionKey(ekey)
-     
+    
 );
 
 
 CREATE TABLE encryptionKey(
-    ekey BINARY NOT NULL,
+    ekey BINARY PRIMARY KEY NOT NULL,
     IV TEXT NOT NULL
 )
 

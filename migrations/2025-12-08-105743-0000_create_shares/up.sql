@@ -3,9 +3,6 @@ CREATE TABLE shares (
     resource_type TEXT NOT NULL,
     resource_id INTEGER NOT NULL,
     shared_with_user_id INTEGER,
-    share_token TEXT UNIQUE,
-    permission TEXT NOT NULL,
-    created_at TEXT NOT NULL,
     expires_at TEXT,
     FOREIGN KEY (shared_with_user_id) REFERENCES users(id) ON DELETE CASCADE
 );
