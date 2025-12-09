@@ -6,7 +6,7 @@ inputs:
   toolchain:
     description: "Rust toolchain version"
     required: false
-    default: "1.90.0"
+    default: "1.85.0"
 
 runs:
   using: "composite"
