@@ -11,7 +11,7 @@ CREATE TABLE folders (
 );
 
 CREATE TABLE EncryptedMetadata(
-    mdata BINARY NOT NULL,
+    mdata BLOB NOT NULL,
     iv TEXT NOT NULL REFERENCES encryptionKey(IV)
 );
 
