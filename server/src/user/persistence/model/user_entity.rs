@@ -8,6 +8,7 @@ pub(crate) struct UserEntity {
     username: String,
     password_hash: String,
     storage_limit: DataAmount,
+    encryption_uninitialized: bool, // default: false
 
     // encrypted with key derived from user password
     master_key: EncryptionKey,

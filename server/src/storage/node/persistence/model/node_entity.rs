@@ -14,9 +14,6 @@ pub struct NodeEntity {
     /// - folder/file metadata (last accessed, ???)
     metadata: EncryptedMetadata,
 
-    // TODO decide if we should temporarily store deleted nodes in "trash" folder
-    // this could be realized by setting the deleted boolean and an according timestamp
-    // this also makes instantaneous restoring possible
     deleted: bool,
     deleted_on: Option<u64>,
 }

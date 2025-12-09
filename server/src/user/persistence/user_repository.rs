@@ -1,12 +1,18 @@
 use crate::user::persistence::model::user_entity::UserEntity;
+use anyhow::Result;
+use crabdrive_common::data::DataAmount;
 use crabdrive_common::user::UserId;
 
 pub(crate) trait UserRepository {
-    fn create_user(username: String, password_hash: String) -> UserId; // TODO: Add remaining initialization fields as parameter
+    fn create_user(
+        username: String,
+        password_hash: String,
+        storage_limit: DataAmount,
+    ) -> Result<UserId>;
 
-    fn get_user(user_id: UserId) -> UserEntity;
+    fn get_user(user_id: UserId) -> Result<UserEntity>;
 
-    // TODO: More operations?
+    fn update_user(updated_entity: UserEntity) -> Result<()>;
 
-    fn delete_user(user_id: UserId);
+    fn delete_user(user_id: UserId) -> Result<()>;
 }
