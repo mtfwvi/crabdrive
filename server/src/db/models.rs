@@ -49,3 +49,41 @@ pub struct Folder {
     pub created_at: String,
     pub updated_at: String,
 }
+
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::db::schema::folders)]
+pub struct NewFolder {
+    pub name: String,
+    pub parent_id: Option<i32>,
+    pub owner_id: i32,
+    pub created_at: String,
+    pub updated_at: String,
+}
+
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = crate::db::schema::shares)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+pub struct Share {
+    pub id: i32,
+    pub resource_type: String,
+    pub resource_id: i32,
+    pub shared_with_user_id: Option<i32>,
+    pub share_token: Option<String>,
+    pub permission: String,
+    pub created_at: String,
+    pub expires_at: Option<String>,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = crate::db::schema::shares)]
+pub struct NewShare {
+    pub resource_type: String,
+    pub resource_id: i32,
+    pub shared_with_user_id: Option<i32>,
+    pub share_token: Option<String>,
+    pub permission: String,
+    pub created_at: String,
+    pub expires_at: Option<String>,
+}
+

@@ -1,3 +1,5 @@
+mod db;
+
 use axum::{Router, routing::get};
 use tokio::signal;
 
