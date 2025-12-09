@@ -3,20 +3,20 @@ tab_spaces = 4
 edition = "2024"
 style_edition = "2024"
 
-imports_granularity = "Module"
-group_imports = "StdExternalCrate"
+# imports_granularity = "Module"
+# group_imports = "StdExternalCrate"
 
-trailing_semicolon = true
-overflow_delimited_expr = true
-struct_lit_single_line = true
+# trailing_semicolon = true
+# overflow_delimited_expr = true
+# struct_lit_single_line = true
 
-enum_discrim_align_threshold = 20
-struct_field_align_threshold = 20
+# enum_discrim_align_threshold = 20
+# struct_field_align_threshold = 20
 
-hex_literal_case = "Lower"
+# hex_literal_case = "Lower"
 
 # Comments
-wrap_comments = true
-comment_width = 80
-format_code_in_doc_comments = true
-doc_comment_code_block_width = 80
+# wrap_comments = true
+# comment_width = 80
+# format_code_in_doc_comments = true
+# doc_comment_code_block_width = 80

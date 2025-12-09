@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
+name: Code Quality (PR)
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - "docs/**"
+      - ".github/**"
+      - "README.md"
+      - "CONTRIBUTING.md"
+
+env:
+  CARGO_TERM_COLOR: always
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-formatted:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name != 'pull_request' || !github.event.pull_request.draft
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          toolchain: nightly
+
+      - name: rs-fmt-check
+        uses: clechasseur/rs-fmt-check@v3.0.1
+
+  check-build:
+    name: Check build
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name != 'pull_request' || !github.event.pull_request.draft
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: ./.github/actions/setup-rust
+
+      - name: Check for linter errors / warnings
+        run: cargo clippy --all-targets --all-features
+
+      - name: Run tests
+        shell: bash
+        run: cargo test --all-features --all-targets --no-fail-fast
