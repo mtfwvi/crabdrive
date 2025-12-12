@@ -1,0 +1,11 @@
+.github/
+.git/
+.gitignore
+.env
+debug/
+target/
+.vscode/
+.idea/
+*.iml
+.devcontainer/
+Dockerfile
