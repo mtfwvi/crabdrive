@@ -12,6 +12,7 @@ LABEL authors="wi"
 RUN apt update && \
     apt install --no-install-recommends -y sqlite3 libsqlite3-dev && \
     apt install --no-install-recommends -y clang mold && \
+    apt install --no-install-recommends -y git && \
     rm -rf /var/lib/apt/lists/*
 
 ENV CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=clang

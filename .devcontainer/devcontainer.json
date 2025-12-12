@@ -18,7 +18,7 @@
     "forwardPorts": [
         2722
     ],
-    "postCreateCommand": "rustc --version",
+    "postCreateCommand": "echo 'Devcontainer ready!' && rustc --version",
     "customizations": {
         "jetbrains": {
             "backend": "RustRover"
