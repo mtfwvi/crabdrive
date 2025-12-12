@@ -21,7 +21,12 @@
     "postCreateCommand": "echo 'Devcontainer ready!' && rustc --version",
     "customizations": {
         "jetbrains": {
-            "backend": "RustRover"
+            "backend": "RustRover",
+            "plugins": [
+                "com.jetbrains.rust",
+                "org.toml.lang",
+                "com.intellij.nativeDebug"
+            ]
         },
         "vscode": {
             "extensions": [
