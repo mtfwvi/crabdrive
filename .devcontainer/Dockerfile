@@ -8,12 +8,15 @@ LABEL authors="wi"
 # + libsqlite3-dev      Provides header files for SQLite3  (needed by Diesel ORM)
 # + mold                Linker
 # + clang               Compiler
+# + zsh                 Shell
+# + default-jdk         Provides the JDK for IntelliJ / RustRover
 
 RUN apt update && \
     apt install --no-install-recommends -y sqlite3 libsqlite3-dev && \
     apt install --no-install-recommends -y clang mold && \
     apt install git --no-install-recommends -y && \
     apt install zsh --no-install-recommends -y && \
+    apt install default-jdk --no-install-recommends -y && \
     rm -rf /var/lib/apt/lists/*
 
 RUN groupadd --gid 1000 crabdrive && useradd --uid 1000 --gid 1000 -m -s /bin/zsh crabdrive
