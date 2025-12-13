@@ -1,9 +1,6 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-
-
-
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::db::schema::users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
