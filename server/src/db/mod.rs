@@ -6,5 +6,3 @@ pub mod schema;
 pub mod connection;
 #[allow(dead_code)]
 pub mod operations;
-
-pub use connection::{establish_connection, create_pool, DbPool};
