@@ -1,4 +1,10 @@
-pub mod connection;
+#[allow(dead_code)]
 pub mod models;
-pub mod operations;
+#[allow(dead_code)]
 pub mod schema;
+#[allow(dead_code)]
+pub mod connection;
+#[allow(dead_code)]
+pub mod operations;
+
+pub use connection::{establish_connection, create_pool, DbPool};
