@@ -17,10 +17,8 @@ pub struct User {
     pub root_key: Vec<u8>,
     pub root_node: i32,
     pub trash_key: Vec<u8>,
-    pub trash_node: Vec<u8>
+    pub trash_node: Vec<u8>,
 }
-
-
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::db::schema::files)]
@@ -37,7 +35,6 @@ pub struct File {
     pub updated_at: String,
 }
 
-
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::db::schema::folders)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -50,7 +47,6 @@ pub struct Folder {
     pub updated_at: String,
 }
 
-
 #[derive(Insertable)]
 #[diesel(table_name = crate::db::schema::folders)]
 pub struct NewFolder {
@@ -60,6 +56,3 @@ pub struct NewFolder {
     pub created_at: String,
     pub updated_at: String,
 }
-
-
-
