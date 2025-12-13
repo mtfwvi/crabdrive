@@ -1,0 +1,18 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: "Setup Rust Environment"
+description: "Checkout code and install Rust toolchain"
+
+inputs:
+  toolchain:
+    description: "Rust toolchain version"
+    required: false
+    default: "1.85.0"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Rust
+      uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        toolchain: ${{ inputs.toolchain }}
+        components: clippy, rustfmt
