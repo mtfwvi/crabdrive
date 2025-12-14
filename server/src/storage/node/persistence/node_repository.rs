@@ -17,7 +17,7 @@ pub(crate) trait NodeRepository {
     fn update_node(node: NodeEntity) -> Result<()>;
 
     /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
-    fn purge_tree(node_id: NodeId) -> Result<Vec<NodeId>>;
+    fn purge_tree(node_id: NodeId) -> Result<NodeEntity>;
 
     /// Move a node from one parent to another. Requires:
     /// - the id of the node to move
