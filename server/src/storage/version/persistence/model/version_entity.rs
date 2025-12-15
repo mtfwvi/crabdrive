@@ -17,7 +17,7 @@ pub struct VersionEntity {
     /// The random bytes used as IV prefix to last encrypt the file. The iv for each chunk must be
     /// derived from this value + 4 Bytes describing the index to avoid reordering. This value
     /// MUST NOT be reused for encrypting a new file
-    iv: IV
+    iv: IV,
 
     /// The amount of chunks the server claimed the file contains. Before commiting a version it 
     /// should be checked all chunks are present in the object storage
