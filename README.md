@@ -40,5 +40,8 @@ Pressing `Crtl + C` will gracefully shut down the server.
 
 ## Client
 
-To run the client on it's own run `trunk server --open` from `/client`.
+To run the client on its own run `trunk server --open` from `/client`.
 (Make sure `trunk` is installed - if not run `cargo install trunk`)
+
+Optionally, you can install `leptosfmt` with `cargo install leptosfmt` to more easily format the view macros inside
+leptos.

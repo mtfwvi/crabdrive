@@ -4,7 +4,7 @@ name: Code Quality (PR)
 on:
   workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [ opened, synchronize, reopened, ready_for_review ]
     paths-ignore:
       - "docs/**"
       - ".github/**"
@@ -37,6 +37,9 @@ jobs:
 
       - name: rs-fmt-check
         uses: clechasseur/rs-fmt-check@v3.0.1
+
+      - name: leptosfmt-check
+        uses: LesnyRumcajs/leptosfmt-action@v0.1.0
 
   check-build:
     name: Check build
