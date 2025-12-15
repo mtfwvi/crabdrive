@@ -37,3 +37,8 @@ The default address is http://127.0.0.1:2722/ or http://localhost:2722/, however
   ```
 
 Pressing `Crtl + C` will gracefully shut down the server.
+
+## Client
+
+To run the client on it's own run `trunk server --open` from `/client`.
+(Make sure `trunk` is installed - if not run `cargo install trunk`)
