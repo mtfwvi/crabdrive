@@ -18,4 +18,8 @@ pub struct VersionEntity {
     /// derived from this value + 4 Bytes describing the index to avoid reordering. This value
     /// MUST NOT be reused for encrypting a new file
     iv: IV
+
+    /// The amount of chunks the server claimed the file contains. Before commiting a version it 
+    /// should be checked all chunks are present in the object storage
+    chunk_count_claimed: u64,
 }
