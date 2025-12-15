@@ -1,7 +1,8 @@
 use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::node::{NodeId, NodeType};
+use chrono::NaiveDateTime;
+use crabdrive_common::storage::RevisionId;
+use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::user::UserId;
-use crabdrive_common::version::VersionId;
 
 pub struct NodeEntity {
     id: NodeId,
@@ -17,8 +18,8 @@ pub struct NodeEntity {
     /// - additional info based on the node type (e.g. links should have a relative path to the node)
     metadata: EncryptedMetadata,
 
-    /// The time the file was moved to the trash as unix time (None for a not deleted node)
-    deleted_on: Option<u64>,
+    /// The time the file was moved to the trash (None for a not deleted node)
+    deleted_on: Option<NaiveDateTime>,
 
     /// Counter that indicates the amount of times the metadata was updated. The server should
     /// increment it during each metadata update. Before accepting a change from a client, the
@@ -27,9 +28,9 @@ pub struct NodeEntity {
     /// simultaneously
     metadata_change_counter: u64,
 
-    /// The version of the file that is currently active (None for none-file nodes).
-    /// May point to an incomplete version when the file was just created and is being uploaded
-    current_file_version: Option<VersionId>,
+    /// The revision of the file that is currently active (None for none-file nodes).
+    /// May point to an incomplete revision when the file was just created and is being uploaded
+    current_revision: Option<RevisionId>,
 
     //TODO find out how to store this in the database (string or int)
     node_type: NodeType,

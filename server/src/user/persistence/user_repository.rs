@@ -5,14 +5,15 @@ use crabdrive_common::user::UserId;
 
 pub(crate) trait UserRepository {
     fn create_user(
+        &self,
         username: String,
         password_hash: String,
         storage_limit: DataAmount,
     ) -> Result<UserId>;
 
-    fn get_user(user_id: UserId) -> Result<UserEntity>;
+    fn get_user(&self, id: UserId) -> Result<UserEntity>;
 
-    fn update_user(updated_entity: UserEntity) -> Result<()>;
+    fn update_user(&self, updated_entity: UserEntity) -> Result<()>;
 
-    fn delete_user(user_id: UserId) -> Result<()>;
+    fn delete_user(&self, id: UserId) -> Result<()>;
 }

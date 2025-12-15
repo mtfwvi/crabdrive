@@ -1,0 +1,21 @@
+use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use crate::user::persistence::model::encryption_key::IV;
+use anyhow::Result;
+use chrono::NaiveDateTime;
+use crabdrive_common::storage::NodeId;
+use crabdrive_common::storage::RevisionId;
+
+pub(crate) trait RevisionRepository {
+    fn create_revision(
+        &self,
+        file_id: NodeId,
+        upload_started_on: NaiveDateTime,
+        iv: IV,
+    ) -> Result<RevisionId>;
+
+    fn update_revision(&self, file_version: RevisionEntity) -> Result<()>;
+
+    fn get_revision(&self, id: RevisionId) -> Result<RevisionEntity>;
+
+    fn delete_revision(&self, id: RevisionId) -> Result<RevisionEntity>;
+}
