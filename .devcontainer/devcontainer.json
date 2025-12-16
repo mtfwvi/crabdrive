@@ -1,0 +1,39 @@
+{
+    "name": "Crabdrive Devcontainer",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "mounts": [
+        {
+            "source": "crabdrive-storage-${devcontainerId}",
+            "target": "/storage/",
+            "type": "volume"
+        }
+    ],
+    "containerEnv": {
+        "DATABASE_URL": "sqlite:///storage/db.sqlite",
+        "CRABDRIVE_ADDR": "0.0.0.0:2722"
+    },
+    "forwardPorts": [
+        2722
+    ],
+    "postCreateCommand": "echo 'Devcontainer ready!' && rustc --version",
+    "customizations": {
+        "jetbrains": {
+            "backend": "RustRover",
+            "plugins": [
+                "com.jetbrains.rust",
+                "org.toml.lang",
+                "com.intellij.nativeDebug"
+            ]
+        },
+        "vscode": {
+            "extensions": [
+                "rust-lang.rust-analyzer",
+                "tamasfe.even-better-toml"
+            ]
+        }
+    },
+    "remoteUser": "crabdrive"
+}
