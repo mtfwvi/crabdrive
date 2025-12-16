@@ -74,6 +74,20 @@ impl DataAmount {
     pub fn as_tib(&self) -> f64 {
         self.0 as f64 / TIB as f64
     }
+
+    pub fn unit_floor(&self) -> DataUnit {
+        if self.0 >= TB {
+            DataUnit::Terabyte
+        } else if self.0 >= GB {
+            DataUnit::Gigabyte
+        } else if self.0 >= MB {
+            DataUnit::Megabyte
+        } else if self.0 >= KB {
+            DataUnit::Kilobyte
+        } else {
+            DataUnit::Byte
+        }
+    }
 }
 
 impl Add for DataAmount {
