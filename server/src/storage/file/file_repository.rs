@@ -1,5 +1,6 @@
 use crate::storage::file::model::{FileChunk, FileKey, TransferSessionId};
 use anyhow::Result;
+use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::ChunkIndex;
 
 // TODO: Async, Streams?
@@ -10,7 +11,7 @@ pub(crate) trait FileRepository {
     /// Check if the session exists
     fn session_exists(&self, session: &TransferSessionId) -> bool;
     /// Estimates the number of chunks. Ultimately, however, this is managed by the client.
-    fn estimate_chunks(&self, chunk_size: u64) -> u64; // TODO? DataAmount?
+    fn estimate_chunks(&self, chunk_size: DataAmount) -> ChunkIndex;
 
     // Writing files
     /// Initiates a new transfer by allocating all necessary temporary resources.
@@ -41,13 +42,13 @@ pub(crate) trait FileRepository {
     /// Example:
     /// ```
     /// let storage = C3::new();
-    /// // Retrieve the 13th chunk of the file // TODO: 0-indexed?
-    /// storage.get_chunk("MyFile123", 13, 16_000_000);
+    /// // Retrieve the 13th chunk of the file
+    /// storage.get_chunk("MyFile123", 12, 16_000_000);
     /// ```
     fn get_chunk(
         &self,
         key: FileKey,
         chunk_index: ChunkIndex,
-        chunk_size: u64, // TODO? DataAmount here too?
+        chunk_size: DataAmount,
     ) -> Result<FileChunk>;
 }

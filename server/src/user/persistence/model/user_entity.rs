@@ -17,7 +17,7 @@ pub(crate) struct UserEntity {
     private_key: EncryptionKey,
 
     // not encrypted (needs to be verified before each usage as the server could modify it
-    public_key: Vec<u8>, // TODO: Bytes?
+    public_key: Vec<u8>,
 
     // encrypted with master key
     // used to encrypt the users root folder metadata
