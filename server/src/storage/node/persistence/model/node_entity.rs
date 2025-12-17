@@ -32,6 +32,5 @@ pub struct NodeEntity {
     /// May point to an incomplete revision when the file was just created and is being uploaded
     current_revision: Option<RevisionId>,
 
-    //TODO find out how to store this in the database (string or int)
     node_type: NodeType,
 }
