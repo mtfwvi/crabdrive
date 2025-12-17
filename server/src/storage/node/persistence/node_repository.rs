@@ -11,14 +11,14 @@ pub(crate) trait NodeRepository {
         encrypted_metadata: EncryptedMetadata,
         owner: UserId,
         node_type: crabdrive_common::storage::NodeType,
-    ) -> NodeId;
+    ) -> Result<NodeEntity>;
 
     fn get_node(&self, id: NodeId) -> Result<NodeEntity>;
 
     fn update_node(&self, node: NodeEntity) -> Result<()>;
 
     /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
-    fn purge_tree(&self, id: NodeId) -> Result<NodeEntity>;
+    fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
 
     /// Move a node from one parent to another. Requires:
     /// - the id of the node to move
