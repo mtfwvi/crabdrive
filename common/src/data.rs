@@ -26,11 +26,11 @@ pub enum DataUnit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default)]
-pub struct DataAmount(pub u64);
+pub struct DataAmount(u64);
 
 impl DataAmount {
     pub fn new(amount: f64, unit: DataUnit) -> Self {
-        let mul = match unit {
+        let unit_factor = match unit {
             DataUnit::Byte => 1,
             DataUnit::Kilobyte => KB,
             DataUnit::Megabyte => MB,
@@ -42,7 +42,7 @@ impl DataAmount {
             DataUnit::Tebibyte => TIB,
         } as f64;
 
-        DataAmount((amount * mul) as u64)
+        DataAmount((amount * unit_factor) as u64)
     }
 
     pub fn as_bytes(&self) -> u64 {
@@ -124,15 +124,17 @@ impl Sum for DataAmount {
 
 impl fmt::Display for DataAmount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let b = self.0 as f64;
+        let bytes = self.0 as f64;
         if self.0 >= TB {
-            write!(f, "{:.2} TB ({b} Bytes)", b / TB as f64)
+            write!(f, "{:.2} TB ({bytes} Bytes)", bytes / TB as f64)
         } else if self.0 >= GB {
-            write!(f, "{:.2} GB ({b} Bytes)", b / GB as f64)
+            write!(f, "{:.2} GB ({bytes} Bytes)", bytes / GB as f64)
         } else if self.0 >= MB {
-            write!(f, "{:.2} MB ({b} Bytes)", b / MB as f64)
+            write!(f, "{:.2} MB ({bytes} Bytes)", bytes / MB as f64)
         } else if self.0 >= KB {
-            write!(f, "{:.2} KB ({b} Bytes)", b / KB as f64)
+            write!(f, "{:.2} KB ({bytes} Bytes)", bytes / KB as f64)
+        } else if self.0 == 1 {
+            write!(f, "1 Byte")
         } else {
             write!(f, "{} Bytes", self.0)
         }
@@ -145,13 +147,13 @@ impl fmt::Display for DataAmount {
 /// ```
 /// use crabdrive_common::data::DataAmount;
 ///
-/// DataAmount bytes = da!(500 MB);
-/// bytes.as_bytes(); // 500_000_000
-/// println!("{}", bytes) // 500 MB (500000000 Bytes)
+/// DataAmount one_kilobyte = da!(1000);
+/// one_kilobyte.as_kb(); // 1
+/// println!("{}", one_kilobyte); // 1.00 KB (1000 Bytes)
 ///
-/// DataAmount bytes2 = da!(1000);
-/// bytes2.as_kb(); // 1
-/// println!("");
+/// DataAmount five_hundred_megabytes = da!(500 MB);
+/// five_hundred_megabytes.as_bytes(); // 500_000_000
+/// println!("{}", five_hundred_megabytes) // 500.00 MB (500000000 Bytes)
 /// ```
 ///
 /// Supported units:
@@ -167,7 +169,6 @@ macro_rules! da {
         DataAmount($val)
     };
 
-    // Expr or Literal? Literal: Not comma seperated
     ($val:literal B) => {
         DataAmount::new($val as f64, DataUnit::Byte)
     };
@@ -201,6 +202,8 @@ macro_rules! da {
 #[cfg(test)]
 mod tests {
     use crate::data::{DataAmount, DataUnit};
+    use pretty_assertions::assert_eq;
+    use test_case::test_case;
 
     #[test]
     fn test_macro() {
@@ -216,11 +219,14 @@ mod tests {
         assert_eq!(da!(1.024 KB), da!(1 KiB));
     }
 
-    #[test]
-    fn test_display() {
-        assert_eq!(format!("{}", da!(100_000)), "100.00 KB (100000 Bytes)");
-        assert_eq!(format!("{}", da!(1_000_000)), "1.00 MB (1000000 Bytes)");
-        assert_eq!(format!("{}", da!(123_456)), "123.46 KB (123456 Bytes)");
+    #[test_case("0 Bytes", 0 ; "for zero")]
+    #[test_case("1 Byte", 1 ; "for single Byte")]
+    #[test_case("100.00 KB (100000 Bytes)", 100_000 ; "for one hundred kilobytes")]
+    #[test_case("1.00 MB (1000000 Bytes)", 1_000_000 ; "for one megabyte")]
+    #[test_case("1.02 KB (1024 Bytes)", 1_024 ; "for one kibibyte")]
+    fn test_display(expected: &str, for_bytes: u64) {
+        let actual = format!("{}", da!(for_bytes));
+        assert_eq!(actual, expected);
     }
 
     #[test]
