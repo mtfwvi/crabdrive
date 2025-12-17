@@ -1,2 +1,2 @@
-pub mod encryption_key;
-pub mod user_entity;
+pub(crate) mod encryption_key;
+pub(crate) mod user_entity;
