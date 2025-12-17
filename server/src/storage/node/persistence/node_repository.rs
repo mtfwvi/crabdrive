@@ -10,7 +10,7 @@ pub(crate) trait NodeRepository {
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
         owner: UserId,
-        is_folder: bool,
+        type: crabdrive_common::storage::NodeType,
     ) -> NodeId;
 
     fn get_node(&self, node_id: NodeId) -> Result<NodeEntity>;

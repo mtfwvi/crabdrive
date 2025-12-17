@@ -11,7 +11,7 @@ pub(crate) trait RevisionRepository {
         file_id: NodeId,
         upload_started_on: NaiveDateTime,
         iv: IV,
-    ) -> Result<RevisionId>;
+    ) -> Result<RevisionEntity>;
 
     fn update_revision(&self, file_version: RevisionEntity) -> Result<()>;
 

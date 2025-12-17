@@ -9,7 +9,7 @@ pub(crate) trait UserRepository {
         username: String,
         password_hash: String,
         storage_limit: DataAmount,
-    ) -> Result<UserId>;
+    ) -> Result<UserEntity>;
 
     fn get_user(&self, id: UserId) -> Result<UserEntity>;
 
