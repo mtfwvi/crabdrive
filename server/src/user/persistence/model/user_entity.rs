@@ -3,6 +3,12 @@ use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::UserId;
 
+pub(crate) enum UserType {
+    User,
+    Admin,
+    Restricted,
+}
+
 pub(crate) struct UserEntity {
     id: UserId,
     username: String,
@@ -32,4 +38,6 @@ pub(crate) struct UserEntity {
 
     // should be created when the user first logs in
     trash_node: Option<NodeId>,
+
+    user_type: UserType,
 }
