@@ -33,6 +33,7 @@ diesel::table! {
         password_hash -> Text,
         created_at -> Text,
         updated_at -> Text,
+        user_type -> Text,
         storage_limit -> Integer,
         masterkey -> Blob,
         private_key -> Blob,

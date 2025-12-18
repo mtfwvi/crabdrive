@@ -1,8 +1,4 @@
-#[allow(dead_code)]
-pub mod connection;
-#[allow(dead_code)]
-pub mod models;
-#[allow(dead_code)]
-pub mod operations;
-#[allow(dead_code)]
-pub mod schema;
+pub(crate) mod connection;
+pub(crate) mod models;
+pub(crate) mod operations;
+pub(crate) mod schema;

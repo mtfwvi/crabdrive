@@ -1,3 +1,8 @@
+#![allow(dead_code)] // TODO: Remove before submission
+
+mod storage;
+mod user;
+
 mod db;
 
 use axum::{Router, routing::get};
