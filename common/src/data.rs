@@ -145,13 +145,14 @@ impl fmt::Display for DataAmount {
 ///
 /// Usage:
 /// ```
-/// use crabdrive_common::data::DataAmount;
+/// use crabdrive_common::data::{DataUnit, DataAmount};
+/// use crabdrive_common::da;
 ///
-/// DataAmount one_kilobyte = da!(1000);
+/// let one_kilobyte = da!(1000);
 /// one_kilobyte.as_kb(); // 1
 /// println!("{}", one_kilobyte); // 1.00 KB (1000 Bytes)
 ///
-/// DataAmount five_hundred_megabytes = da!(500 MB);
+/// let five_hundred_megabytes = da!(500 MB);
 /// five_hundred_megabytes.as_bytes(); // 500_000_000
 /// println!("{}", five_hundred_megabytes) // 500.00 MB (500000000 Bytes)
 /// ```
@@ -166,7 +167,7 @@ impl fmt::Display for DataAmount {
 #[macro_export]
 macro_rules! da {
     ($val:expr) => {
-        DataAmount($val)
+        DataAmount::new($val as f64, DataUnit::Byte)
     };
 
     ($val:literal B) => {
