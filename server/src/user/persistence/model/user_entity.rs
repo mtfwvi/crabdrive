@@ -1,4 +1,5 @@
 use crate::user::persistence::model::encryption_key::EncryptionKey;
+use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::UserId;
@@ -10,7 +11,10 @@ pub(crate) enum UserType {
 }
 
 pub(crate) struct UserEntity {
+    user_type: UserType,
+    created_at: NaiveDateTime,
     id: UserId,
+
     username: String,
     password_hash: String,
     storage_limit: DataAmount,
@@ -38,6 +42,4 @@ pub(crate) struct UserEntity {
 
     // should be created when the user first logs in
     trash_node: Option<NodeId>,
-
-    user_type: UserType,
 }
