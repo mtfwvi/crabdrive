@@ -620,9 +620,15 @@ components:
         token:
           type: string
           format: jwt
-        redirect_uld:
+        redirect_url:
           type: string
           format: url
+        root_node_id:
+          type: string
+          format: uuid
+        trash_node_id:
+          type: string
+          format: uuid
     RegisterInfo:
       properties:
         username:
