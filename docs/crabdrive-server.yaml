@@ -151,8 +151,8 @@ paths: #
       responses:
         "201":
           description: The server stored the chunk
-        "507":
-          description: The user does not have enough storage / server out of space (catastrophic)
+        "413":
+          description: The user does not have enough storage
         "404":
           description: The fileId does not exist/ the user cannot see it
         "409":
@@ -264,7 +264,7 @@ paths: #
           required: true
       tags:
         - node
-      summary: Update the metadata of a single node (other fields in the node should be immutable/ only the server should change them
+      summary: Update the metadata of a single node (other fields in the node should be immutable/ only the server should change them)
       responses:
         "200":
           description: The metadata was updated
@@ -632,8 +632,6 @@ components:
     RegisterInfo:
       properties:
         username:
-          type: string
-        email:
           type: string
         password:
           type: string
