@@ -69,7 +69,7 @@ paths: #
           description: Permission denied
 
   #TODO to invalidate a token, the server would need to store a token blacklist
-  /auth/invalidate_session:
+  /auth/logout:
     post:
       tags:
         - auth
