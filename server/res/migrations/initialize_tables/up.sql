@@ -1,4 +1,4 @@
-CREATE TABLE users (
+CREATE TABLE User (
     user_type TEXT NOT NULL,
     id TEXT PRIMARY KEY NOT NULL,
     username TEXT NOT NULL UNIQUE,
@@ -37,7 +37,7 @@ CREATE TABLE Node(
     FOREIGN KEY (current_revision) REFERENCES revision(id)
 );
 
-CREATE TABLE revision(
+CREATE TABLE Revision(
     id TEXT PRIMARY KEY NOT NULL,
     fid TEXT NOT NULL,
     upload_started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

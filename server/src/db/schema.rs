@@ -1,32 +1,5 @@
-// @generated automatically by Diesel CLI.
-
 diesel::table! {
-    files (id) {
-        id -> Integer,
-        name -> Text,
-        file_path -> Text,
-        file_size -> Integer,
-        mime_type -> Text,
-        folder_id -> Nullable<Integer>,
-        owner_id -> Integer,
-        created_at -> Text,
-        updated_at -> Text,
-    }
-}
-
-diesel::table! {
-    folders (id) {
-        id -> Integer,
-        name -> Text,
-        parent_id -> Nullable<Integer>,
-        owner_id -> Integer,
-        created_at -> Text,
-        updated_at -> Text,
-    }
-}
-
-diesel::table! {
-    users (id) {
+    User (id) {
         id -> Integer,
         username -> Text,
         email -> Text,
