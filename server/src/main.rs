@@ -3,8 +3,7 @@ mod http;
 mod storage;
 mod user;
 
-use crate::http::Config;
-use crate::http::server::serve;
+use crate::http::{Config, server};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -14,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .init();
 
     let config = Config::load();
-    let _ = serve(config).await;
+    let _ = server::start(config).await;
 
     Ok(())
 }

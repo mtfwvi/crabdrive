@@ -6,20 +6,25 @@ use crate::http::state::AppState;
 use axum::{Router, middleware};
 use tracing::{error, info};
 
-async fn shutdown_signal() {
+async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;
-    println!("Exiting...");
+    shutdown(state).await;
 }
 
-pub async fn serve(config: Config) -> Result<(), ()> {
+async fn shutdown(state: AppState) {
+    info!("Stopping server");
+}
+
+pub async fn start(config: Config) -> Result<(), ()> {
     let state = AppState::new(config.clone());
-    let app = Router::new()
+
+    let app = Router::<AppState>::new()
         .with_state(state.clone())
+        .merge(routes::routes())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             logging_middleware,
-        ))
-        .merge(routes::routes());
+        ));
 
     let addr = config.addr();
 
@@ -43,8 +48,9 @@ pub async fn serve(config: Config) -> Result<(), ()> {
     info!("Server running on http://{}", addr);
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(shutdown_signal())
+        .with_graceful_shutdown(graceful_shutdown(state.clone()))
         .await
         .unwrap();
+
     Ok(())
 }
