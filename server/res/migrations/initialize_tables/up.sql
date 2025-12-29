@@ -32,9 +32,9 @@ CREATE TABLE Node(
     metadata_change_counter INTEGER NOT NULL DEFAULT 0,
     current_revision TEXT,
     node_type TEXT,
-    FOREIGN KEY (owner_id) REFERENCES users(id),
+    FOREIGN KEY (owner_id) REFERENCES User(id),
     FOREIGN KEY (parent_id) REFERENCES Node(id),
-    FOREIGN KEY (current_revision) REFERENCES revision(id)
+    FOREIGN KEY (current_revision) REFERENCES Revision(id)
 );
 
 CREATE TABLE Revision(
