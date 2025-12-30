@@ -64,7 +64,7 @@ Output:
 2025-12-30T19:30:02.003771Z  INFO my_method2{user_id=0}: ***:: My_Method finished!
 ```
 
-> [!INFO]
+> [!NOTE]
 > Every Request has its own unique Request ID and span. When a request handler calls another function, that function inherits the span/context.
 
 You can also manually create a (nested) span:
