@@ -10,7 +10,8 @@ bytes = "1.11.0"
 tokio = { version = "1", features = ["full"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-diesel = { version = "2.2.0", features = ["sqlite", "r2d2", "chrono"] }
+diesel = { version = "2.2.0", features = ["sqlite", "r2d2", "chrono", "uuid"] }
+uuid = "1.19.0"
 diesel_migrations = "2.2.0"
 dotenvy = "0.15"
 r2d2 = "0.8"
