@@ -11,6 +11,7 @@ async fn graceful_shutdown(state: AppState) {
     shutdown(state).await;
 }
 
+#[allow(unused_variables)] // TODO: Remove when state is actually used
 async fn shutdown(state: AppState) {
     info!("Stopping server");
 }
