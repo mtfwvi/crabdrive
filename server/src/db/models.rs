@@ -42,7 +42,7 @@ pub struct Node {
 pub struct Revision {
     id: String,
     fid: String,
-    upload_started_on: String, 
+    upload_started_on: String,
     upload_ended_on: String,
     iv: Vec<u8>,
 }
