@@ -596,10 +596,18 @@ components:
               type: string
             from_node_version:
               type: integer
+            from_node_iv:
+              type: array
+              items:
+                type: integer
             to_node_change_counter:
               type: string
             to_node_version:
               type: integer
+            to_node_iv:
+              type: array
+              items: 
+                type: integer
         from_node_metadata:
           type: string
           format: binary
