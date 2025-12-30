@@ -5,3 +5,4 @@ pub(crate) mod server;
 pub(crate) mod state;
 
 pub use config::Config;
+pub use state::AppState;

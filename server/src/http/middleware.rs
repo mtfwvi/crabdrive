@@ -1,7 +1,7 @@
 use axum::{http::Request, middleware::Next, response::Response};
 use std::time::Instant;
 
-use crate::http::state::AppState;
+use crate::http::AppState;
 use axum::body::Body;
 use axum::extract::State;
 use axum::http::{HeaderName, HeaderValue};
