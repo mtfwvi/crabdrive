@@ -1,5 +1,3 @@
-use libsqlite3_sys::SQLITE_CHANGESET_FOREIGN_KEY;
-
 diesel::table! {
     User (id) {
         user_type -> Text,

@@ -1,6 +1,7 @@
-use diesel::{prelude::*, sql_types::Bool};
+use diesel::{prelude::*};
 use serde::{Deserialize, Serialize};
 
+#[allow(non_snake_case)]
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::db::schema::User)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -26,6 +27,7 @@ pub struct User {
     pub trash_node: Vec<u8>,
 }
 
+#[allow(non_snake_case)]
 pub struct Node {
     id: i32,
     parent_id: i32,
@@ -39,6 +41,7 @@ pub struct Node {
     node_type: String,
 }
 
+#[allow(non_snake_case)]
 pub struct Revision {
     id: String,
     fid: String,
