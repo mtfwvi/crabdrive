@@ -11,6 +11,7 @@ pub struct Config {
     pub env: Environment,
     pub host: String,
     pub port: u16,
+    pub log_dir: String,
 }
 
 impl Config {
@@ -33,6 +34,13 @@ impl Config {
             panic!("Invalid format!")
         };
 
+        let log_dir = env::var("CRABDRIVE_LOG_DIR").unwrap_or("/var/log/crabdrive/".to_string());
+        let log_path = std::path::Path::new(&log_dir);
+
+        if !log_path.exists() || !log_path.is_dir() {
+            panic!("Misconfigured log directory!");
+        }
+
         Config {
             env: if environment == "dev" {
                 Environment::Dev
@@ -41,6 +49,7 @@ impl Config {
             },
             host: host.to_string(),
             port: port.parse::<u16>().unwrap(),
+            log_dir,
         }
     }
 
