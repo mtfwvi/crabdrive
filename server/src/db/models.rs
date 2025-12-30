@@ -26,23 +26,23 @@ pub struct User {
     pub trash_node: Vec<u8>,
 }
 
-pub struct Node{
+pub struct Node {
     id: i32,
     parent_id: i32,
     owner_id: String,
     mdata: Vec<u8>,
     iv: Vec<u8>,
     deleted_on: String,
-    created_at:String,
+    created_at: String,
     metadata_change_counter: i32,
     current_revision: i32,
     node_type: String,
 }
 
-pub struct Revision{
+pub struct Revision {
     id: String,
     fid: String,
     upload_started_on: String, 
     upload_ended_on: String,
-    iv: Vec<u8>
+    iv: Vec<u8>,
 }
