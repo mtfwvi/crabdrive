@@ -36,10 +36,11 @@ pub async fn start(config: Config) -> Result<(), ()> {
                 "Failed to bind to {}. {}",
                 addr,
                 match err.kind() {
-                    ErrorKind::AddrInUse => "The port is already in use!",
-                    ErrorKind::PermissionDenied => "You do not have sufficient permissions!",
-                    ErrorKind::AddrNotAvailable => "The requested IP is not available!",
-                    _ => &*format!("{}", err),
+                    ErrorKind::AddrInUse => "The port is already in use!".to_string(),
+                    ErrorKind::PermissionDenied =>
+                        "You do not have sufficient permissions!".to_string(),
+                    ErrorKind::AddrNotAvailable => "The requested IP is not available!".to_string(),
+                    _ => format!("{}", err),
                 }
             );
             Err(())
