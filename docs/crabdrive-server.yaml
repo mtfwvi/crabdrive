@@ -281,7 +281,7 @@ paths: #
                 info:
                   type: object
                   properties:
-                    node_version:
+                    node_change_count:
                       type: string
                     iv:
                       type: array
@@ -593,16 +593,12 @@ components:
           type: object
           properties:
             from_node_change_counter:
-              type: string
-            from_node_version:
               type: integer
             from_node_iv:
               type: array
               items:
                 type: integer
             to_node_change_counter:
-              type: string
-            to_node_version:
               type: integer
             to_node_iv:
               type: array
