@@ -1,3 +1,4 @@
+#[allow(non_snake_case)]
 diesel::table! {
     User (id) {
         user_type -> Text,
@@ -21,6 +22,7 @@ diesel::table! {
     }
 }
 
+#[allow(non_snake_case)]
 diesel::table! {
     Node (id) {
         id -> Integer,
@@ -36,6 +38,7 @@ diesel::table! {
     }
 }
 
+#[allow(non_snake_case)]
 diesel::table! {
     Revision(id) {
         id -> Text,

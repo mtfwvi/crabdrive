@@ -1,7 +1,6 @@
-use diesel::{prelude::*};
+use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[allow(non_snake_case)]
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::db::schema::User)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
