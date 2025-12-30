@@ -38,7 +38,7 @@ diesel::table! {
     }
 }
 
-diesel::table!{
+diesel::table! {
     Revision(id) {
         id -> Text,
         fid -> Text,
