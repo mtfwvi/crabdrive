@@ -40,5 +40,5 @@ Pressing `Crtl + C` will gracefully shut down the server.
 
 ### Developement Resources
 
-- [Logging](server/logging.md)
-- [Shared State Management](server/state.md)
+- [Logging](./docs/developement/server/logging.md)
+- [Shared State Management](./docs/developement/server/state.md)
