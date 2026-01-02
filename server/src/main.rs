@@ -16,7 +16,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         let file_appender =
             tracing_appender::rolling::daily(&config.log_dir, "crabdrive-server.log");
-        tracing_subscriber::fmt().with_writer(file_appender).init();
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::WARN)
+            .with_writer(file_appender)
+            .init();
     }
 
     let _ = server::start(config).await;

@@ -1,8 +1,8 @@
 use crate::http::{Config, routes};
 use std::io::ErrorKind;
 
+use crate::http::AppState;
 use crate::http::middleware::logging_middleware;
-use crate::http::state::AppState;
 use axum::{Router, middleware};
 use tracing::{error, info};
 
@@ -22,10 +22,7 @@ pub async fn start(config: Config) -> Result<(), ()> {
     let app = Router::<AppState>::new()
         .with_state(state.clone())
         .merge(routes::routes())
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            logging_middleware,
-        ));
+        .layer(middleware::from_fn(logging_middleware));
 
     let addr = config.addr();
 

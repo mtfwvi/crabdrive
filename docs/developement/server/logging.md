@@ -5,10 +5,10 @@
 - Trace
 - Debug
 - Info
-- W-arn
+- Warn
 - Error
 
-When building in Debug-Mode, all log messages will be printed to the console. In Release however, log messages below `info` are ignored.
+When building in Debug-Mode, all log messages will be printed to the console. In Release however, log messages below `warning` are ignored.
 
 ---
 
