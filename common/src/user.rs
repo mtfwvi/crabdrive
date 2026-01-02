@@ -1,2 +1,3 @@
+use uuid::Uuid;
 /// Unique ID (UUID) for a user
-pub type UserId = u128;
+pub type UserId = Uuid;
