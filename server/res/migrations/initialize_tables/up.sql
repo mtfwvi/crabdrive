@@ -39,7 +39,7 @@ CREATE TABLE Node(
 
 CREATE TABLE Revision(
     id TEXT PRIMARY KEY NOT NULL,
-    fid TEXT NOT NULL,
+    file_id TEXT NOT NULL,
     upload_started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     upload_ended_on TIMESTAMP,
     iv BLOB,

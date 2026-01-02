@@ -42,7 +42,7 @@ diesel::table! {
     #[allow(non_snake_case)]
     Revision(id) {
         id -> Text,
-        fid -> Text,
+        file_id -> Text,
         upload_started_on -> Text,
         upload_ended_on -> Text,
         iv -> Blob,

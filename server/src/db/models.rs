@@ -43,7 +43,7 @@ pub struct Node {
 #[allow(non_snake_case)]
 pub struct Revision {
     id: String,
-    fid: String,
+    file_id: String,
     upload_started_on: String,
     upload_ended_on: String,
     iv: Vec<u8>,
