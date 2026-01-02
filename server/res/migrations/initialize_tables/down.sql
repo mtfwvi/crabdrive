@@ -1,3 +1,3 @@
-Drop TABLE User;
+DROP TABLE User;
 DROP TABLE Node;
 DROP TABLE Revision;
