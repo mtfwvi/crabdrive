@@ -60,7 +60,7 @@ paths: #
         "201":
           description: Register success, application should redirect to login page
         "409":
-          description: Conflict when registering (email/username)
+          description: Conflict when registering (username)
           content:
             application/json:
               schema:
@@ -646,14 +646,12 @@ components:
           type: string
           enum:
             - USERNAME_TAKEN
-            - EMAIL_ALREADY_USED
+            - ILLEGAL_USERNAME
     UserInfo:
       properties:
         username:
           type: string
         id:
-          type: string
-        email:
           type: string
         data_allowed: # in bytes?
           type: integer
