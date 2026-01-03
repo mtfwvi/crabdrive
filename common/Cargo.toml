@@ -9,3 +9,4 @@ test-case = "3.3.1"
 
 [dependencies]
 serde = { version = "1.0.228", features = ["derive"] }
+chrono = { version = "0.4.42", features = ["serde"] }

@@ -124,6 +124,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -138,6 +139,7 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "crabdrive-common"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "pretty_assertions",
  "serde",
  "test-case",
