@@ -1,6 +1,8 @@
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
+use rusqlite::Result;
 
 pub const KB: u64 = 1_000;
 pub const MB: u64 = KB * 1_000;
@@ -27,6 +29,27 @@ pub enum DataUnit {
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default)]
 pub struct DataAmount(u64);
+
+impl ToSql for DataAmount {
+    fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
+        Ok(ToSqlOutput::from(self.0 as i64))
+    }
+}
+
+impl FromSql for DataAmount {
+    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
+        match value {
+            ValueRef::Integer(i) => {
+                if i < 0 {
+                    Err(FromSqlError::OutOfRange(i))
+                } else {
+                    Ok(DataAmount(i as u64))
+                }
+            }
+            _ => Err(FromSqlError::InvalidType),
+        }
+    }
+}
 
 impl DataAmount {
     pub fn new(amount: f64, unit: DataUnit) -> Self {
