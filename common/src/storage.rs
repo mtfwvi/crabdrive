@@ -1,9 +1,8 @@
-use uuid::Uuid;
 use diesel::deserialize::{self, FromSql};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::sqlite::Sqlite;
-
+use uuid::Uuid;
 
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = Uuid;
@@ -13,7 +12,6 @@ pub enum NodeType {
     File,
     Link,
 }
-
 
 impl ToSql<Text, Sqlite> for NodeType {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {

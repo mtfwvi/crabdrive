@@ -47,9 +47,9 @@ impl ToSql<BigInt, Sqlite> for DataAmount {
 }
 
 impl FromSql<BigInt, Sqlite> for DataAmount {
-    fn from_sql(bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>)
-        -> deserialize::Result<Self>
-    {
+    fn from_sql(
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+    ) -> deserialize::Result<Self> {
         let value = i64::from_sql(bytes)?;
 
         if value < 0 {
@@ -59,7 +59,6 @@ impl FromSql<BigInt, Sqlite> for DataAmount {
         Ok(DataAmount(value as u64))
     }
 }
-
 
 impl DataAmount {
     pub fn new(amount: f64, unit: DataUnit) -> Self {

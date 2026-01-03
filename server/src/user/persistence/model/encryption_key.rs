@@ -1,7 +1,7 @@
-use diesel::sqlite::Sqlite;
 use diesel::deserialize::FromSql;
 use diesel::serialize::ToSql;
 use diesel::sql_types::Binary;
+use diesel::sqlite::Sqlite;
 use std::io::Read;
 // Initialization vector for encryption
 pub type IV = [u8; 12];
@@ -32,12 +32,12 @@ impl FromSql<Binary, Sqlite> for EncryptionKey {
     ) -> diesel::deserialize::Result<Self> {
         let mut blob = bytes.read_blob();
         let mut iv_buf: IV = [0; 12];
-        blob.read(&mut iv_buf)?;
+        blob.read_exact(&mut iv_buf)?;
         let mut key_len: [u8; 2] = [0; 2];
-        blob.read(&mut key_len)?;
+        blob.read_exact(&mut key_len)?;
         let key_len = u16::from_be_bytes(key_len);
         let mut key_buf: Vec<u8> = vec![0; key_len.into()];
-        blob.read(&mut key_buf)?;
+        blob.read_exact(&mut key_buf)?;
         let ek = EncryptionKey {
             key: key_buf,
             iv: iv_buf,
