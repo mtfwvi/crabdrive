@@ -1,41 +1,44 @@
-use rusqlite::Result;
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use uuid::Uuid;
+use diesel::deserialize::{self, FromSql};
+use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::sql_types::Text;
+use diesel::sqlite::Sqlite;
+
 
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = Uuid;
+#[derive(Debug)]
 pub enum NodeType {
     Folder,
     File,
     Link,
 }
 
-impl ToSql for NodeType {
-    fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
-        let s = match self {
+
+impl ToSql<Text, Sqlite> for NodeType {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
+        let value = match self {
             NodeType::Folder => "folder",
             NodeType::File => "file",
             NodeType::Link => "link",
         };
-        Ok(ToSqlOutput::from(s))
+
+        out.set_value(value);
+        Ok(IsNull::No)
     }
 }
 
-impl FromSql for NodeType {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        match value {
-            ValueRef::Text(s) => {
-                let s = std::str::from_utf8(s).map_err(|e| FromSqlError::Other(Box::new(e)))?;
-                match s {
-                    "folder" => Ok(NodeType::Folder),
-                    "file" => Ok(NodeType::File),
-                    "link" => Ok(NodeType::Link),
-                    _ => Err(FromSqlError::Other(
-                        format!("Invalid NodeType: {}", s).into(),
-                    )),
-                }
-            }
-            _ => Err(FromSqlError::InvalidType),
+impl FromSql<Text, Sqlite> for NodeType {
+    fn from_sql(
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+    ) -> deserialize::Result<Self> {
+        let s = <String as FromSql<Text, Sqlite>>::from_sql(bytes)?;
+
+        match s.as_str() {
+            "folder" => Ok(NodeType::Folder),
+            "file" => Ok(NodeType::File),
+            "link" => Ok(NodeType::Link),
+            _ => Err(format!("Invalid NodeType: {}", s).into()),
         }
     }
 }

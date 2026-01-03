@@ -1,5 +1,7 @@
-use rusqlite::Result;
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
+use diesel::deserialize::{self, FromSql};
+use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::sql_types::BigInt;
+use diesel::sqlite::Sqlite;
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -28,28 +30,36 @@ pub enum DataUnit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default)]
-pub struct DataAmount(u64);
+pub struct DataAmount(pub u64);
 
-impl ToSql for DataAmount {
-    fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
-        Ok(ToSqlOutput::from(self.0 as i64))
+impl ToSql<BigInt, Sqlite> for DataAmount {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
+        let value: i64 = self.0.try_into().map_err(|_| {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "DataAmount too large for SQLite INTEGER",
+            ))
+        })?;
+
+        out.set_value(value);
+        Ok(IsNull::No)
     }
 }
 
-impl FromSql for DataAmount {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        match value {
-            ValueRef::Integer(i) => {
-                if i < 0 {
-                    Err(FromSqlError::OutOfRange(i))
-                } else {
-                    Ok(DataAmount(i as u64))
-                }
-            }
-            _ => Err(FromSqlError::InvalidType),
+impl FromSql<BigInt, Sqlite> for DataAmount {
+    fn from_sql(bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>)
+        -> deserialize::Result<Self>
+    {
+        let value = i64::from_sql(bytes)?;
+
+        if value < 0 {
+            return Err("Negative value cannot be converted to DataAmount".into());
         }
+
+        Ok(DataAmount(value as u64))
     }
 }
+
 
 impl DataAmount {
     pub fn new(amount: f64, unit: DataUnit) -> Self {

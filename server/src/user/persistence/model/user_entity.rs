@@ -3,41 +3,42 @@ use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::UserId;
-use rusqlite::Result;
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
+use diesel::deserialize::{self, FromSql};
+use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::sql_types::Text;
+use diesel::sqlite::Sqlite;
 
+#[derive(Debug)]
 pub(crate) enum UserType {
     User,
     Admin,
     Restricted,
 }
 
-impl ToSql for UserType {
-    fn to_sql(&self) -> Result<ToSqlOutput<'_>> {
-        let s = match self {
+impl ToSql<Text, Sqlite> for UserType {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
+        let value = match self {
             UserType::User => "user",
             UserType::Admin => "admin",
             UserType::Restricted => "restricted",
         };
-        Ok(ToSqlOutput::from(s))
+
+        out.set_value(value);
+        Ok(IsNull::No)
     }
 }
 
-impl FromSql for UserType {
-    fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
-        match value {
-            ValueRef::Text(s) => {
-                let s = std::str::from_utf8(s).map_err(|e| FromSqlError::Other(Box::new(e)))?;
-                match s {
-                    "user" => Ok(UserType::User),
-                    "admin" => Ok(UserType::Admin),
-                    "restricted" => Ok(UserType::Restricted),
-                    _ => Err(FromSqlError::Other(
-                        format!("Invalid UserType: {}", s).into(),
-                    )),
-                }
-            }
-            _ => Err(FromSqlError::InvalidType),
+impl FromSql<Text, Sqlite> for UserType {
+    fn from_sql(
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+    ) -> deserialize::Result<Self> {
+        let s = <String as FromSql<Text, Sqlite>>::from_sql(bytes)?;
+
+        match s.as_str() {
+            "user" => Ok(UserType::User),
+            "admin" => Ok(UserType::Admin),
+            "restricted" => Ok(UserType::Restricted),
+            _ => Err(format!("Invalid UserType: {}", s).into()),
         }
     }
 }

@@ -19,7 +19,7 @@ CREATE TABLE User (
     trash_node TEXT NOT NULL 
 );
 
-CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_username ON User(username);
 
 CREATE TABLE Node(
     id TEXT PRIMARY KEY NOT NULL,
