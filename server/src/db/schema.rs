@@ -15,10 +15,10 @@ diesel::table! {
         public_key  -> Blob,
         root_key  -> Blob,
         root_key_iv -> Blob,
-        root_node -> Integer,
+        root_node -> Nullable<Integer>,
         trash_key  -> Blob,
         trash_key_iv -> Blob,
-        trash_node  -> Blob,
+        trash_node  -> Nullable<Blob>,
     }
 }
 

@@ -20,10 +20,10 @@ pub struct User {
     pub public_key: Vec<u8>,
     pub root_key: Vec<u8>,
     pub root_key_iv: Vec<u8>,
-    pub root_node: i32,
+    pub root_node: Option<i32>,
     pub trash_key: Vec<u8>,
     pub trash_key_iv: Vec<u8>,
-    pub trash_node: Vec<u8>,
+    pub trash_node: Option<Vec<u8>>,
 }
 
 #[allow(non_snake_case)]
