@@ -3,8 +3,8 @@ use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::UserId;
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result;
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 
 pub(crate) enum UserType {
     User,
@@ -27,14 +27,13 @@ impl FromSql for UserType {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value {
             ValueRef::Text(s) => {
-                let s = std::str::from_utf8(s)
-                    .map_err(|e| FromSqlError::Other(Box::new(e)))?;
+                let s = std::str::from_utf8(s).map_err(|e| FromSqlError::Other(Box::new(e)))?;
                 match s {
                     "user" => Ok(UserType::User),
                     "admin" => Ok(UserType::Admin),
                     "restricted" => Ok(UserType::Restricted),
                     _ => Err(FromSqlError::Other(
-                        format!("Invalid UserType: {}", s).into()
+                        format!("Invalid UserType: {}", s).into(),
                     )),
                 }
             }

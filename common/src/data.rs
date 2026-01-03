@@ -1,8 +1,8 @@
+use rusqlite::Result;
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
-use rusqlite::Result;
 
 pub const KB: u64 = 1_000;
 pub const MB: u64 = KB * 1_000;

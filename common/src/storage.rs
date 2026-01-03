@@ -1,6 +1,6 @@
-use uuid::Uuid;
-use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
 use rusqlite::Result;
+use rusqlite::types::{FromSql, FromSqlError, FromSqlResult, ToSql, ToSqlOutput, ValueRef};
+use uuid::Uuid;
 
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = Uuid;
@@ -25,14 +25,13 @@ impl FromSql for NodeType {
     fn column_result(value: ValueRef<'_>) -> FromSqlResult<Self> {
         match value {
             ValueRef::Text(s) => {
-                let s = std::str::from_utf8(s)
-                    .map_err(|e| FromSqlError::Other(Box::new(e)))?;
+                let s = std::str::from_utf8(s).map_err(|e| FromSqlError::Other(Box::new(e)))?;
                 match s {
                     "folder" => Ok(NodeType::Folder),
                     "file" => Ok(NodeType::File),
                     "link" => Ok(NodeType::Link),
                     _ => Err(FromSqlError::Other(
-                        format!("Invalid NodeType: {}", s).into()
+                        format!("Invalid NodeType: {}", s).into(),
                     )),
                 }
             }
