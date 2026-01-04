@@ -1,13 +1,16 @@
 use serde::{Deserialize, Serialize};
 
+
+
 #[derive(Serialize, Deserialize, Debug)]
-pub enum LoginDeniedReason {
-    Password,
-    Username,
+pub enum PostLoginResponse {
+    Ok(LoginSuccess),
+    Unauthorized(LoginDenied),
+
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginPost200Response {
+pub struct LoginSuccess {
     /// The jwt token signed by the server
     bearer_token: String,
     redirect_url: String,
@@ -20,6 +23,13 @@ pub struct LoginPost200Response {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct LoginPost401Response {
+pub enum LoginDeniedReason {
+    Password,
+    Username,
+    OTHER,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LoginDenied {
     reason: LoginDeniedReason,
 }

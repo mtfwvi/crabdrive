@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RegisterPostBody {
+pub struct PostRegisterRequest {
     username: String,
     password: String,
 }

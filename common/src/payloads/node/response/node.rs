@@ -4,14 +4,15 @@ use serde::{Deserialize, Serialize};
 use crate::{storage::{NodeId, NodeType, RevisionId, RevisionIv}, user::UserId};
 
 #[derive(Serialize, Deserialize, Debug)] 
-pub struct Node {
+pub struct NodeInfo {
     id: NodeId,
     change_count: u64,
     parent_id: NodeId,
     owner_id: UserId,
     deleted_on: Option<NaiveDateTime>,
     node_type: NodeType,
-    current_revision: Option<FileRevision>
+    current_revision: Option<FileRevision>,
+    encrypted_metadata: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Debug)] 
@@ -23,5 +24,42 @@ pub struct FileRevision {
     chunk_count: u64,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GetNodeResponse {
+    Ok(NodeInfo),
+    NotFound,
+}
 
-pub type NodeGet200ResponseInfoPart = Node;
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PatchNodeResponse {
+    Ok(NodeInfo),
+    NotFound,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PostMoveNodeResponse {
+    Ok,
+    NotFound, // one of the referenced nodes was not found
+    Conflict, // version conflict (one of the nodes
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PostMoveNodeToTrashResponse {
+    Ok,
+    NotFound, // one of the referenced nodes was not found
+    Conflict, // version conflict (one of the nodes
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PostMoveNodeOutOfTrashResponse {
+    Ok,
+    NotFound, // one of the referenced nodes was not found
+    Conflict, // version conflict (one of the nodes
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum DeleteNodeResponse {
+    Ok,
+    NotFound,
+    Conflict,
+}
