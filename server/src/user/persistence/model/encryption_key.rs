@@ -17,11 +17,12 @@ impl ToSql<Binary, Sqlite> for EncryptionKey {
         &'b self,
         out: &mut diesel::serialize::Output<'b, '_, Sqlite>,
     ) -> diesel::serialize::Result {
-        let mut result: Vec<u8> = Vec::with_capacity(self.key.len() + 12);
-        result.extend_from_slice(&self.iv); // Store IV
-        result.extend_from_slice(&(self.key.len() as u16).to_be_bytes()); // Store length of IV to SQL
-        result.extend_from_slice(&self.key); // Store Key
-        out.set_value(result);
+        let mut out_buf = Vec::with_capacity(self.iv.len() + self.key.len());
+        // First 12 bytes stores the IV
+        out_buf.extend_from_slice(&self.iv);
+        // Byte 13 - End stores the key
+        out_buf.extend_from_slice(&self.key);
+        out.set_value(out_buf);
         Ok(diesel::serialize::IsNull::No)
     }
 }
@@ -33,15 +34,11 @@ impl FromSql<Binary, Sqlite> for EncryptionKey {
         let mut blob = bytes.read_blob();
         let mut iv_buf: IV = [0; 12];
         blob.read_exact(&mut iv_buf)?;
-        let mut key_len: [u8; 2] = [0; 2];
-        blob.read_exact(&mut key_len)?;
-        let key_len = u16::from_be_bytes(key_len);
-        let mut key_buf: Vec<u8> = vec![0; key_len.into()];
-        blob.read_exact(&mut key_buf)?;
-        let ek = EncryptionKey {
+        let mut key_buf = Vec::with_capacity(blob.len() - iv_buf.len());
+        blob.read_to_end(&mut key_buf)?;
+        Ok(EncryptionKey {
             key: key_buf,
             iv: iv_buf,
-        };
-        Ok(ek)
+        })
     }
 }
