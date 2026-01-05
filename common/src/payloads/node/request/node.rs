@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::storage::MetadataIv;
+use crate::storage::{MetadataIv, NodeId};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeleteNodeRequest {
@@ -25,6 +25,7 @@ pub struct MoveNodeData {
     to_node_change_counter: u64,
     to_node_iv: MetadataIv,
     to_node_metadata: Vec<u8>,
+    to_node_id: NodeId,
 }
 
 pub type PostMoveNodeRequest = MoveNodeData;
