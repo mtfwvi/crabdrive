@@ -41,7 +41,7 @@ Pressing `Crtl + C` will gracefully shut down the server.
 ## Client
 
 To run the client on its own run `trunk server --open` from `/client`.
-(Make sure `trunk` is installed - if not run `cargo install trunk`)
+Make sure `trunk` is installed - if not install it with `cargo install trunk` - and add the `wasm32-unknown-unknown` target with `rustup target add wasm32-unknown-unknown`.
 
 Optionally, you can install `leptosfmt` with `cargo install leptosfmt` to more easily format the view macros inside
 leptos.

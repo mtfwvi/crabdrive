@@ -10,12 +10,14 @@ pub(crate) fn DemoPage() -> impl IntoView {
                 <LayoutHeader>
                     <h1>"crabdrive 🦀"</h1>
                     <Space>
-                        <h3 style="display: inline; padding-right: 5px;">"Rust native cloud storage"</h3>
+                        <h3 style="display: inline; padding-right: 5px;">
+                            "Rust native cloud storage"
+                        </h3>
                         <Badge>"⚙️"</Badge>
                     </Space>
                 </LayoutHeader>
                 <Layout content_style="padding: 20px;">
-                    <FileTree/>
+                    <FileTree />
                 </Layout>
             </Layout>
         </ConfigProvider>
