@@ -118,6 +118,18 @@ paths: #
                 $ref: "#/components/schemas/UserInfo"
         "404":
           description: The user does not exist
+  /admin/user:
+    post:
+      summary: Create a new user
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+
 
 
   #########################
@@ -660,6 +672,16 @@ components:
         user_type:
           type: string
         created_on:
+          type: string
+    CreateUser:
+      properties:
+        username:
+          type: string
+        storage_limit: # in bytes?
+          type: integer
+        user_type:
+          type: string
+        password_hash:
           type: string
     Id:
       properties:
