@@ -15,8 +15,6 @@ pub struct PatchNodeRequest {
     node_metadata: Vec<u8>,
 }
 
-//TODO rename openapi object (MoveFile)
-//TODO turn this into single json
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MoveNodeData {
     from_node_change_counter: u64,

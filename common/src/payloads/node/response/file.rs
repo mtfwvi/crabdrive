@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCreateFileResponse {
-    Created(NodeInfo), // TODO change response code
+    Created(NodeInfo),
     NotFound,
     BadRequest,
     Conflict,
@@ -14,7 +14,7 @@ pub enum PostCreateFileResponse {
 pub enum PostUpdateFileResponse {
     Success(FileRevision),
     NotFound,
-    BadRequest, //TODO add to openapi
+    BadRequest,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

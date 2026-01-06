@@ -11,7 +11,7 @@ pub enum GetUserResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostUserResponse {
     Created(UserInfo),
-    Conflict, //TODO add this to openapi
+    Conflict,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
