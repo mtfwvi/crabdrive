@@ -129,6 +129,15 @@ paths: #
           application/json:
             schema:
               $ref: '#/components/schemas/CreateUser'
+      responses:
+        "200":
+          description: the just created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "409":
+          description: Username conflict
 
 
 
@@ -213,25 +222,17 @@ paths: #
       summary: Delete/Purge a node and its whole subtree
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                info:
-                  type: object
-                  properties:
-                    parent_change_count:
-                      type: integer
-                    parent_metadata_iv:
-                      type: array
+                parent_change_count:
+                  type: integer
+                parent_metadata_iv:
+                  type: array
                 parent_node_metadata:
                   type: string
                   format: binary
-            encoding:
-              info:
-                contentType: application/json
-              parent_node_metadata:
-                contentType: application/octet-stream
       responses:
         "200":
           description: The tree was deleted
@@ -256,14 +257,9 @@ paths: #
         "200":
           description: The node including its metadata
           content:
-            multipart/mixed:
+            application/json:
               schema:
                 $ref: '#/components/schemas/Node'
-              encoding:
-                metadata:
-                  contentType: application/octet-stream
-                info:
-                  contentType: application/json
         "404":
           description: Permission denied/ node does not exist
 
@@ -286,25 +282,17 @@ paths: #
           description: The update was not accepted. This could be because the version is outdated
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               type: object
               properties:
-                info:
-                  type: object
-                  properties:
-                    node_change_count:
-                      type: string
-                    iv:
-                      type: array
+                node_change_count:
+                  type: string
+                iv:
+                  type: array
                 node_metadata:
                   type: string
                   format: binary
-            encoding:
-              info:
-                contentType: application/json
-              node_metadata:
-                contentType: application/octet-stream
 
   /node/{nodeId}/move:
     post:
@@ -318,16 +306,9 @@ paths: #
         - node
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/MoveFile'
-            encoding:
-              info:
-                contentType: application/json
-              from_node_metadata:
-                contentType: application/octet-stream
-              to_node_metadata:
-                contentType: application/octet-stream
+              $ref: '#/components/schemas/MoveNodeData'
       summary: Move a node
       responses:
         "200":
@@ -348,16 +329,9 @@ paths: #
         - node
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/MoveFile'
-            encoding:
-              info:
-                contentType: application/json
-              from_node_metadata:
-                contentType: application/octet-stream
-              to_node_metadata:
-                contentType: application/octet-stream
+              $ref: '#/components/schemas/MoveNodeData'
       summary: Trash node
       description: move a node to the trash (same as moving but server sets the deleted timestamp)
       responses:
@@ -379,16 +353,9 @@ paths: #
         - node
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
-              $ref: '#/components/schemas/MoveFile'
-            encoding:
-              info:
-                contentType: application/json
-              from_node_metadata:
-                contentType: application/octet-stream
-              to_node_metadata:
-                contentType: application/octet-stream
+              $ref: '#/components/schemas/MoveNodeData'
       summary: Restore node
       description: move a node out of the the trash (same as moving but server removes the deleted timestamp)
       responses:
@@ -398,7 +365,6 @@ paths: #
           description: Permission denied/ node does not exist
         "409":
           description: The update was not accepted. This could be because the version is outdated
-
 
 
 
@@ -416,29 +382,19 @@ paths: #
           required: true
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/CreateFile'
-            encoding:
-              info:
-                contentType: application/json
-              node_metadata:
-                contentType: application/octet-stream
       tags:
         - file
       summary: Start a file upload
       responses:
-        "200":
+        "201":
           description: The file node was created
           content:
-            multipart/mixed:
+            application/json:
               schema:
                 $ref: '#/components/schemas/Node'
-              encoding:
-                metadata:
-                  contentType: application/octet-stream
-                info:
-                  contentType: application/json
         "404":
           description: Permission denied/ parent does not exist
         "400":
@@ -462,7 +418,9 @@ paths: #
               type: object
               properties:
                 chunk_count:
-                    type: integer
+                  type: integer
+                file_iv:
+                  type: array
       tags:
         - file
       summary: Create a new file version
@@ -475,6 +433,8 @@ paths: #
                 $ref: '#/components/schemas/Id'
         "404":
           description: Permission denied/ parent does not exist
+        "400":
+          description: The node is not a file
 
   /node/{nodeId}/{versionId}/commit:
     post:
@@ -497,14 +457,9 @@ paths: #
         "200":
           description: Return the node that was just updated
           content:
-            multipart/mixed:
+            application/json:
               schema:
                 $ref: '#/components/schemas/Node'
-              encoding:
-                metadata:
-                  contentType: application/octet-stream
-                info:
-                  contentType: application/json
         "404":
           description: The node does not exist/missing permissions
         "400":
@@ -534,16 +489,9 @@ paths: #
           required: true
       requestBody:
         content:
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/CreateFolder'
-            encoding:
-              info:
-                contentType: application/json
-              parent_metadata:
-                contentType: application/octet-stream
-              new_item_metadata:
-                contentType: application/octet-stream
       responses:
         "201":
           description: The folder was created
@@ -560,28 +508,23 @@ components:
     Node:
       type: object
       properties:
-        metadata:
-          type: object
+        encrypted_metadata:
           format: binary
-        node_info:
-          type: object
+        id:
+          $ref: '#/components/schemas/Uuid'
+        change_count:
+          type: integer
+        parent_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_id:
+          $ref: '#/components/schemas/Uuid'
+        deleted_on:
+          type: integer
+        node_type:
+          type: string # is an enum
+        current_file_version:
           format: json
-          properties:
-            id:
-              $ref: '#/components/schemas/Uuid'
-            change_count:
-              type: integer
-            parent_id:
-              $ref: '#/components/schemas/Uuid'
-            owner_id:
-              $ref: '#/components/schemas/Uuid'
-            deleted_on:
-              type: integer
-            node_type:
-              type: string # is an enum
-            current_file_version:
-              format: json
-              $ref: '#/components/schemas/FileRevision'
+          $ref: '#/components/schemas/FileRevision'
     FileRevision:
       type: object
       properties:
@@ -598,30 +541,29 @@ components:
     Uuid:
       type: string
       format: uuid
-    MoveFile:
+    MoveNodeData:
       type: object
       properties:
-        info:
-          type: object
-          properties:
-            from_node_change_counter:
-              type: integer
-            from_node_iv:
-              type: array
-              items:
-                type: integer
-            to_node_change_counter:
-              type: integer
-            to_node_iv:
-              type: array
-              items: 
-                type: integer
+        from_node_change_counter:
+          type: integer
+        from_node_iv:
+          type: array
+          items:
+            type: integer
         from_node_metadata:
           type: string
           format: binary
+        to_node_change_counter:
+          type: integer
+        to_node_iv:
+          type: array
+          items:
+            type: integer
         to_node_metadata:
           type: string
           format: binary
+        to_node_id:
+          $ref: '#/components/schemas/Uuid'
     LoginInfo:
       properties:
         username:
@@ -690,45 +632,37 @@ components:
     CreateFolder:
       type: object
       properties:
-        info:
-          type: object
-          format: json
-          properties:
-            parent_metadata_iv:
-              type: array
-            new_item_metadata_iv:
-              type: array
-            parent_metadata_change_count:
-              type: integer
-        new_item_metadata:
+        node_metadata_iv:
+          type: array
+        node_metadata:
           type: string
           format: binary
+        parent_metadata_iv:
+          type: array
         parent_metadata:
           type: string
           format: binary
+        parent_metadata_change_count:
+          type: integer
     CreateFile:
       type: object
       properties:
-        info:
-          type: object
-          format: json
-          properties:
-            node_metadata_iv:
-              type: array
-            parent_metadata_iv:
-              type: array
-            file_iv:
-              type: array
-            chunk_count:
-              type: integer
-
+        node_metadata_iv:
+          type: array
+        parent_metadata_iv:
+          type: array
+        parent_metadata_change_count:
+          type: integer
+        file_iv:
+          type: array
+        chunk_count:
+          type: integer
         node_metadata:
           type: string
           format: binary
         parent_metadata:
           type: string
           format: binary
-
   securitySchemes:
     bearerAuth:
       type: http
