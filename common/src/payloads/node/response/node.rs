@@ -15,13 +15,25 @@ pub struct NodeInfo {
     encrypted_metadata: Vec<u8>,
 }
 
-#[derive(Serialize, Deserialize, Debug)] 
+impl NodeInfo {
+    pub fn new(id: NodeId, change_count: u64, parent_id: NodeId, owner_id: UserId, deleted_on: Option<NaiveDateTime>, node_type: NodeType, current_revision: Option<FileRevision>, encrypted_metadata: Vec<u8>) -> Self {
+        Self { id, change_count, parent_id, owner_id, deleted_on, node_type, current_revision, encrypted_metadata }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct FileRevision {
     id: RevisionId,
     upload_ended_on: Option<NaiveDateTime>,
     upload_started_on: NaiveDateTime,
     iv: RevisionIv,
     chunk_count: u64,
+}
+
+impl FileRevision {
+    pub fn new(id: RevisionId, upload_ended_on: Option<NaiveDateTime>, upload_started_on: NaiveDateTime, iv: RevisionIv, chunk_count: u64) -> Self {
+        Self { id, upload_ended_on, upload_started_on, iv, chunk_count }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,6 +46,7 @@ pub enum GetNodeResponse {
 pub enum PatchNodeResponse {
     Ok(NodeInfo),
     NotFound,
+    Conflict,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

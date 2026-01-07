@@ -20,5 +20,6 @@ pub enum PostUpdateFileResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCommitFileResponse {
     Success(NodeInfo),
+    BadRequest(Vec<u64>), // the missing parts
     NotFound,
 }

@@ -5,9 +5,11 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.100"
-axum = "0.8.7"
+axum = { version = "0.8.7", features = ["json"] }
 bytes = "1.11.0"
 chrono = "0.4.42"
 tokio = { version = "1.48.0", features = ["full"] }
+serde = "1.0.228"
+uuid = { version = "0.7", features = ["serde", "v4"] }
 
 crabdrive-common = { path = "../common" }

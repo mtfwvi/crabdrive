@@ -27,5 +27,5 @@ pub struct MoveNodeData {
 }
 
 pub type PostMoveNodeRequest = MoveNodeData;
-pub type PostMoveNodeToTrash = MoveNodeData;
-pub type PostMoveNodeOutOfTrash = MoveNodeData;
+pub type PostMoveNodeToTrashRequest = MoveNodeData;
+pub type PostMoveNodeOutOfTrashRequest = MoveNodeData;

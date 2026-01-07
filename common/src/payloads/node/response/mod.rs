@@ -1,3 +1,3 @@
 pub mod node;
-mod file;
-mod folder;
+pub mod file;
+pub mod folder;
