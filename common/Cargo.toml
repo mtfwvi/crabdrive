@@ -10,4 +10,4 @@ test-case = "3.3.1"
 [dependencies]
 uuid = { version = "1.19.0", features = ["v4", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
-diesel = { version = "2.2.0", default--features = false,  features = ["sqlite"] }
+diesel = { version = "2.2.0", default-features = false,  features = ["sqlite"] }

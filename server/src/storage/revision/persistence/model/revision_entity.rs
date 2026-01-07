@@ -1,8 +1,13 @@
-use crate::user::persistence::model::encryption_key::IV;
 use chrono::NaiveDateTime;
+use crabdrive_common::iv::IV;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = crate::db::schema::Revision)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct RevisionEntity {
     id: RevisionId,
 

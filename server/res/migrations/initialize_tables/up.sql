@@ -12,8 +12,7 @@ CREATE TABLE User (
     root_key BLOB NOT NULL,
     root_node TEXT NULL,
     trash_key BLOB NOT NULL,
-    trash_key_iv BLOB NOT NULL,
-    trash_node TEXT NOT NULL 
+    trash_node TEXT NULL 
 );
 
 CREATE INDEX idx_users_username ON User(username);
@@ -23,12 +22,10 @@ CREATE TABLE Node(
     parent_id TEXT DEFAULT NULL, 
     owner_id TEXT NOT NULL,
     metadata BLOB NOT NULL,
-    iv BLOB NOT NULL,
-    deleted_on TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    deleted_on TIMESTAMP NULL,
     metadata_change_counter INTEGER NOT NULL DEFAULT 0,
-    current_revision TEXT,
-    node_type TEXT,
+    current_revision TEXT NULL,
+    node_type TEXT NOT NULL,
     FOREIGN KEY (owner_id) REFERENCES User(id),
     FOREIGN KEY (parent_id) REFERENCES Node(id),
     FOREIGN KEY (current_revision) REFERENCES Revision(id)
@@ -39,6 +36,6 @@ CREATE TABLE Revision(
     file_id TEXT NOT NULL,
     upload_started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     upload_ended_on TIMESTAMP,
-    iv BLOB,
-    FOREIGN KEY (fid) REFERENCES Node(id)
+    iv BLOB NOT NULL,
+    FOREIGN KEY (file_id) REFERENCES Node(id)
 );

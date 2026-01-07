@@ -1,17 +1,18 @@
+use diesel::deserialize::FromSqlRow;
 use diesel::deserialize::{self, FromSql};
+use diesel::expression::AsExpression;
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::sqlite::Sqlite;
-use diesel::{AsExpression, FromSqlRow};
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
-/// Unique ID (UUID) for a user
-pub type UserId = Uuid;
-
-#[derive(Debug, Clone, Copy, FromSqlRow, AsExpression, Hash, Eq, PartialEq)]
-#[sql_type = "Text"]
+#[derive(
+    Debug, Clone, Copy, FromSqlRow, Hash, Eq, PartialEq, Serialize, Deserialize, AsExpression,
+)]
+#[diesel(sql_type = Text)]
 pub struct UUID(pub uuid::Uuid);
 
 // Small function to easily initialize our uuid

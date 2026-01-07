@@ -2,36 +2,32 @@ diesel::table! {
     #[allow(non_snake_case)]
     User (id) {
         user_type -> Text,
-        id -> Integer,
+        id -> Text,
+        created_at -> Timestamp,
         username -> Text,
         password_hash -> Text,
-        storage_limit -> Integer,
-        created_at -> Text,
-        updated_at -> Text,
-        encryption_uninitialized -> Integer,
-        master_key -> Blob,
-        private_key -> Blob,
-        public_key  -> Blob,
-        root_key  -> Blob,
-        root_node -> Nullable<Integer>,
-        trash_key  -> Blob,
-        trash_key_iv -> Blob,
-        trash_node  -> Nullable<Blob>,
+        storage_limit -> BigInt,
+        encryption_uninitialized -> Bool,
+        master_key -> Binary,
+        private_key -> Binary,
+        public_key  -> Binary,
+        root_key  -> Binary,
+        root_node -> Nullable<Text>,
+        trash_key  -> Binary,
+        trash_node  -> Nullable<Text>,
     }
 }
 
 diesel::table! {
     #[allow(non_snake_case)]
     Node (id) {
-        id -> Integer,
-        parent_id -> Nullable<Integer>,
+        id -> Text,
+        parent_id -> Nullable<Text>,
         owner_id -> Text,
-        metadata -> Blob,
-        iv -> Blob,
-        deleted_on -> Text,
-        created_at -> Text,
-        metadata_change_counter -> Integer,
-        current_revision -> Nullable<Integer>,
+        metadata -> Binary,
+        deleted_on -> Nullable<Timestamp>,
+        metadata_change_counter -> BigInt,
+        current_revision -> Nullable<Text>,
         node_type -> Text,
     }
 }
@@ -41,9 +37,9 @@ diesel::table! {
     Revision(id) {
         id -> Text,
         file_id -> Text,
-        upload_started_on -> Text,
-        upload_ended_on -> Text,
-        iv -> Blob,
+        upload_started_on -> Timestamp,
+        upload_ended_on -> Nullable<Timestamp>,
+        iv -> Binary,
     }
 }
 
