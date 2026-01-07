@@ -1,5 +1,5 @@
 pub(crate) mod components;
-mod pages;
+pub(crate) mod pages;
 
 use leptos::prelude::*;
 use pages::demo_page::DemoPage;
