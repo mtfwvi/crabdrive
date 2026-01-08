@@ -12,14 +12,14 @@ pub enum PostCreateFileResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostUpdateFileResponse {
-    Success(FileRevision),
+    Ok(FileRevision),
     NotFound,
     BadRequest,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCommitFileResponse {
-    Success(NodeInfo),
+    Ok(NodeInfo),
     BadRequest(Vec<u64>), // the missing parts
     NotFound,
 }

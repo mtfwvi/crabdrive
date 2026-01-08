@@ -26,7 +26,7 @@ pub async fn post_update_file(Path(_file_id): Path<Uuid>, Json(_payload): Json<P
     //(StatusCode::BAD_REQUEST, Json(PostUpdateFileResponse::BadRequest))
 
     //TODO implement
-    (StatusCode::OK, Json(PostUpdateFileResponse::Success(get_example_revision_info())))
+    (StatusCode::OK, Json(PostUpdateFileResponse::Ok(get_example_revision_info())))
 }
 
 pub async fn post_commit_file(Path((_file_id, _revision_id)): Path<(Uuid, Uuid)>, Json(_payload): Json<PostCommitFileRequest>) -> (StatusCode, Json<PostCommitFileResponse>) {
@@ -34,5 +34,5 @@ pub async fn post_commit_file(Path((_file_id, _revision_id)): Path<(Uuid, Uuid)>
     //(StatusCode::BAD_REQUEST, Json(PostCommitFileResponse::BadRequest(vec![1,2,3])))
 
     //TODO implement
-    (StatusCode::OK, Json(PostCommitFileResponse::Success(get_example_node_info())))
+    (StatusCode::OK, Json(PostCommitFileResponse::Ok(get_example_node_info())))
 }
