@@ -1,11 +1,11 @@
-use crate::storage::node_request_handler::{get_example_node_info};
+use crate::storage::node_request_handler::get_example_node_info;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use axum::Json;
 use crabdrive_common::payloads::node::request::file::{PostCommitFileRequest, PostCreateFileRequest, PostUpdateFileRequest};
 use crabdrive_common::payloads::node::response::file::{PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse};
+use crabdrive_common::payloads::node::response::node::FileRevision;
 use uuid::Uuid;
-use crabdrive_common::payloads::node::response::node::{FileRevision, NodeInfo};
 
 //TODO fix this
 pub fn get_example_revision_info() -> FileRevision {
