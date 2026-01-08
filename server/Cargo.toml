@@ -10,9 +10,11 @@ bytes = "1.11.0"
 chrono = "0.4.42"
 tokio = { version = "1.48.0", features = ["full"] }
 tracing = "0.1.44"
-
-crabdrive-common = { path = "../common" }
-tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt"] }
-dotenvy = "0.15.7"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "json"] }
 nanoid = "0.4.0"
 tracing-appender = "0.2.4"
+
+crabdrive-common = { path = "../common" }
+serde = { version = "1.0.228", features = ["derive"] }
+confique = { git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options", version = "0.4.0", features = ["toml"] }
+dotenvy = "0.15.7"

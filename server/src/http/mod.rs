@@ -4,5 +4,5 @@ pub(crate) mod routes;
 pub(crate) mod server;
 pub(crate) mod state;
 
-pub use config::Config;
+pub use config::AppConfig;
 pub use state::AppState;

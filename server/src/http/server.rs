@@ -1,4 +1,4 @@
-use crate::http::{Config, routes};
+use crate::http::{AppConfig, routes};
 use std::io::ErrorKind;
 
 use crate::http::AppState;
@@ -16,7 +16,7 @@ async fn shutdown(state: AppState) {
     info!("Stopping server");
 }
 
-pub async fn start(config: Config) -> Result<(), ()> {
+pub async fn start(config: AppConfig) -> Result<(), ()> {
     let state = AppState::new(config.clone());
 
     let app = Router::<AppState>::new()

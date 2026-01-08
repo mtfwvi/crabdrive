@@ -1,12 +1,15 @@
-use crate::http::Config;
+use crate::http::AppConfig;
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct AppState {
-    pub config: Config,
+    pub config: Arc<AppConfig>,
 }
 
 impl AppState {
-    pub fn new(config: Config) -> Self {
-        Self { config }
+    pub fn new(config: AppConfig) -> Self {
+        Self {
+            config: Arc::new(config),
+        }
     }
 }
