@@ -1,8 +1,10 @@
 pub(crate) mod components;
+mod display_utils;
+mod model;
 pub(crate) mod pages;
 
 use leptos::prelude::*;
-use pages::demo_page::DemoPage;
+use pages::home_page::HomePage;
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -22,5 +24,5 @@ fn main() {
         .with(perf_layer)
         .init();
 
-    mount_to_body(DemoPage)
+    mount_to_body(HomePage)
 }
