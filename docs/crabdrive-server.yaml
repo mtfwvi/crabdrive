@@ -1,0 +1,670 @@
+openapi: 3.1.0
+info:
+  title: Crabdrive server
+  description: Crabdrive server
+  version: 1.0.0
+security:
+  - bearerAuth: [ ]
+paths: #
+  # INFO: everything should return a 403 if the JWT is not valid or redirect to the login page
+  #
+
+  #########################
+  #       Auth            #
+  #########################
+  /auth/login:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInfo'
+      summary: Login
+      tags:
+        - auth
+      security: [ ]
+      parameters:
+        - in: query
+          name: redirect
+          schema:
+            type: string
+            format: url
+          description: The url that redirected to the login page
+      responses:
+        "200":
+          description: Login success, returns JWT
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccess'
+        "401":
+          description: Failed login
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FailedLoginResponse'
+  /auth/register:
+    post:
+      summary: Register
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterInfo'
+      security: [ ]
+      responses:
+        "201":
+          description: Register success, application should redirect to login page
+        "409":
+          description: Conflict when registering (username)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegisterConflictError'
+        "401":
+          description: Permission denied
+
+  #TODO to invalidate a token, the server would need to store a token blacklist
+  /auth/logout:
+    post:
+      tags:
+        - auth
+      responses:
+        "200":
+          description: Logout
+      summary: Logout
+
+
+
+  #########################
+  #    Admin Operation    #
+  #########################
+  /admin/user/{userId}:
+    delete:
+      summary: Delete a user
+      tags:
+        - admin
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: User was deleted
+        "404":
+          description: User does not exist
+    get:
+      summary: Get user info
+      tags:
+        - admin
+      parameters:
+        - in: path
+          name: userId
+          schema:
+            type: string
+          required: true
+      responses:
+        "200":
+          description: information about a user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "404":
+          description: The user does not exist
+  /admin/user:
+    post:
+      summary: Create a new user
+      tags:
+        - admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUser'
+      responses:
+        "200":
+          description: the just created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserInfo"
+        "409":
+          description: Username conflict
+
+
+
+  #########################
+  #   Chunk Operations    #
+  # #######################
+
+  /chunk/{versionId}/{chunkIndex}:
+    post:
+      parameters:
+        - in: path
+          name: chunkIndex
+          schema:
+            type: integer
+          required: true
+        - in: path
+          name: versionId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      summary: Upload an (encrypted) chunk
+      tags:
+        - chunk
+      requestBody:
+        required: true
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "201":
+          description: The server stored the chunk
+        "413":
+          description: The user does not have enough storage
+        "404":
+          description: The fileId does not exist/ the user cannot see it
+        "409":
+          description: The server already has the chunk with the given id
+        "400":
+          description: The chunk cannot be uploaded (e.g. the client did not inform the server a file was being modified)
+    get:
+      parameters:
+        - in: path
+          name: chunkIndex
+          schema:
+            type: integer
+          required: true
+        - in: path
+          name: versionId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      summary: Download a single chunk
+      tags:
+        - chunk
+      responses:
+        "200":
+          description: Chunk content
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Permission denied/ chunk does not exist
+
+
+  #########################
+  #   Node Operations     #
+  # #######################
+  /node/{nodeId}:
+    delete:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      summary: Delete/Purge a node and its whole subtree
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parent_change_count:
+                  type: integer
+                parent_metadata_iv:
+                  type: array
+                parent_node_metadata:
+                  type: string
+                  format: binary
+      responses:
+        "200":
+          description: The tree was deleted
+        "404":
+          description: The node does not exist/ missing permissions
+        "409":
+          description: The parent_change_count does not match
+      tags:
+        - node
+
+    get:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      summary: Query single node info
+      tags:
+        - node
+      responses:
+        "200":
+          description: The node including its metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        "404":
+          description: Permission denied/ node does not exist
+
+    patch:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      tags:
+        - node
+      summary: Update the metadata of a single node (other fields in the node should be immutable/ only the server should change them)
+      responses:
+        "200":
+          description: The metadata was updated
+        "404":
+          description: Permission denied/ node does not exist
+        "409":
+          description: The update was not accepted. This could be because the version is outdated
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                node_change_count:
+                  type: string
+                iv:
+                  type: array
+                node_metadata:
+                  type: string
+                  format: binary
+
+  /node/{nodeId}/move:
+    post:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      tags:
+        - node
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNodeData'
+      summary: Move a node
+      responses:
+        "200":
+          description: The node was moved
+        "404":
+          description: Permission denied/ node does not exist
+        "409":
+          description: The update was not accepted. This could be because the version is outdated
+  /node/{nodeId}/move_to_trash:
+    post:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      tags:
+        - node
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNodeData'
+      summary: Trash node
+      description: move a node to the trash (same as moving but server sets the deleted timestamp)
+      responses:
+        "200":
+          description: The node was moved
+        "404":
+          description: Permission denied/ node does not exist
+        "409":
+          description: The update was not accepted. This could be because the version is outdated
+  /node/{nodeId}/move_out_of_trash:
+    post:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      tags:
+        - node
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveNodeData'
+      summary: Restore node
+      description: move a node out of the the trash (same as moving but server removes the deleted timestamp)
+      responses:
+        "200":
+          description: The node was moved
+        "404":
+          description: Permission denied/ node does not exist
+        "409":
+          description: The update was not accepted. This could be because the version is outdated
+
+
+
+  #########################
+  #   File Operations     #
+  # #######################
+  /node/{parentId}/create_file:
+    post:
+      parameters:
+        - in: path
+          name: parentId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFile'
+      tags:
+        - file
+      summary: Start a file upload
+      responses:
+        "201":
+          description: The file node was created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        "404":
+          description: Permission denied/ parent does not exist
+        "400":
+          description: Parent is not a folder
+        "409":
+          description: metadata change count does not match
+
+  /node/{nodeId}/update_file:
+    post:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                chunk_count:
+                  type: integer
+                file_iv:
+                  type: array
+      tags:
+        - file
+      summary: Create a new file version
+      responses:
+        "200":
+          description: Return the id of the just created version
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Id'
+        "404":
+          description: Permission denied/ parent does not exist
+        "400":
+          description: The node is not a file
+
+  /node/{nodeId}/{versionId}/commit:
+    post:
+      tags:
+        - file
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            $ref: '#/components/schemas/Uuid'
+          required: true
+        - in: path
+          name: versionId
+          schema:
+            $ref: '#/components/schemas/Uuid'
+          required: true
+
+      summary: Finish upload
+      responses:
+        "200":
+          description: Return the node that was just updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Node'
+        "404":
+          description: The node does not exist/missing permissions
+        "400":
+          description: The file can not be commited because chunks are missing. The missing chunks are in the response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
+
+
+
+  #########################
+  #   Folder Operations   #
+  # #######################
+
+  /node/{parentId}/create_folder:
+    post:
+      tags:
+        - folder
+      parameters:
+        - in: path
+          name: parentId
+          schema:
+            $ref: '#/components/schemas/Uuid'
+          required: true
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolder'
+      responses:
+        "201":
+          description: The folder was created
+        "404":
+          description: The parent does not exist/ missing permissions
+        "400":
+          description: The parent is not a folder
+        "409":
+          description: The parent metadata change count does not match
+
+
+components:
+  schemas:
+    Node:
+      type: object
+      properties:
+        encrypted_metadata:
+          format: binary
+        id:
+          $ref: '#/components/schemas/Uuid'
+        change_count:
+          type: integer
+        parent_id:
+          $ref: '#/components/schemas/Uuid'
+        owner_id:
+          $ref: '#/components/schemas/Uuid'
+        deleted_on:
+          type: integer
+        node_type:
+          type: string # is an enum
+        current_file_version:
+          format: json
+          $ref: '#/components/schemas/FileRevision'
+    FileRevision:
+      type: object
+      properties:
+        versionId:
+          $ref: '#/components/schemas/Uuid'
+        upload_ended_on:
+          type: integer
+        upload_started_on:
+          type: integer
+        iv:
+          type: array
+        chunk_count:
+          type: integer
+    Uuid:
+      type: string
+      format: uuid
+    MoveNodeData:
+      type: object
+      properties:
+        from_node_change_counter:
+          type: integer
+        from_node_iv:
+          type: array
+          items:
+            type: integer
+        from_node_metadata:
+          type: string
+          format: binary
+        to_node_change_counter:
+          type: integer
+        to_node_iv:
+          type: array
+          items:
+            type: integer
+        to_node_metadata:
+          type: string
+          format: binary
+        to_node_id:
+          $ref: '#/components/schemas/Uuid'
+    LoginInfo:
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    #TODO decide if we want to send a reason
+    FailedLoginResponse:
+      type: object
+    LoginSuccess:
+      properties:
+        token:
+          type: string
+          format: jwt
+        redirect_url:
+          type: string
+          format: url
+        root_node_id:
+          type: string
+          format: uuid
+        trash_node_id:
+          type: string
+          format: uuid
+    RegisterInfo:
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    RegisterConflictError:
+      properties:
+        reason:
+          type: string
+          enum:
+            - USERNAME_TAKEN
+            - ILLEGAL_USERNAME
+    UserInfo:
+      properties:
+        username:
+          type: string
+        id:
+          type: string
+        data_allowed: # in bytes?
+          type: integer
+        data_used:
+          type: integer
+        user_type:
+          type: string
+        created_on:
+          type: string
+    CreateUser:
+      properties:
+        username:
+          type: string
+        storage_limit: # in bytes?
+          type: integer
+        user_type:
+          type: string
+        password_hash:
+          type: string
+    Id:
+      properties:
+        id:
+          type: string
+    CreateFolder:
+      type: object
+      properties:
+        node_metadata_iv:
+          type: array
+        node_metadata:
+          type: string
+          format: binary
+        parent_metadata_iv:
+          type: array
+        parent_metadata:
+          type: string
+          format: binary
+        parent_metadata_change_count:
+          type: integer
+    CreateFile:
+      type: object
+      properties:
+        node_metadata_iv:
+          type: array
+        parent_metadata_iv:
+          type: array
+        parent_metadata_change_count:
+          type: integer
+        file_iv:
+          type: array
+        chunk_count:
+          type: integer
+        node_metadata:
+          type: string
+          format: binary
+        parent_metadata:
+          type: string
+          format: binary
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: jwt
