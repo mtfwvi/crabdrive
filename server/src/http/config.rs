@@ -199,8 +199,9 @@ impl AppConfig {
 
                         let mut file = std::fs::OpenOptions::new()
                             .create(true)
+                            .truncate(true)
                             .write(true)
-                            .open(&path)?;
+                            .open(path)?;
                         file.write_all(
                             confique::toml::template::<AppConfig>(format_options).as_bytes(),
                         )?;
