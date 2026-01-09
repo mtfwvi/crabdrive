@@ -3,7 +3,7 @@ mod http;
 mod storage;
 mod user;
 
-use tracing::{debug, trace};
+use tracing::trace;
 use tracing_subscriber::{
     Layer, Registry, filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt,
 };
@@ -19,22 +19,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             .log
             .targets
             .iter()
-            .filter_map(|target| {
+            .map(|target| {
                 let path = std::path::Path::new(target);
 
-                return match target.as_str() {
-                    ":stdout:" => Some(
-                        tracing_subscriber::fmt::layer()
-                            .with_ansi(true)
-                            .with_writer(std::io::stdout)
-                            .boxed(),
-                    ),
-                    ":stderr:" => Some(
-                        tracing_subscriber::fmt::layer()
-                            .with_ansi(true)
-                            .with_writer(std::io::stderr)
-                            .boxed(),
-                    ),
+                match target.as_str() {
+                    ":stdout:" => tracing_subscriber::fmt::layer()
+                        .with_ansi(true)
+                        .with_writer(std::io::stdout)
+                        .boxed(),
+                    ":stderr:" => tracing_subscriber::fmt::layer()
+                        .with_ansi(true)
+                        .with_writer(std::io::stderr)
+                        .boxed(),
 
                     t if t.ends_with(std::path::MAIN_SEPARATOR) => {
                         if !path.exists() {
@@ -42,12 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             std::process::exit(-1);
                         }
                         let appender = tracing_appender::rolling::daily(path, "crabdrive-server");
-                        Some(
-                            tracing_subscriber::fmt::layer()
-                                .with_ansi(false)
-                                .with_writer(appender)
-                                .boxed(),
-                        )
+                        tracing_subscriber::fmt::layer()
+                            .with_ansi(false)
+                            .with_writer(appender)
+                            .boxed()
                     }
 
                     _ => {
@@ -55,7 +49,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .create(true)
                             .append(true)
                             .open(path)
-                            .ok()?;
+                            .unwrap_or_else(|_| {
+                                eprintln!("Error: Couldn't open log file {}", path.display());
+                                std::process::exit(-1);
+                            });
 
                         let layer = tracing_subscriber::fmt::layer()
                             // This is currently broken, for some reason it still emits ANSI Codes
@@ -68,12 +65,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                             .compact();
 
                         if target.ends_with(".json") {
-                            Some(layer.json().boxed())
+                            layer.json().boxed()
                         } else {
-                            Some(layer.boxed())
+                            layer.boxed()
                         }
                     }
-                };
+                }
             })
             .collect();
 
