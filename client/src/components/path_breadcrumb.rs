@@ -1,34 +1,40 @@
 use leptos::prelude::*;
-use thaw::{
-    Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Popover, PopoverTrigger, Text,
-};
+use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem};
 
 #[component]
-pub(crate) fn PathBreadcrumb(_elements: Vec<&'static str>) -> impl IntoView {
+pub(crate) fn PathBreadcrumb(#[prop(into)] node_names: Signal<Vec<String>>) -> impl IntoView {
     view! {
         <Breadcrumb>
+            <ForEnumerate
+                each=move || node_names.get()
+                key=|name| name.clone()
+                children=move |index, name| {
+                    let is_not_last = move || index.get() != node_names.get().len() - 1;
 
-            <PathBreadcrumbItem name="home" />
-            <BreadcrumbDivider />
-            <PathBreadcrumbItem name="jonathan" />
-            <BreadcrumbDivider />
-            <PathBreadcrumbItem name="Documents" />
+                    view! {
+                        <PathBreadcrumbItem name=name is_last=!is_not_last() />
+                        <Show when=is_not_last>
+                            <BreadcrumbDivider attr:style="font-size: 1.2rem" />
+                        </Show>
+                    }
+                }
+            />
         </Breadcrumb>
     }
 }
 
 #[component]
-fn PathBreadcrumbItem(name: &'static str) -> impl IntoView {
+fn PathBreadcrumbItem(
+    #[prop(into)] name: Signal<String>,
+    #[prop(optional, into)] is_last: Signal<bool>,
+) -> impl IntoView {
     view! {
         <BreadcrumbItem>
-            <Popover>
-                <PopoverTrigger slot>
-                    <BreadcrumbButton>
-                        <Text>{name}</Text>
-                    </BreadcrumbButton>
-                </PopoverTrigger>
-                "TODO: Open folder on click"
-            </Popover>
+            <BreadcrumbButton>
+                <Show when=move || is_last.get() fallback=move || view! { <h2>{name}</h2> }>
+                    <h1>{name}</h1>
+                </Show>
+            </BreadcrumbButton>
         </BreadcrumbItem>
     }
 }

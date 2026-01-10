@@ -1,6 +1,5 @@
 pub(crate) mod components;
 mod display_utils;
-mod model;
 pub(crate) mod pages;
 
 use leptos::prelude::*;

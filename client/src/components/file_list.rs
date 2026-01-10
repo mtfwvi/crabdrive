@@ -1,19 +1,26 @@
 use leptos::prelude::*;
-use thaw::{Button, ButtonAppearance, Space, Text};
+use thaw::{Button, ButtonAppearance, Text};
 
 #[component]
-pub(crate) fn FileList() -> impl IntoView {
+pub(crate) fn FileList(
+    #[prop(into)] files: Signal<Vec<String>>,
+    set_selected_file: WriteSignal<String>,
+) -> impl IntoView {
     view! {
-        <Space vertical=true>
-            <File name="test.md" />
-            <File name="audio.mp3" />
-            <File name="document.pdf" />
-        </Space>
+        <For
+            each=move || files.get()
+            key=|file| file.clone()
+            children=move |file| {
+                view! {
+                    <File name=file.clone() on:click=move |_| set_selected_file.set(file.clone()) />
+                }
+            }
+        />
     }
 }
 
 #[component]
-fn File(name: &'static str) -> impl IntoView {
+fn File(#[prop(into)] name: Signal<String>) -> impl IntoView {
     view! {
         <Button
             appearance=ButtonAppearance::Subtle

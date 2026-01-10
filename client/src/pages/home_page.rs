@@ -6,7 +6,7 @@ use thaw::{ConfigProvider, Image, Layout, LayoutSider, Space, SpaceAlign};
 pub(crate) fn HomePage() -> impl IntoView {
     view! {
         <ConfigProvider>
-            <Layout content_style="padding: 20px;" has_sider=true>
+            <Layout content_style="padding: 30px 40px;" has_sider=true>
                 <LayoutSider>
                     <Space align=SpaceAlign::Center>
                         <Image src="/logo.svg" attr:width=50 />
