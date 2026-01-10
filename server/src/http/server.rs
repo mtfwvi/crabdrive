@@ -44,7 +44,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         }
     }?;
 
-    info!("Server running on http://{}", addr);
+    info!("Server running on http://{}", &addr);
 
     axum::serve(listener, app)
         .with_graceful_shutdown(graceful_shutdown(state.clone()))

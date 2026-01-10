@@ -1,6 +1,6 @@
 use confique::Config;
 use serde::{Deserialize, Serialize};
-use std::io::Write;
+use tracing_subscriber::{Layer, Registry};
 
 use crate::http::config::confique_database_config_layer::DatabaseConfigLayer;
 use crate::http::config::confique_log_config_layer::LogConfigLayer;
@@ -173,49 +173,8 @@ impl AppConfig {
         }
     }
 
-    pub fn load() -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn load(configfile: &std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
-
-        let mut args = std::env::args().skip(1);
-        let mut configfile = "./crabdrive.toml".to_string();
-
-        while let Some(arg) = args.next() {
-            match arg.as_str() {
-                "-C" | "--config" => {
-                    if let Some(path) = args.next() {
-                        configfile = path;
-                    } else {
-                        eprintln!("Error: Expected a path after {}", arg);
-                        std::process::exit(-1);
-                    }
-                }
-                "--generate-config-template" => {
-                    println!("Generating example config");
-                    if let Some(path) = args.next() {
-                        let path = std::path::Path::new(&path);
-
-                        let mut format_options = confique::toml::FormatOptions::default();
-                        format_options.general.include_default_or_required_comment = false;
-
-                        let mut file = std::fs::OpenOptions::new()
-                            .create(true)
-                            .truncate(true)
-                            .write(true)
-                            .open(path)?;
-                        file.write_all(
-                            confique::toml::template::<AppConfig>(format_options).as_bytes(),
-                        )?;
-                        println!("Created an example config here: {}", &path.display());
-                        std::process::exit(0);
-                    } else {
-                        eprintln!("Error: Expected a path after {}", arg);
-                        std::process::exit(-1);
-                    }
-                }
-                "--" => break,
-                _ => continue,
-            }
-        }
 
         let config = AppConfig::builder()
             .env()
@@ -224,6 +183,64 @@ impl AppConfig {
             .load()?;
 
         Ok(config)
+    }
+
+    /// Parses all targets (in [`AppConfig::log::targets`]) into Tracing Layers
+    pub fn parse_tracing_layers(
+        &self,
+    ) -> Result<Vec<Box<dyn Layer<Registry> + Send + Sync>>, Box<dyn std::error::Error>> {
+        self.log.targets.iter()
+            .map(|target| -> Result<Box<dyn Layer<Registry> + Send + Sync>, Box<dyn std::error::Error>> {
+                let path = std::path::Path::new(target);
+
+                match target.as_str() {
+                    // `:stdout:` writes to the standard output
+                    ":stdout:" => Ok(tracing_subscriber::fmt::layer()
+                        .with_ansi(true)
+                        .with_writer(std::io::stdout)
+                        .boxed()),
+                    // `:stderr:` writes to the standard error output
+                    ":stderr:" => Ok(tracing_subscriber::fmt::layer()
+                        .with_ansi(true)
+                        .with_writer(std::io::stderr)
+                        .boxed()),
+                    // If the target ends with a path seperator, it's expected to be a folder.
+                    t if t.ends_with(std::path::MAIN_SEPARATOR) => {
+                        if !path.exists() {
+                            // Do not automatically create folders
+                            return Err(std::io::Error::from(std::io::ErrorKind::NotFound).into());
+                        }
+                        let appender = tracing_appender::rolling::daily(path, "crabdrive-server");
+                        Ok(tracing_subscriber::fmt::layer()
+                            .with_ansi(false)
+                            .with_writer(appender)
+                            .boxed())
+                    }
+                    // Everything else is assumed to be a file
+                    _ => {
+                        let file = std::fs::OpenOptions::new()
+                            .create(true)
+                            .append(true)
+                            .open(path)?;
+
+                        let layer = tracing_subscriber::fmt::layer()
+                            // This is currently broken, for some reason it still emits ANSI Codes
+                            // for Bold / Italic Text.
+                            //   -> See also https://github.com/tokio-rs/tracing/issues/3116
+                            // A temporary workaround might be to sort the layers first (paths first,
+                            // then console)
+                            .with_ansi(false)
+                            .with_writer(file)
+                            .compact();
+
+                        if path.extension() == Some(std::ffi::OsStr::new("json")) {
+                            Ok(layer.json().boxed())
+                        } else {
+                            Ok(layer.boxed())
+                        }
+                    }
+                }
+            }).collect()
     }
 
     pub fn addr(&self) -> String {

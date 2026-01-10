@@ -8,13 +8,14 @@ anyhow = "1.0.100"
 axum = "0.8.7"
 bytes = "1.11.0"
 chrono = "0.4.42"
+clap = { version = "4.5.54", features = ["cargo"] }
+confique = { git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options", version = "0.4.0", features = ["toml"] }
+dotenvy = "0.15.7"
+nanoid = "0.4.0"
+serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.48.0", features = ["full"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter", "fmt", "json"] }
-nanoid = "0.4.0"
 tracing-appender = "0.2.4"
 
 crabdrive-common = { path = "../common" }
-serde = { version = "1.0.228", features = ["derive"] }
-confique = { git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options", version = "0.4.0", features = ["toml"] }
-dotenvy = "0.15.7"
