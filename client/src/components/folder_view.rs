@@ -7,10 +7,16 @@ use thaw::{Divider, Layout, LayoutSider, Space};
 #[component]
 pub(crate) fn FolderView() -> impl IntoView {
     let (files, _set_files) = signal(
-        vec!["README.md", "audio.mp3", "document.pdf"]
-            .iter()
-            .map(|str| str.to_string())
-            .collect(),
+        vec![
+            "README.md",
+            "audio.mp3",
+            "document.pdf",
+            "garbage.txt",
+            "FlameShot-v0.1.0-x86_64.deb",
+        ]
+        .iter()
+        .map(|str| str.to_string())
+        .collect(),
     );
     let (path, _set_path) = signal(
         vec!["home", "jonathan", "Downloads"]
@@ -31,7 +37,7 @@ pub(crate) fn FolderView() -> impl IntoView {
                 attr:style="flex-direction: column; gap: 10px; padding: 30px; flex: 1"
             >
                 <PathBreadcrumb node_names=path />
-                <Divider />
+                <Divider attr:style="margin-bottom: 10px" />
                 <FileList files=files set_selected_file />
             </Space>
 
