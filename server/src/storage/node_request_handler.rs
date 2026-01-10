@@ -1,8 +1,8 @@
-use axum::extract::Path;
+use axum::extract::{Path, Query};
 use axum::http::StatusCode;
 use axum::Json;
-use crabdrive_common::payloads::node::request::node::{DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest, PostMoveNodeToTrashRequest};
-use crabdrive_common::payloads::node::response::node::{DeleteNodeResponse, GetNodeResponse, NodeInfo, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse};
+use crabdrive_common::payloads::node::request::node::{DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest, PostMoveNodeToTrashRequest};
+use crabdrive_common::payloads::node::response::node::{DeleteNodeResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse, NodeInfo, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse};
 use uuid::Uuid;
 
 //TODO fix this
@@ -55,4 +55,20 @@ pub async fn post_move_node_out_of_trash(Path(_node_id): Path<Uuid>, Json(_paylo
 
     //TODO implement
     (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok))
+}
+
+//TODO add to openapi
+pub async fn get_path_between_nodes(_path_constraints: Query<PathConstraints>) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
+    //(StatusCode::NO_CONTENT, Json(GetPathBetweenNodesResponse::NoContent))
+
+    //TODO implement
+    (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(vec![])))
+}
+
+//TODO add to openapi
+pub async fn get_node_children(Path(_node_id): Path<Uuid>) -> (StatusCode, Json<GetNodeChildrenResponse>) {
+    //(StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound))
+
+    //TODO implement
+    (StatusCode::OK, Json(GetNodeChildrenResponse::Ok(vec![])))
 }

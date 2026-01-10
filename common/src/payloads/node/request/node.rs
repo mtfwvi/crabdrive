@@ -1,6 +1,13 @@
 use serde::{Deserialize, Serialize};
 use crate::storage::{MetadataIv, NodeId};
 
+// used to parse the query parameters in the get_path_between nodes handler
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PathConstraints {
+    from_id: NodeId,
+    to_id: NodeId,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeleteNodeRequest {
     parent_change_count: u64,

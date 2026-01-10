@@ -72,3 +72,16 @@ pub enum DeleteNodeResponse {
     NotFound,
     Conflict,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GetPathBetweenNodesResponse {
+    Ok(Vec<NodeInfo>),
+    NoContent,
+    NotFound,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GetNodeChildrenResponse {
+    Ok(Vec<NodeInfo>),
+    NotFound,
+}
