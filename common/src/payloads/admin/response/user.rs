@@ -15,6 +15,20 @@ pub enum PostUserResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum DeleteUserResponse {
+    Ok(UserInfo),
+    NotFound,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PatchUserResponse {
+    Ok(UserInfo),
+    NotFound,
+}
+
+
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct UserInfo {
     username: String,
     user_type: UserType,

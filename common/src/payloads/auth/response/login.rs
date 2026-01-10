@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostLoginResponse {
     Ok(LoginSuccess),
-    Unauthorized(LoginDenied),
+    Unauthorized(LoginDeniedReason),
 
 }
 
@@ -22,14 +22,15 @@ pub struct LoginSuccess {
     should_initialize_encryption: bool,
 }
 
+impl LoginSuccess {
+    pub fn new(bearer_token: String, redirect_url: String, root_node_id: String, trash_node_id: String, should_initialize_encryption: bool) -> Self {
+        Self { bearer_token, redirect_url, root_node_id, trash_node_id, should_initialize_encryption }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum LoginDeniedReason {
     Password,
     Username,
     OTHER,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct LoginDenied {
-    reason: LoginDeniedReason,
 }

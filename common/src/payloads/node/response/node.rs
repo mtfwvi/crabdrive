@@ -2,8 +2,9 @@ use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::{storage::{NodeId, NodeType, RevisionId, RevisionIv}, user::UserId};
+use crate::storage::MetadataIv;
 
-#[derive(Serialize, Deserialize, Debug)] 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct NodeInfo {
     id: NodeId,
     change_count: u64,
@@ -13,12 +14,7 @@ pub struct NodeInfo {
     node_type: NodeType,
     current_revision: Option<FileRevision>,
     encrypted_metadata: Vec<u8>,
-}
-
-impl NodeInfo {
-    pub fn new(id: NodeId, change_count: u64, parent_id: NodeId, owner_id: UserId, deleted_on: Option<NaiveDateTime>, node_type: NodeType, current_revision: Option<FileRevision>, encrypted_metadata: Vec<u8>) -> Self {
-        Self { id, change_count, parent_id, owner_id, deleted_on, node_type, current_revision, encrypted_metadata }
-    }
+    metadata_iv: MetadataIv
 }
 
 #[derive(Serialize, Deserialize, Debug)]
