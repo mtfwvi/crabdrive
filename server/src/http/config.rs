@@ -135,6 +135,9 @@ pub struct StorageConfig {
 }
 
 type ConfLayer = <AppConfig as Config>::Layer;
+type ParsedLayerVecResult =
+    Result<Vec<Box<dyn Layer<Registry> + Send + Sync>>, Box<dyn std::error::Error>>;
+type ParsedLayerResult = Result<Box<dyn Layer<Registry> + Send + Sync>, Box<dyn std::error::Error>>;
 
 impl AppConfig {
     pub fn default_values() -> ConfLayer {
@@ -186,11 +189,11 @@ impl AppConfig {
     }
 
     /// Parses all targets (in [`AppConfig::log::targets`]) into Tracing Layers
-    pub fn parse_tracing_layers(
-        &self,
-    ) -> Result<Vec<Box<dyn Layer<Registry> + Send + Sync>>, Box<dyn std::error::Error>> {
-        self.log.targets.iter()
-            .map(|target| -> Result<Box<dyn Layer<Registry> + Send + Sync>, Box<dyn std::error::Error>> {
+    pub fn parse_tracing_layers(&self) -> ParsedLayerVecResult {
+        self.log
+            .targets
+            .iter()
+            .map(|target| -> ParsedLayerResult {
                 let path = std::path::Path::new(target);
 
                 match target.as_str() {
@@ -240,7 +243,8 @@ impl AppConfig {
                         }
                     }
                 }
-            }).collect()
+            })
+            .collect()
     }
 
     pub fn addr(&self) -> String {
