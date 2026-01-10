@@ -9,5 +9,6 @@ members = [
 [workspace.package]
 description = "A cloud storage platform"
 repository = "https://github.com/mtfwvi/crabdrive"
+rust-version = "1.85.0"
 version = "0.1.0"
 edition = "2024"
