@@ -6,12 +6,12 @@ use crabdrive_common::payloads::node::request::file::{
     PostCommitFileRequest, PostCreateFileRequest, PostUpdateFileRequest,
 };
 use crabdrive_common::payloads::node::response::file::{
-    PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
+    GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
 use crabdrive_common::payloads::node::response::node::FileRevision;
 use uuid::Uuid;
 
-//TODO fix this
+//TODO remove this
 pub fn get_example_revision_info() -> FileRevision {
     todo!()
 }
@@ -57,4 +57,11 @@ pub async fn post_commit_file(
         StatusCode::OK,
         Json(PostCommitFileResponse::Ok(get_example_node_info())),
     )
+}
+
+pub async fn get_file_versions(
+    Path(_file_id): Path<Uuid>,
+) -> (StatusCode, Json<GetVersionsResponse>) {
+    //TODO implement
+    (StatusCode::OK, Json(GetVersionsResponse::Ok(vec![])))
 }

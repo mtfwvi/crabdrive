@@ -23,3 +23,9 @@ pub enum PostCommitFileResponse {
     BadRequest(Vec<u64>), // the missing parts
     NotFound,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GetVersionsResponse {
+    Ok(Vec<FileRevision>),
+    NotFound,
+}

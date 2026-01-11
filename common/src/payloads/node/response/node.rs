@@ -9,42 +9,24 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NodeInfo {
-    id: NodeId,
-    change_count: u64,
-    parent_id: NodeId,
-    owner_id: UserId,
-    deleted_on: Option<NaiveDateTime>,
-    node_type: NodeType,
-    current_revision: Option<FileRevision>,
-    encrypted_metadata: Vec<u8>,
-    metadata_iv: MetadataIv,
+    pub id: NodeId,
+    pub change_count: u64,
+    pub parent_id: NodeId,
+    pub owner_id: UserId,
+    pub deleted_on: Option<NaiveDateTime>,
+    pub node_type: NodeType,
+    pub current_revision: Option<FileRevision>,
+    pub encrypted_metadata: Vec<u8>,
+    pub metadata_iv: MetadataIv,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FileRevision {
-    id: RevisionId,
-    upload_ended_on: Option<NaiveDateTime>,
-    upload_started_on: NaiveDateTime,
-    iv: RevisionIv,
-    chunk_count: u64,
-}
-
-impl FileRevision {
-    pub fn new(
-        id: RevisionId,
-        upload_ended_on: Option<NaiveDateTime>,
-        upload_started_on: NaiveDateTime,
-        iv: RevisionIv,
-        chunk_count: u64,
-    ) -> Self {
-        Self {
-            id,
-            upload_ended_on,
-            upload_started_on,
-            iv,
-            chunk_count,
-        }
-    }
+    pub id: RevisionId,
+    pub upload_ended_on: Option<NaiveDateTime>,
+    pub upload_started_on: NaiveDateTime,
+    pub iv: RevisionIv,
+    pub chunk_count: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

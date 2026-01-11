@@ -10,11 +10,21 @@ use crabdrive_common::payloads::node::response::node::{
     NodeInfo, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
     PostMoveNodeToTrashResponse,
 };
+use crabdrive_common::storage::NodeType;
 use uuid::Uuid;
 
-//TODO fix this
 pub fn get_example_node_info() -> NodeInfo {
-    todo!()
+    NodeInfo {
+        id: 0,
+        change_count: 0,
+        parent_id: 0,
+        owner_id: 0,
+        deleted_on: None,
+        node_type: NodeType::Folder,
+        current_revision: None,
+        encrypted_metadata: vec![],
+        metadata_iv: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    }
 }
 
 pub async fn delete_node(
@@ -85,7 +95,6 @@ pub async fn post_move_node_out_of_trash(
     (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok))
 }
 
-//TODO add to openapi
 pub async fn get_path_between_nodes(
     _path_constraints: Query<PathConstraints>,
 ) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
@@ -98,7 +107,6 @@ pub async fn get_path_between_nodes(
     )
 }
 
-//TODO add to openapi
 pub async fn get_node_children(
     Path(_node_id): Path<Uuid>,
 ) -> (StatusCode, Json<GetNodeChildrenResponse>) {

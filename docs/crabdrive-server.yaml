@@ -145,7 +145,7 @@ paths: #
   #   Chunk Operations    #
   # #######################
 
-  /chunk/{versionId}/{chunkIndex}:
+  /node/{nodeId}/versions/{versionId}/chunks/{chunkIndex}:
     post:
       parameters:
         - in: path
@@ -159,6 +159,12 @@ paths: #
             type: string
             format: uuid
           required: true
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+
       summary: Upload an (encrypted) chunk
       tags:
         - chunk
@@ -193,6 +199,11 @@ paths: #
             type: string
             format: uuid
           required: true
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
       summary: Download a single chunk
       tags:
         - chunk
@@ -293,6 +304,28 @@ paths: #
                 node_metadata:
                   type: string
                   format: binary
+  /node/{nodeId}/children:
+    get:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+          required: true
+      summary: Get children of node
+      tags:
+        - node
+      responses:
+        "200":
+          description: The list of children nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Node"
+        "404":
+          description: One of the nodes does not exist
 
   /node/{nodeId}/move:
     post:
@@ -365,6 +398,38 @@ paths: #
           description: Permission denied/ node does not exist
         "409":
           description: The update was not accepted. This could be because the version is outdated
+  /path_between_nodes/:
+    get:
+      parameters:
+        - in: query
+          name: from_id
+          schema:
+            $ref: "#/components/schemas/Uuid"
+          required: true
+        - in: query
+          name: to_id
+          schema:
+            $ref: "#/components/schemas/Uuid"
+          required: true
+      summary: Get the list of nodes that form a path between the 2 given nodes (inclusive)
+      tags:
+        - node
+      responses:
+        "200":
+          description: The list of nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Node"
+        "204":
+          description: No path exists
+        "404":
+          description: One of the nodes does not exist
+
+
+
 
 
 
@@ -436,7 +501,7 @@ paths: #
         "400":
           description: The node is not a file
 
-  /node/{nodeId}/{versionId}/commit:
+  /node/{nodeId}/versions/{versionId}/commit:
     post:
       tags:
         - file
@@ -470,6 +535,28 @@ paths: #
                 type: array
                 items:
                   type: integer
+  /node/{nodeId}/versions:
+    get:
+      tags:
+        - file
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            $ref: '#/components/schemas/Uuid'
+          required: true
+      summary: Get all file revisions
+      responses:
+        "200":
+          description: The list of versions belonging to that node
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileRevision"
+        "404":
+          description: The node does not exist/missing permissions
 
 
 

@@ -9,7 +9,7 @@ use crabdrive_common::payloads::admin::response::user::{
 };
 use uuid::Uuid;
 
-//TODO fix this
+//TODO remove this
 pub fn get_example_user_info() -> UserInfo {
     todo!()
 }
