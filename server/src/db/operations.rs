@@ -1,4 +1,4 @@
-//createFile (parentId, parent_metadata, node_metadata, chunk_count) -> Ok(nodeId)/Error // creates node in temporary db withUploadStarted timestamp
+//createFile (parentId, parent_metadata, node_metadata, chunk_count) -> Ok(nodeId)/Error  // creates node in temporary db withUploadStarted timestamp
 //uploadChunk (nodeId) -> Ok/Error
 //finishUpload (nodeId) -> Ok/Error
 //replaceFile (nodeId, node_metadata) -> Ok/Error // copies file node in temporary db withUploadStarted timestamp
