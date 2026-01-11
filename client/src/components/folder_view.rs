@@ -2,7 +2,7 @@ use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use leptos::prelude::*;
-use thaw::{Divider, Layout, LayoutSider, Space};
+use thaw::{Button, Divider, Layout, LayoutSider, Space};
 
 #[component]
 pub(crate) fn FolderView() -> impl IntoView {
@@ -28,21 +28,20 @@ pub(crate) fn FolderView() -> impl IntoView {
     let (selected_file, set_selected_file) = signal(String::new());
 
     view! {
-        <Layout
-            attr:style="flex: 1; box-shadow: none; outline: 1px solid lightgray; border-radius: 5px"
-            has_sider=true
-        >
-            <Space
-                vertical=true
-                attr:style="flex-direction: column; gap: 10px; padding: 30px; flex: 1"
-            >
+        <Layout class="flex-1 rounded-sm outline outline-gray-300" has_sider=true>
+            <Space vertical=true class="flex-1 flex-column gap-3 p-8">
                 <PathBreadcrumb node_names=path />
-                <Divider attr:style="margin-bottom: 10px" />
+                <Divider class="mb-3" />
                 <FileList files=files set_selected_file />
+                <Divider class="my-3" />
+                <Space>
+                    <Button>New folder</Button>
+                    <Button>Upload file</Button>
+                </Space>
             </Space>
 
             <Show when=move || !selected_file.get().is_empty()>
-                <LayoutSider attr:style="border-left: 1px dotted lightgray; padding: 20px">
+                <LayoutSider class="border-l-1 border-gray-200 p-5">
                     <FileDetails file=selected_file set_selected_file />
                 </LayoutSider>
             </Show>

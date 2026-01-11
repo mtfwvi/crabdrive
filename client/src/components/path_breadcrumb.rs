@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem};
+use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text};
 
 #[component]
 pub(crate) fn PathBreadcrumb(#[prop(into)] node_names: Signal<Vec<String>>) -> impl IntoView {
@@ -14,7 +14,7 @@ pub(crate) fn PathBreadcrumb(#[prop(into)] node_names: Signal<Vec<String>>) -> i
                     view! {
                         <PathBreadcrumbItem name=name is_last=!is_not_last() />
                         <Show when=is_not_last>
-                            <BreadcrumbDivider attr:style="font-size: 1.2rem" />
+                            <BreadcrumbDivider class="!text-xl" />
                         </Show>
                     }
                 }
@@ -31,8 +31,11 @@ fn PathBreadcrumbItem(
     view! {
         <BreadcrumbItem>
             <BreadcrumbButton>
-                <Show when=move || is_last.get() fallback=move || view! { <h2>{name}</h2> }>
-                    <h1>{name}</h1>
+                <Show
+                    when=move || is_last.get()
+                    fallback=move || view! { <Text class="!text-2xl !font-bold">{name}</Text> }
+                >
+                    <Text class="!text-3xl !font-bold">{name}</Text>
                 </Show>
             </BreadcrumbButton>
         </BreadcrumbItem>

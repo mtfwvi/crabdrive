@@ -1,6 +1,6 @@
 use crate::components::folder_view::FolderView;
 use leptos::prelude::*;
-use thaw::{ConfigProvider, Image, Layout, LayoutSider, Space, SpaceAlign};
+use thaw::{ConfigProvider, Image, Layout, LayoutSider, Space, SpaceAlign, Text};
 
 #[component]
 pub(crate) fn HomePage() -> impl IntoView {
@@ -10,9 +10,9 @@ pub(crate) fn HomePage() -> impl IntoView {
                 <LayoutSider>
                     <Space align=SpaceAlign::Center>
                         <Image src="/logo.svg" attr:width=50 />
-                        <h1>"crabdrive"</h1>
+                        <Text class="!text-3xl !font-bold">"crabdrive"</Text>
                     </Space>
-                    <h3>"Rust native cloud storage"</h3>
+                    <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
                 </LayoutSider>
 
                 <FolderView />

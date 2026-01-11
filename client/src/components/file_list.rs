@@ -22,10 +22,7 @@ pub(crate) fn FileList(
 #[component]
 fn File(#[prop(into)] name: Signal<String>) -> impl IntoView {
     view! {
-        <Button
-            appearance=ButtonAppearance::Subtle
-            attr:style="width: 100%; display: flex; justify-content: start;"
-        >
+        <Button appearance=ButtonAppearance::Subtle class="w-full flex !justify-start">
             <Text>{name}</Text>
         </Button>
     }
