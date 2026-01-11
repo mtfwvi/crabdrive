@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tokio = { version = "1.48.0", features = ["full"] }
 uuid = { version = "1.19.0", features = ["serde", "v4"] }
 anyhow = { workspace = true }
 axum = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
 clap = { workspace = true, features = ["cargo"] }
 confique = { workspace = true, features = ["toml"] }
 dotenvy = { workspace = true }
