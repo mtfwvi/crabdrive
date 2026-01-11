@@ -7,11 +7,6 @@ use diesel::sqlite::Sqlite;
 use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fmt::{Display, Formatter};
-use uuid::Uuid;
-use diesel::deserialize::{self, FromSql};
-use diesel::sql_types::Text;
-use diesel::sqlite::Sqlite;
-
 
 #[derive(
     Debug, Clone, Copy, FromSqlRow, Hash, Eq, PartialEq, Serialize, Deserialize, AsExpression,
@@ -39,17 +34,13 @@ impl Display for UUID {
     }
 }
 
-use diesel::deserialize::{self, FromSql};
-use diesel::sql_types::Text;
-use diesel::sqlite::Sqlite;
-use uuid::Uuid;
-
 impl FromSql<Text, Sqlite> for UUID {
-    fn from_sql(bytes: diesel::backend::RawValue<Sqlite>) -> deserialize::Result<Self> {
+    fn from_sql(
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+    ) -> deserialize::Result<Self> {
         // Für Sqlite ist RawValue ein &[u8], wir müssen es als String interpretieren
         let text = <String as FromSql<Text, Sqlite>>::from_sql(bytes)?;
-        let uuid = Uuid::parse_str(&text)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+        let uuid = uuid::Uuid::parse_str(&text)?;
         Ok(Self(uuid))
     }
 }

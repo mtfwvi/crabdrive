@@ -273,6 +273,7 @@ dependencies = [
  "iana-time-zone",
  "js-sys",
  "num-traits",
+ "serde",
  "wasm-bindgen",
  "windows-link",
 ]
@@ -477,12 +478,10 @@ dependencies = [
  "nanoid",
  "r2d2",
  "serde",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-appender",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]

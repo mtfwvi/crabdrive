@@ -4,9 +4,6 @@ mod http;
 mod storage;
 mod user;
 
-use axum::{Router, routing::get};
-use tokio::signal;
-
 use clap::{Arg, Command, crate_version, value_parser};
 use tracing::trace;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};

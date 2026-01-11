@@ -6,8 +6,6 @@ use diesel::sql_types::Binary;
 use diesel::sqlite::Sqlite;
 use serde::{Deserialize, Serialize};
 
-use std::io::Read;
-
 #[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression)]
 #[diesel(sql_type = Binary)]
 pub(crate) struct EncryptedMetadata {
@@ -32,15 +30,14 @@ impl ToSql<Binary, Sqlite> for EncryptedMetadata {
 
 impl FromSql<Binary, Sqlite> for EncryptedMetadata {
     fn from_sql(
-        mut bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
     ) -> diesel::deserialize::Result<Self> {
-        let mut blob = bytes.read_blob();
-        let mut iv_buf: [u8; 12] = [0; 12];
-        blob.read_exact(&mut iv_buf)?;
-        let mut data_buf = Vec::with_capacity(blob.len() - iv_buf.len());
-        blob.read_to_end(&mut data_buf)?;
+        let blob = <Vec<u8> as FromSql<Binary, Sqlite>>::from_sql(bytes)?;
+        let (iv_slice, data_slice) = blob.split_at(12);
+        let mut iv_buf = [0u8; 12];
+        iv_buf.copy_from_slice(iv_slice);
         Ok(EncryptedMetadata {
-            data: data_buf,
+            data: data_slice.to_vec(),
             iv: IV::new(iv_buf),
         })
     }
