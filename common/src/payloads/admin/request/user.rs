@@ -5,7 +5,7 @@ use crate::{data::DataAmount, user::UserType};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PostUserRequest {
     username: String,
-    password_hash: String,
+    password: String,
     user_type: UserType,
     storage_limit: Option<DataAmount>,
 }

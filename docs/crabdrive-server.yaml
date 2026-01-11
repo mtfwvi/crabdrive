@@ -5,6 +5,8 @@ info:
   version: 1.0.0
 security:
   - bearerAuth: [ ]
+servers:
+  - url: http://127.0.0.1:2722/api
 paths: #
   # INFO: everything should return a 403 if the JWT is not valid or redirect to the login page
   #
@@ -93,6 +95,7 @@ paths: #
           name: userId
           schema:
             type: string
+            format: uuid
           required: true
       responses:
         "200":
@@ -108,6 +111,7 @@ paths: #
           name: userId
           schema:
             type: string
+            format: uuid
           required: true
       responses:
         "200":
@@ -164,6 +168,7 @@ paths: #
           schema:
             type: string
             format: uuid
+          required: true
 
       summary: Upload an (encrypted) chunk
       tags:
@@ -204,6 +209,7 @@ paths: #
           schema:
             type: string
             format: uuid
+          required: true
       summary: Download a single chunk
       tags:
         - chunk
@@ -229,6 +235,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       summary: Delete/Purge a node and its whole subtree
       requestBody:
@@ -260,6 +267,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       summary: Query single node info
       tags:
@@ -280,6 +288,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -311,6 +320,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       summary: Get children of node
       tags:
@@ -334,6 +344,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -357,6 +368,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -381,6 +393,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -404,12 +417,14 @@ paths: #
         - in: query
           name: from_id
           schema:
-            $ref: "#/components/schemas/Uuid"
+            type: string
+            format: uuid
           required: true
         - in: query
           name: to_id
           schema:
-            $ref: "#/components/schemas/Uuid"
+            type: string
+            format: uuid
           required: true
       summary: Get the list of nodes that form a path between the 2 given nodes (inclusive)
       tags:
@@ -509,12 +524,14 @@ paths: #
         - in: path
           name: nodeId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
         - in: path
           name: versionId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
 
       summary: Finish upload
@@ -543,7 +560,8 @@ paths: #
         - in: path
           name: nodeId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
       summary: Get all file revisions
       responses:
@@ -572,7 +590,8 @@ paths: #
         - in: path
           name: parentId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
       requestBody:
         content:
@@ -710,7 +729,7 @@ components:
           type: integer
         user_type:
           type: string
-        password_hash:
+        password:
           type: string
     Id:
       properties:

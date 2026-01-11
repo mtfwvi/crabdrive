@@ -1,3 +1,4 @@
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
 use crate::{data::DataAmount, user::UserType};
@@ -31,6 +32,6 @@ pub struct UserInfo {
     username: String,
     user_type: UserType,
     storage_limit: Option<DataAmount>,
-    created_on: u64,
+    created_on: NaiveDateTime,
     updated_on: u64,
 }

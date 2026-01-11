@@ -45,22 +45,22 @@ pub enum PatchNodeResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeResponse {
     Ok,
-    NotFound, // one of the referenced nodes was not found
-    Conflict, // version conflict (one of the nodes
+    NotFound,
+    Conflict,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeToTrashResponse {
     Ok,
-    NotFound, // one of the referenced nodes was not found
-    Conflict, // version conflict (one of the nodes
+    NotFound,
+    Conflict,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeOutOfTrashResponse {
     Ok,
-    NotFound, // one of the referenced nodes was not found
-    Conflict, // version conflict (one of the nodes
+    NotFound,
+    Conflict,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
