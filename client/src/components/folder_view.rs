@@ -7,7 +7,7 @@ use thaw::{Button, Divider, Layout, LayoutSider, Space};
 #[component]
 pub(crate) fn FolderView() -> impl IntoView {
     let (files, _set_files) = signal(
-        vec![
+        [
             "README.md",
             "audio.mp3",
             "document.pdf",
@@ -19,7 +19,7 @@ pub(crate) fn FolderView() -> impl IntoView {
         .collect(),
     );
     let (path, _set_path) = signal(
-        vec!["home", "jonathan", "Downloads"]
+        ["home", "jonathan", "Downloads"]
             .iter()
             .map(|str| str.to_string())
             .collect(),

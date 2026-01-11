@@ -11,7 +11,7 @@ mod tests {
     use pretty_assertions::assert_eq;
     use test_case::test_case;
 
-    #[test_case(2026, 1, 7, 16, 32, 01, "07/01/2026, 16:32:01")]
+    #[test_case(2026, 1, 7, 16, 32, 1, "07/01/2026, 16:32:01")]
     #[test_case(2020, 1, 1, 0, 0, 0, "01/01/2020, 00:00:00")]
     fn test_format_date_time(
         year: i32,
