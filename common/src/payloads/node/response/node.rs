@@ -1,8 +1,11 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
-use crate::{storage::{NodeId, NodeType, RevisionId, RevisionIv}, user::UserId};
 use crate::storage::MetadataIv;
+use crate::{
+    storage::{NodeId, NodeType, RevisionId, RevisionIv},
+    user::UserId,
+};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct NodeInfo {
@@ -14,7 +17,7 @@ pub struct NodeInfo {
     node_type: NodeType,
     current_revision: Option<FileRevision>,
     encrypted_metadata: Vec<u8>,
-    metadata_iv: MetadataIv
+    metadata_iv: MetadataIv,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,8 +30,20 @@ pub struct FileRevision {
 }
 
 impl FileRevision {
-    pub fn new(id: RevisionId, upload_ended_on: Option<NaiveDateTime>, upload_started_on: NaiveDateTime, iv: RevisionIv, chunk_count: u64) -> Self {
-        Self { id, upload_ended_on, upload_started_on, iv, chunk_count }
+    pub fn new(
+        id: RevisionId,
+        upload_ended_on: Option<NaiveDateTime>,
+        upload_started_on: NaiveDateTime,
+        iv: RevisionIv,
+        chunk_count: u64,
+    ) -> Self {
+        Self {
+            id,
+            upload_ended_on,
+            upload_started_on,
+            iv,
+            chunk_count,
+        }
     }
 }
 

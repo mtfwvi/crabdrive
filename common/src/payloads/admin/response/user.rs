@@ -26,8 +26,6 @@ pub enum PatchUserResponse {
     NotFound,
 }
 
-
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserInfo {
     username: String,

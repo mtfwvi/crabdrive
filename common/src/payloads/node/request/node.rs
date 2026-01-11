@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::storage::{MetadataIv, NodeId};
+use serde::{Deserialize, Serialize};
 
 // used to parse the query parameters in the get_path_between nodes handler
 #[derive(Serialize, Deserialize, Debug)]
