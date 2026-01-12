@@ -52,35 +52,35 @@ impl FromSql<Text, Sqlite> for UserType {
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(encryptionKey))]
 pub(crate) struct UserEntity {
-    user_type: UserType,
-    created_at: NaiveDateTime,
-    id: UUID,
-
-    username: String,
-    password_hash: String,
-    storage_limit: DataAmount,
-    encryption_uninitialized: bool, // default: false
+    pub user_type: UserType,
+    pub created_at: NaiveDateTime,
+    pub id: UUID,
+    
+    pub username: String,
+    pub password_hash: String,
+    pub storage_limit: DataAmount,
+    pub encryption_uninitialized: bool, // default: false
 
     // encrypted with key derived from user password
-    master_key: EncryptionKey,
+    pub master_key: EncryptionKey,
 
     // encrypted with master key
-    private_key: EncryptionKey,
+    pub private_key: EncryptionKey,
 
     // not encrypted (needs to be verified before each usage as the server could modify it
-    public_key: Vec<u8>,
+    pub public_key: Vec<u8>,
 
     // encrypted with master key
     // used to encrypt the users root folder metadata
-    root_key: EncryptionKey,
+    pub root_key: EncryptionKey,
 
     // should be created when the user first logs in
-    root_node: Option<NodeId>,
+    pub root_node: Option<NodeId>,
 
     // encrypted with master key
     // used to encrypt the trash folder metadata
-    trash_key: EncryptionKey,
+    pub trash_key: EncryptionKey,
 
     // should be created when the user first logs in
-    trash_node: Option<NodeId>,
+    pub trash_node: Option<NodeId>,
 }

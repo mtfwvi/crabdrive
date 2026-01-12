@@ -1,9 +1,9 @@
-use crate::storage::file::persistence::repository::FileRepository;
+use crate::storage::file::file_repository::FileRepository;
 use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::node::persistence::repository::NodeRepository;
+use crate::storage::node::persistence::node_repository::NodeRepository;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
-use crate::storage::revision::persistence::repository::RevisionRepository;
+use crate::storage::revision::persistence::revision_repository::RevisionRepository;
 use anyhow::{Result, anyhow};
 use chrono::Utc;
 use crabdrive_common::iv::IV;
@@ -107,7 +107,7 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
     pub fn replace_file(
         &self,
         node_id: NodeId,
-        node_metadata: EncryptedMetadata,
+        _node_metadata: EncryptedMetadata,
         iv: IV,
     ) -> Result<NodeId> {
         let existing_node = self.node_repo.get_node(node_id)?;
@@ -120,7 +120,7 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
             self.revision_repo
                 .create_revision(node_id, Utc::now().naive_utc(), iv)?;
 
-        let session_id = self.file_repo.start_transfer(node_id.to_string())?;
+        let _session_id = self.file_repo.start_transfer(node_id.to_string())?;
 
         let temp_node = existing_node;
 
@@ -132,7 +132,7 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
 
     pub fn finish_replacement(&self, node_id: NodeId) -> Result<()> {
         let mut temp = self.temp_storage.lock().unwrap();
-        let (temp_node, mut revision, _) = temp
+        let (temp_node,revision, _) = temp
             .nodes
             .remove(&node_id)
             .ok_or_else(|| anyhow!("Node {} not found in temporary storage", node_id))?;
