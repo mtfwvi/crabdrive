@@ -33,5 +33,5 @@ pub struct UserInfo {
     user_type: UserType,
     storage_limit: Option<DataAmount>,
     created_on: NaiveDateTime,
-    updated_on: u64,
+    updated_on: NaiveDateTime,
 }
