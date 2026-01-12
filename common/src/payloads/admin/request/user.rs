@@ -16,6 +16,3 @@ pub struct PatchUserRequest {
     user_type: UserType,
     storage_limit: Option<DataAmount>,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct DeleteUserRequest {}

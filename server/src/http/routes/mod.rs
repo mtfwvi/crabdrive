@@ -42,7 +42,10 @@ pub fn nodes_routes() -> Router {
             "/api/node/{nodeId}/versions/{versionId}/commit",
             post(post_commit_file),
         )
-        .route("/api/node/{parentId}/create_folder", post(post_create_folder))
+        .route(
+            "/api/node/{parentId}/create_folder",
+            post(post_create_folder),
+        )
         .route("/api/node/{parentId}/children", get(get_node_children))
         .route("/api/path_between_nodes", get(get_path_between_nodes))
         .route("/api/node/{nodeId}/versions", get(get_file_versions))
@@ -61,6 +64,9 @@ pub fn auth_routes() -> Router {
 
 pub fn admin_routes() -> Router {
     Router::new()
-        .route("/api/admin/user/{userId}", get(get_user).delete(delete_user))
+        .route(
+            "/api/admin/user/{userId}",
+            get(get_user).delete(delete_user),
+        )
         .route("/api/admin/user", post(post_user))
 }

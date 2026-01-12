@@ -3,7 +3,7 @@ use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
 use crabdrive_common::payloads::node::request::file::{
-    PostCommitFileRequest, PostCreateFileRequest, PostUpdateFileRequest,
+    PostCreateFileRequest, PostUpdateFileRequest,
 };
 use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
@@ -47,7 +47,6 @@ pub async fn post_update_file(
 
 pub async fn post_commit_file(
     Path((_file_id, _revision_id)): Path<(Uuid, Uuid)>,
-    Json(_payload): Json<PostCommitFileRequest>,
 ) -> (StatusCode, Json<PostCommitFileResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostCommitFileResponse::NotFound))
     //(StatusCode::BAD_REQUEST, Json(PostCommitFileResponse::BadRequest(vec![1,2,3])))

@@ -17,6 +17,3 @@ pub struct PostUpdateFileRequest {
     file_iv: RevisionIv,
     chunk_count: u64,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PostCommitFileRequest {}
