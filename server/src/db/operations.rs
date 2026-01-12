@@ -65,20 +65,15 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
         updated_parent.metadata_change_counter += 1;
         self.node_repo.update_node(updated_parent)?;
 
-        let node = self.node_repo.create_node(
-            Some(parent_id),
-            node_metadata,
-            owner,
-            NodeType::File,
-        )?;
+        let node =
+            self.node_repo
+                .create_node(Some(parent_id), node_metadata, owner, NodeType::File)?;
 
         let node_id = node.id;
 
-        let revision = self.revision_repo.create_revision(
-            node_id,
-            Utc::now().naive_utc(),
-            iv,
-        )?;
+        let revision = self
+            .revision_repo
+            .create_revision(node_id, Utc::now().naive_utc(), iv)?;
 
         let session_id = self.file_repo.start_transfer(node_id.to_string())?;
 
@@ -109,9 +104,9 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
             .ok_or_else(|| anyhow!("Node {} not found in temporary storage", node_id))?;
 
         let session_id = session.session_id.clone();
-        
+
         self.file_repo.write_chunk(&session_id, chunk)?;
-        
+
         session.chunks_uploaded += 1;
 
         Ok(())
@@ -160,11 +155,9 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
             return Err(anyhow!("Node {} is not a file", node_id));
         }
 
-        let new_revision = self.revision_repo.create_revision(
-            node_id,
-            Utc::now().naive_utc(),
-            iv,
-        )?;
+        let new_revision =
+            self.revision_repo
+                .create_revision(node_id, Utc::now().naive_utc(), iv)?;
 
         let session_id = self.file_repo.start_transfer(node_id.to_string())?;
 
