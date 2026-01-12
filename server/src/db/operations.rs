@@ -103,7 +103,7 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
             .get_mut(&node_id)
             .ok_or_else(|| anyhow!("Node {} not found in temporary storage", node_id))?;
 
-        let session_id = session.session_id.clone();
+        let session_id = session.session_id.copy();
 
         self.file_repo.write_chunk(&session_id, chunk)?;
 
