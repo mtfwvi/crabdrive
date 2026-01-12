@@ -133,10 +133,11 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
 
         let mut updated_revision = session.revision;
         updated_revision.upload_ended_on = Some(Utc::now().naive_utc());
+        let revision_id = updated_revision.id;
         self.revision_repo.update_revision(updated_revision)?;
 
         let mut updated_node = session.node;
-        updated_node.current_revision = Some(updated_revision.id);
+        updated_node.current_revision = Some(revision_id);
         self.node_repo.update_node(updated_node)?;
 
         Ok(())
@@ -201,10 +202,11 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
 
         let mut updated_revision = session.revision;
         updated_revision.upload_ended_on = Some(Utc::now().naive_utc());
+        let revision_id = updated_revision.id;
         self.revision_repo.update_revision(updated_revision)?;
 
         let mut updated_node = session.node;
-        updated_node.current_revision = Some(updated_revision.id);
+        updated_node.current_revision = Some(revision_id);
         self.node_repo.update_node(updated_node)?;
 
         Ok(())
@@ -223,7 +225,4 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    // TODO: Tests implementieren mit Mock-Repositories
-}
+mod tests {}
