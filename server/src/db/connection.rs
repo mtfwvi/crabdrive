@@ -22,5 +22,5 @@ pub fn create_pool() -> DbPool {
     Pool::builder()
         .max_size(15)
         .build(manager)
-        .expect("Failed to create pool")
+        .expect("Failed to create a pool")
 }
