@@ -55,7 +55,7 @@ pub(crate) struct UserEntity {
     pub user_type: UserType,
     pub created_at: NaiveDateTime,
     pub id: UUID,
-    
+
     pub username: String,
     pub password_hash: String,
     pub storage_limit: DataAmount,

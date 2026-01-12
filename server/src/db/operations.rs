@@ -132,7 +132,7 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
 
     pub fn finish_replacement(&self, node_id: NodeId) -> Result<()> {
         let mut temp = self.temp_storage.lock().unwrap();
-        let (temp_node,revision, _) = temp
+        let (temp_node, revision, _) = temp
             .nodes
             .remove(&node_id)
             .ok_or_else(|| anyhow!("Node {} not found in temporary storage", node_id))?;
