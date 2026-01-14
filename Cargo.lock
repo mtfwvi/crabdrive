@@ -476,7 +476,6 @@ dependencies = [
  "dotenvy",
  "libsqlite3-sys",
  "nanoid",
- "r2d2",
  "serde",
  "tokio",
  "tracing",
