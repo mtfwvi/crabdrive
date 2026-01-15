@@ -11,7 +11,7 @@ use diesel::sql_types::Text;
 use diesel::sqlite::Sqlite;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, PartialEq, AsExpression)]
+#[derive(Debug, Serialize, Deserialize, FromSqlRow, PartialEq, AsExpression, Clone)]
 #[diesel(sql_type = Text)]
 pub(crate) enum UserType {
     User,
@@ -47,14 +47,14 @@ impl FromSql<Text, Sqlite> for UserType {
     }
 }
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
 #[diesel(table_name = crate::db::schema::User)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(encryptionKey))]
 pub(crate) struct UserEntity {
     pub user_type: UserType,
-    pub created_at: NaiveDateTime,
     pub id: UUID,
+    pub created_at: NaiveDateTime,
 
     pub username: String,
     pub password_hash: String,

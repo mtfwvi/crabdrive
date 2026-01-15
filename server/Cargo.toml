@@ -10,7 +10,7 @@ bytes = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = ["cargo"] }
 confique = { workspace = true, features = ["toml"] }
-diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "uuid"] }
+diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { workspace = true }
 dotenvy = { workspace = true }
 libsqlite3-sys = { workspace = true }
