@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 chrono = { workspace = true }
 console_error_panic_hook = { workspace = true }
+icondata = {workspace = true}
 leptos = { workspace = true, features = ["csr"] }
 thaw = { workspace = true, features = ["csr"] }
 tracing = { workspace = true }

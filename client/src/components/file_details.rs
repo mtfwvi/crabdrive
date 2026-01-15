@@ -1,5 +1,6 @@
 use crate::display_utils::format_date_time;
 use chrono::Utc;
+use icondata::AiCloseOutlined;
 use leptos::prelude::*;
 use thaw::{Avatar, Button, ButtonAppearance, Divider, Space, Text};
 
@@ -16,9 +17,8 @@ pub(crate) fn FileDetails(
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
                     on_click=move |_| set_selected_file.set(String::new())
-                >
-                    "⨉"
-                </Button>
+                    icon=AiCloseOutlined
+                />
             </Space>
 
             <Text>"Size: 86 KB"</Text>
