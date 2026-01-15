@@ -16,10 +16,12 @@ pub(crate) fn FileDetails(
 
     let add_toast = move |_| {
         toaster.dispatch_toast(
-            move || view! {
-                <Toast>
-                    <ToastTitle>"TODO"</ToastTitle>
-                </Toast>
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>"TODO"</ToastTitle>
+                    </Toast>
+                }
             },
             ToastOptions::default().with_intent(ToastIntent::Error),
         )
@@ -49,8 +51,16 @@ pub(crate) fn FileDetails(
 
             <Divider class="my-3" />
             <Space class="flex-1">
-                <Button on_click=add_toast>Download</Button>
-                <Button on_click=add_toast>Upload new version</Button>
+                <Button
+                    on_click=add_toast
+                    appearance=ButtonAppearance::Primary
+                    icon=icondata::AiCloudDownloadOutlined
+                >
+                    Download
+                </Button>
+                <Button on_click=add_toast icon=icondata::AiDiffOutlined>
+                    Upload new version
+                </Button>
             </Space>
         </Space>
     }

@@ -1,7 +1,9 @@
 pub(crate) mod components;
 mod display_utils;
 pub(crate) mod pages;
+mod theme;
 
+use crate::theme::get_theme;
 use leptos::prelude::*;
 use pages::home_page::HomePage;
 use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
@@ -24,9 +26,11 @@ fn main() {
         .with(perf_layer)
         .init();
 
+    let theme = RwSignal::new(get_theme());
+
     mount_to_body(move || {
         view! {
-            <ConfigProvider>
+            <ConfigProvider theme>
                 <ToasterProvider position=ToastPosition::BottomStart>
                     <HomePage />
                 </ToasterProvider>

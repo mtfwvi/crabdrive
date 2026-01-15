@@ -3,8 +3,8 @@ use crate::components::file_list::FileList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use leptos::prelude::*;
 use thaw::{
-    Button, Divider, Layout, LayoutSider, Space, Toast, ToastIntent, ToastOptions, ToastTitle,
-    ToasterInjection,
+    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastIntent,
+    ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
@@ -13,10 +13,12 @@ pub(crate) fn FolderView() -> impl IntoView {
 
     let add_toast = move |_| {
         toaster.dispatch_toast(
-            move || view! {
-                <Toast>
-                    <ToastTitle>"TODO"</ToastTitle>
-                </Toast>
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>"TODO"</ToastTitle>
+                    </Toast>
+                }
             },
             ToastOptions::default().with_intent(ToastIntent::Error),
         )
@@ -51,8 +53,16 @@ pub(crate) fn FolderView() -> impl IntoView {
                 <FileList files=files set_selected_file />
                 <Divider class="my-3" />
                 <Space>
-                    <Button on_click=add_toast>New folder</Button>
-                    <Button on_click=add_toast>Upload file</Button>
+                    <Button
+                        on_click=add_toast
+                        appearance=ButtonAppearance::Primary
+                        icon=icondata::AiPlusOutlined
+                    >
+                        Upload file
+                    </Button>
+                    <Button on_click=add_toast icon=icondata::AiFolderAddOutlined>
+                        Create folder
+                    </Button>
                 </Space>
             </Space>
 
