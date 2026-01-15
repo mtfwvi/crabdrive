@@ -4,6 +4,7 @@ pub(crate) mod pages;
 
 use leptos::prelude::*;
 use pages::home_page::HomePage;
+use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -23,5 +24,13 @@ fn main() {
         .with(perf_layer)
         .init();
 
-    mount_to_body(HomePage)
+    mount_to_body(move || {
+        view! {
+            <ConfigProvider>
+                <ToasterProvider position=ToastPosition::BottomStart>
+                    <HomePage />
+                </ToasterProvider>
+            </ConfigProvider>
+        }
+    })
 }

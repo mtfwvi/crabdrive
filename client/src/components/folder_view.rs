@@ -2,10 +2,26 @@ use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use leptos::prelude::*;
-use thaw::{Button, Divider, Layout, LayoutSider, Space};
+use thaw::{
+    Button, Divider, Layout, LayoutSider, Space, Toast, ToastIntent, ToastOptions, ToastTitle,
+    ToasterInjection,
+};
 
 #[component]
 pub(crate) fn FolderView() -> impl IntoView {
+    let toaster = ToasterInjection::expect_context();
+
+    let add_toast = move |_| {
+        toaster.dispatch_toast(
+            move || view! {
+                <Toast>
+                    <ToastTitle>"TODO"</ToastTitle>
+                </Toast>
+            },
+            ToastOptions::default().with_intent(ToastIntent::Error),
+        )
+    };
+
     let (files, _set_files) = signal(
         [
             "README.md",
@@ -35,8 +51,8 @@ pub(crate) fn FolderView() -> impl IntoView {
                 <FileList files=files set_selected_file />
                 <Divider class="my-3" />
                 <Space>
-                    <Button>New folder</Button>
-                    <Button>Upload file</Button>
+                    <Button on_click=add_toast>New folder</Button>
+                    <Button on_click=add_toast>Upload file</Button>
                 </Space>
             </Space>
 

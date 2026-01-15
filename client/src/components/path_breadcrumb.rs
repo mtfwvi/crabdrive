@@ -1,5 +1,8 @@
 use leptos::prelude::*;
-use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text};
+use thaw::{
+    Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text, Toast, ToastIntent,
+    ToastOptions, ToastTitle, ToasterInjection,
+};
 
 #[component]
 pub(crate) fn PathBreadcrumb(#[prop(into)] node_names: Signal<Vec<String>>) -> impl IntoView {
@@ -28,15 +31,26 @@ fn PathBreadcrumbItem(
     #[prop(into)] name: Signal<String>,
     #[prop(optional, into)] is_last: Signal<bool>,
 ) -> impl IntoView {
+    let toaster = ToasterInjection::expect_context();
+
+    let add_toast = move |_| {
+        toaster.dispatch_toast(
+            move || view! {
+                <Toast>
+                    <ToastTitle>"TODO"</ToastTitle>
+                </Toast>
+            },
+            ToastOptions::default().with_intent(ToastIntent::Error),
+        )
+    };
+
     view! {
         <BreadcrumbItem>
-            <BreadcrumbButton>
-                <Show
-                    when=move || is_last.get()
-                    fallback=move || view! { <Text class="!text-2xl !font-bold">{name}</Text> }
-                >
-                    <Text class="!text-3xl !font-bold">{name}</Text>
-                </Show>
+            <BreadcrumbButton on:click=add_toast>
+                <Text class=format!(
+                    "!{} !font-bold",
+                    if is_last.get() { "text-3xl" } else { "text-2xl" },
+                )>{name}</Text>
             </BreadcrumbButton>
         </BreadcrumbItem>
     }
