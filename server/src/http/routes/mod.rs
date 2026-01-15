@@ -11,6 +11,8 @@ use crate::user::admin_request_handler::{delete_user, get_user, post_user};
 use crate::user::auth_request_handler::{post_login, post_logout, post_register};
 use axum::Router;
 use axum::routing::{delete, get, post};
+use crabdrive_common::routes::*;
+use formatx::formatx;
 
 pub fn routes() -> Router {
     Router::new()
@@ -24,49 +26,67 @@ pub fn routes() -> Router {
 pub fn nodes_routes() -> Router {
     Router::new()
         .route(
-            "/api/node/{nodeId}",
+            &formatx!(NODE_ROUTE_NODEID, "{nodeId}").unwrap(),
             get(get_node).patch(patch_node).delete(delete_node),
         )
-        .route("/api/node/{nodeId}/move", post(post_move_node))
         .route(
-            "/api/node/{nodeId}/move_to_trash",
+            &formatx!(MOVE_NODE_ROUTE, "{nodeId}").unwrap(),
+            post(post_move_node),
+        )
+        .route(
+            &formatx!(MOVE_NODE_TO_TRASH_ROUTE, "{nodeId}").unwrap(),
             delete(post_move_node_to_trash),
         )
         .route(
-            "/api/node/{nodeId}/move_out_of_trash",
+            &formatx!(MOVE_NODE_OUT_OF_TASH_ROUTE, "{nodeId}").unwrap(),
             post(post_move_node_out_of_trash),
         )
-        .route("/api/node/{parentId}/create_file", post(post_create_file))
-        .route("/api/node/{nodeId}/update_file", post(post_update_file))
         .route(
-            "/api/node/{nodeId}/versions/{versionId}/commit",
+            &formatx!(CREATE_FILE_ROUTE, "{parentId}").unwrap(),
+            post(post_create_file),
+        )
+        .route(
+            &formatx!(UPDATE_FILE_ROUTE, "{fileId}").unwrap(),
+            post(post_update_file),
+        )
+        .route(
+            &formatx!(COMMIT_FILE_ROUTE, "{nodeId}", "{versionId}").unwrap(),
             post(post_commit_file),
         )
         .route(
-            "/api/node/{parentId}/create_folder",
+            &formatx!(CREATE_FOLDER_ROUTE, "{parentId}").unwrap(),
             post(post_create_folder),
         )
-        .route("/api/node/{parentId}/children", get(get_node_children))
-        .route("/api/path_between_nodes", get(get_path_between_nodes))
-        .route("/api/node/{nodeId}/versions", get(get_file_versions))
         .route(
-            "/api/node/{nodeId}/versions/{versionId}/chunks/{chunkIndex}",
+            &formatx!(CHILDREN_ROUTE, "{parentId}").unwrap(),
+            get(get_node_children),
+        )
+        .route(
+            &formatx!(PATH_BETWEEN_NODES_ROUTE).unwrap(),
+            get(get_path_between_nodes),
+        )
+        .route(
+            &formatx!(NODE_VERSIONS_ROUTE, "{nodeId}").unwrap(),
+            get(get_file_versions),
+        )
+        .route(
+            &formatx!(CHUNK_ROUTE, "{nodeId}", "{versionId}", "{chunkIndex}").unwrap(),
             post(post_chunk).get(get_chunk),
         )
 }
 
 pub fn auth_routes() -> Router {
     Router::new()
-        .route("/api/auth/login", post(post_login))
-        .route("/api/auth/register", post(post_register))
-        .route("/api/auth/logout", post(post_logout))
+        .route(LOGIN_ROUTE, post(post_login))
+        .route(REGISTER_ROUTE, post(post_register))
+        .route(LOGOUT_ROUTE, post(post_logout))
 }
 
 pub fn admin_routes() -> Router {
     Router::new()
         .route(
-            "/api/admin/user/{userId}",
+            &formatx!(ADMIN_USER_ROUTE_ID, "{userId}").unwrap(),
             get(get_user).delete(delete_user),
         )
-        .route("/api/admin/user", post(post_user))
+        .route(ADMIN_USER_ROUTE, post(post_user))
 }

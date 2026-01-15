@@ -20,3 +20,4 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"
 tracing-appender = { workspace = true }
 
 crabdrive-common = { workspace = true }
+formatx = { workspace = true }
