@@ -42,3 +42,5 @@ impl FromSql<Binary, Sqlite> for EncryptionKey {
         })
     }
 }
+
+//write tests for these two functions

@@ -1,3 +1,7 @@
+// This code was largely sourced from Samuel Rodrigues (Obito1903).
+// Licensed under CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
+// https://obito.fr/posts/2022/12/use-uuid-in-sqlite-database-with-rust-diesel.rs/
+
 use diesel::deserialize::FromSqlRow;
 use diesel::deserialize::{self, FromSql};
 use diesel::expression::AsExpression;

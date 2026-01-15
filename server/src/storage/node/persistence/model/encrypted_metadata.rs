@@ -42,3 +42,5 @@ impl FromSql<Binary, Sqlite> for EncryptedMetadata {
         })
     }
 }
+
+//write tests for those two functions

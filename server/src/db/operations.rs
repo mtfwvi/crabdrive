@@ -13,9 +13,6 @@ use crabdrive_common::uuid::UUID;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
-// This code was largely sourced from Samuel Rodrigues (Obito1903).
-// Licensed under CC BY-NC 4.0 (https://creativecommons.org/licenses/by-nc/4.0/)
-// https://obito.fr/posts/2022/12/use-uuid-in-sqlite-database-with-rust-diesel.rs/
 struct TemporaryUploadStorage {
     nodes: HashMap<NodeId, UploadSession>,
 }
@@ -226,6 +223,3 @@ impl<N: NodeRepository, R: RevisionRepository, F: FileRepository> FileOperations
         Ok(())
     }
 }
-
-#[cfg(test)]
-mod tests {}
