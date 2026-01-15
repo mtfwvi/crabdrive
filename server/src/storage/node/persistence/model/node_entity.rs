@@ -6,7 +6,7 @@ use crabdrive_common::uuid::UUID;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
 #[diesel(table_name = crate::db::schema::Node)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(encryptionKey))]

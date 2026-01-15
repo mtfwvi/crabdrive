@@ -6,7 +6,7 @@ use diesel::sql_types::Binary;
 use diesel::sqlite::Sqlite;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression)]
+#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression, Clone)]
 #[diesel(sql_type = Binary)]
 pub(crate) struct EncryptedMetadata {
     data: Vec<u8>,

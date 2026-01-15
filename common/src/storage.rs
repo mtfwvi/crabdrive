@@ -9,7 +9,7 @@ use crate::uuid::UUID;
 
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = UUID;
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression)]
+#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression, Clone)]
 #[diesel(sql_type = Text)]
 pub enum NodeType {
     Folder,
