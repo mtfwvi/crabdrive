@@ -43,14 +43,14 @@ pub(crate) fn FolderView() -> impl IntoView {
             .collect(),
     );
 
-    let (selected_file, set_selected_file) = signal(String::new());
+    let selection = RwSignal::new(String::new());
 
     view! {
         <Layout class="flex-1 rounded-sm outline outline-gray-300" has_sider=true>
             <Space vertical=true class="flex-1 flex-column gap-3 p-8">
                 <PathBreadcrumb node_names=path />
                 <Divider class="mb-3" />
-                <FileList files=files set_selected_file />
+                <FileList files selection />
                 <Divider class="my-3" />
                 <Space>
                     <Button
@@ -66,9 +66,9 @@ pub(crate) fn FolderView() -> impl IntoView {
                 </Space>
             </Space>
 
-            <Show when=move || !selected_file.get().is_empty()>
+            <Show when=move || !selection.get().is_empty()>
                 <LayoutSider class="border-l-1 border-gray-200 p-5">
-                    <FileDetails file=selected_file set_selected_file />
+                    <FileDetails selection />
                 </LayoutSider>
             </Show>
         </Layout>

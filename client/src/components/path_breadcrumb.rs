@@ -35,10 +35,12 @@ fn PathBreadcrumbItem(
 
     let add_toast = move |_| {
         toaster.dispatch_toast(
-            move || view! {
-                <Toast>
-                    <ToastTitle>"TODO"</ToastTitle>
-                </Toast>
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>"TODO"</ToastTitle>
+                    </Toast>
+                }
             },
             ToastOptions::default().with_intent(ToastIntent::Error),
         )

@@ -4,7 +4,7 @@ use thaw::{Button, ButtonAppearance, Text};
 #[component]
 pub(crate) fn FileList(
     #[prop(into)] files: Signal<Vec<String>>,
-    set_selected_file: WriteSignal<String>,
+    selection: RwSignal<String>,
 ) -> impl IntoView {
     view! {
         <For
@@ -12,7 +12,16 @@ pub(crate) fn FileList(
             key=|file| file.clone()
             children=move |file| {
                 view! {
-                    <File name=file.clone() on:click=move |_| set_selected_file.set(file.clone()) />
+                    <File
+                        name=file.clone()
+                        on:click=move |_| {
+                            if selection.get() == file {
+                                selection.set(String::new())
+                            } else {
+                                selection.set(file.clone())
+                            }
+                        }
+                    />
                 }
             }
         />

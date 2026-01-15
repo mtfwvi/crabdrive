@@ -9,8 +9,7 @@ use thaw::{
 
 #[component]
 pub(crate) fn FileDetails(
-    #[prop(into)] file: Signal<String>, // TODO: Switch String out for proper FileDetails once type exists
-    set_selected_file: WriteSignal<String>,
+    #[prop(into)] selection: RwSignal<String>, // TODO: Switch String out for proper FileDetails once type exists
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
@@ -30,11 +29,11 @@ pub(crate) fn FileDetails(
     view! {
         <Space vertical=true>
             <Space class="my-3 content-center justify-between">
-                <Text class="!text-2xl !font-bold">{file}</Text>
+                <Text class="!text-2xl !font-bold">{selection}</Text>
                 <Button
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
-                    on_click=move |_| set_selected_file.set(String::new())
+                    on_click=move |_| selection.set(String::new())
                     icon=AiCloseOutlined
                 />
             </Space>
