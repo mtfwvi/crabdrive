@@ -72,6 +72,16 @@ pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity, Box<dy
 
 // Node Ops
 
+pub fn get_all_children(state: &AppState, node_id: UUID) -> Result<Vec<NodeEntity>, Box<dyn Error>> {
+    let mut conn = state.db_pool.get()?;
+    conn.transaction(|conn| {
+        let nodes = NodeDsl::Node
+            .filter(NodeDsl::parent_id.eq(node_id))
+            .load::<NodeEntity>(conn)?;
+        Ok(nodes)
+    })
+}
+
 pub fn select_node(state: &AppState, node_id: UUID) -> Result<Option<NodeEntity>, Box<dyn Error>> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
