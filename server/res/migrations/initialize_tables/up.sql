@@ -1,3 +1,5 @@
+-- TODO: Add checks (for User(user_type), etc.)
+
 CREATE TABLE User (
     user_type TEXT NOT NULL,
     id TEXT PRIMARY KEY NOT NULL,
@@ -12,14 +14,14 @@ CREATE TABLE User (
     root_key BLOB NOT NULL,
     root_node TEXT NULL,
     trash_key BLOB NOT NULL,
-    trash_node TEXT NULL 
+    trash_node TEXT NULL
 );
 
 CREATE INDEX idx_users_username ON User(username);
 
 CREATE TABLE Node(
     id TEXT PRIMARY KEY NOT NULL,
-    parent_id TEXT DEFAULT NULL, 
+    parent_id TEXT DEFAULT NULL,
     owner_id TEXT NOT NULL,
     metadata BLOB NOT NULL,
     deleted_on TIMESTAMP NULL,
