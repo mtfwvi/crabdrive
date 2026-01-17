@@ -4,13 +4,13 @@ mod request_handler;
 mod storage;
 mod user;
 
-use clap::{crate_version, value_parser, Arg, Command};
+use clap::{Arg, Command, crate_version, value_parser};
 use tracing::trace;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use std::io::Write;
 
-use crate::http::{server, AppConfig};
+use crate::http::{AppConfig, server};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

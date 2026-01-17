@@ -1,14 +1,14 @@
-use crate::storage::chunk_request_handler::{get_chunk, post_chunk};
-use crate::storage::file_request_handler::{
+use crate::request_handler::admin::{delete_user, get_user, post_user};
+use crate::request_handler::auth::{post_login, post_logout, post_register};
+use crate::request_handler::chunk::{get_chunk, post_chunk};
+use crate::request_handler::file::{
     get_file_versions, post_commit_file, post_create_file, post_update_file,
 };
-use crate::storage::folder_request_handler::post_create_folder;
-use crate::storage::node_request_handler::{
+use crate::request_handler::folder::post_create_folder;
+use crate::request_handler::node::{
     delete_node, get_node, get_node_children, get_path_between_nodes, patch_node, post_move_node,
     post_move_node_out_of_trash, post_move_node_to_trash,
 };
-use crate::user::admin_request_handler::{delete_user, get_user, post_user};
-use crate::user::auth_request_handler::{post_login, post_logout, post_register};
 use axum::Router;
 use axum::routing::{delete, get, post};
 use crabdrive_common::routes::*;
