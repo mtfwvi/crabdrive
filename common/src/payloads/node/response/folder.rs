@@ -1,9 +1,9 @@
-use crate::payloads::node::response::node::NodeInfo;
+use crate::storage::EncryptedNode;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCreateFolderResponse {
-    Created(NodeInfo),
+    Created(EncryptedNode),
     NotFound,
     BadRequest,
     Conflict,

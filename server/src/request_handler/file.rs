@@ -8,7 +8,7 @@ use crabdrive_common::payloads::node::request::file::{
 use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
-use crabdrive_common::payloads::node::response::node::FileRevision;
+use crabdrive_common::storage::FileRevision;
 use uuid::Uuid;
 
 //TODO remove this
