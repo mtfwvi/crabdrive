@@ -5,21 +5,18 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
 use diesel::{
-    sqlite::Sqlite,
-    sql_types::Text,
+    deserialize::{self, FromSql, FromSqlRow},
     expression::AsExpression,
     serialize::{self, IsNull, Output, ToSql},
-    deserialize::{self, FromSql, FromSqlRow},
+    sql_types::Text,
+    sqlite::Sqlite,
 };
 
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = UUID;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "server", derive(
-    FromSqlRow, AsExpression
-))]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "server", diesel(sql_type = Text))]
 pub enum NodeType {
     Folder,

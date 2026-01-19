@@ -6,11 +6,11 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
 use diesel::{
-    sqlite::Sqlite,
-    sql_types::BigInt,
+    deserialize::{self, FromSql, FromSqlRow},
     expression::AsExpression,
     serialize::{self, IsNull, Output, ToSql},
-    deserialize::{self, FromSql, FromSqlRow},
+    sql_types::BigInt,
+    sqlite::Sqlite,
 };
 
 pub const KB: u64 = 1_000;
@@ -36,11 +36,8 @@ pub enum DataUnit {
     Tebibyte,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default)]
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "server", derive(
-    FromSqlRow, AsExpression
-))]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "server", diesel(sql_type = BigInt))]
 pub struct DataAmount(u64);
 

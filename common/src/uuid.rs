@@ -9,18 +9,15 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "server")]
 use diesel::{
-    sqlite::Sqlite,
-    sql_types::Text,
+    deserialize::{self, FromSql, FromSqlRow},
     expression::AsExpression,
     serialize::{self, IsNull, Output, ToSql},
-    deserialize::{self, FromSql, FromSqlRow},
+    sql_types::Text,
+    sqlite::Sqlite,
 };
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-#[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "server", derive(
-    FromSqlRow, AsExpression
-))]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "server", diesel(sql_type = Text))]
 pub struct UUID(pub uuid::Uuid);
 
