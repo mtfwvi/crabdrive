@@ -1,5 +1,6 @@
 use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
+use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use leptos::prelude::*;
 use thaw::{
@@ -43,6 +44,7 @@ pub(crate) fn FolderView() -> impl IntoView {
             .collect(),
     );
 
+    let file_selection_dialog_open = RwSignal::new(false);
     let selection = RwSignal::new(String::new());
 
     view! {
@@ -54,7 +56,7 @@ pub(crate) fn FolderView() -> impl IntoView {
                 <Divider class="my-3" />
                 <Space>
                     <Button
-                        on_click=add_toast
+                        on_click=move |_| file_selection_dialog_open.set(true)
                         appearance=ButtonAppearance::Primary
                         icon=icondata::AiPlusOutlined
                     >
@@ -71,6 +73,15 @@ pub(crate) fn FolderView() -> impl IntoView {
                     <FileDetails selection />
                 </LayoutSider>
             </Show>
+
+            <FileSelectionDialog
+                open=file_selection_dialog_open
+                on_select=move |file_list| println!("{:?}", file_list)
+                title=move || {
+                    String::from("Upload files to ") + path.get_untracked().last().unwrap()
+                }
+                button_label=String::from("Upload")
+            />
         </Layout>
     }
 }

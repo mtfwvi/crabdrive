@@ -7,24 +7,18 @@ pub(crate) fn FileList(
     selection: RwSignal<String>,
 ) -> impl IntoView {
     view! {
-        <For
-            each=move || files.get()
-            key=|file| file.clone()
-            children=move |file| {
-                view! {
-                    <File
-                        name=file.clone()
-                        on:click=move |_| {
-                            if selection.get() == file {
-                                selection.set(String::new())
-                            } else {
-                                selection.set(file.clone())
-                            }
-                        }
-                    />
+        <For each=move || files.get() key=|file| file.clone() let:file>
+            <File
+                name=file.clone()
+                on:click=move |_| {
+                    if selection.get() == file {
+                        selection.set(String::new())
+                    } else {
+                        selection.set(file.clone())
+                    }
                 }
-            }
-        />
+            />
+        </For>
     }
 }
 

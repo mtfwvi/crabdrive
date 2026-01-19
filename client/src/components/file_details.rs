@@ -1,3 +1,4 @@
+use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::display_utils::format_date_time;
 use chrono::Utc;
 use icondata::AiCloseOutlined;
@@ -11,6 +12,8 @@ use thaw::{
 pub(crate) fn FileDetails(
     #[prop(into)] selection: RwSignal<String>, // TODO: Switch String out for proper FileDetails once type exists
 ) -> impl IntoView {
+    let file_selection_dialog_open = RwSignal::new(false);
+
     let toaster = ToasterInjection::expect_context();
 
     let add_toast = move |_| {
@@ -57,10 +60,21 @@ pub(crate) fn FileDetails(
                 >
                     Download
                 </Button>
-                <Button on_click=add_toast icon=icondata::AiDiffOutlined>
-                    Upload new version
+                <Button
+                    on_click=move |_| file_selection_dialog_open.set(true)
+                    icon=icondata::AiDiffOutlined
+                >
+                    Modify
                 </Button>
             </Space>
+
+            <FileSelectionDialog
+                open=file_selection_dialog_open
+                on_select=move |file_list| println!("{:?}", file_list)
+                title=move || String::from("Upload new revision of ") + &selection.get()
+                button_label=String::from("Upload")
+                allow_multiple=false
+            />
         </Space>
     }
 }

@@ -9,11 +9,9 @@ console_error_panic_hook = { workspace = true }
 icondata = {workspace = true}
 leptos = { workspace = true, features = ["csr"] }
 thaw = { workspace = true, features = ["csr"] }
-tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-web = { workspace = true }
-
-crabdrive-common = { workspace = true }
+web-sys = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
