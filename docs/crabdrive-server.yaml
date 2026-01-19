@@ -5,6 +5,8 @@ info:
   version: 1.0.0
 security:
   - bearerAuth: [ ]
+servers:
+  - url: http://127.0.0.1:2722/api
 paths: #
   # INFO: everything should return a 403 if the JWT is not valid or redirect to the login page
   #
@@ -93,6 +95,7 @@ paths: #
           name: userId
           schema:
             type: string
+            format: uuid
           required: true
       responses:
         "200":
@@ -108,6 +111,7 @@ paths: #
           name: userId
           schema:
             type: string
+            format: uuid
           required: true
       responses:
         "200":
@@ -145,7 +149,7 @@ paths: #
   #   Chunk Operations    #
   # #######################
 
-  /chunk/{versionId}/{chunkIndex}:
+  /node/{nodeId}/versions/{versionId}/chunks/{chunkIndex}:
     post:
       parameters:
         - in: path
@@ -159,6 +163,13 @@ paths: #
             type: string
             format: uuid
           required: true
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+          required: true
+
       summary: Upload an (encrypted) chunk
       tags:
         - chunk
@@ -193,6 +204,12 @@ paths: #
             type: string
             format: uuid
           required: true
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+          required: true
       summary: Download a single chunk
       tags:
         - chunk
@@ -218,6 +235,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       summary: Delete/Purge a node and its whole subtree
       requestBody:
@@ -249,6 +267,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       summary: Query single node info
       tags:
@@ -269,6 +288,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -293,6 +313,29 @@ paths: #
                 node_metadata:
                   type: string
                   format: binary
+  /node/{nodeId}/children:
+    get:
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      summary: Get children of node
+      tags:
+        - node
+      responses:
+        "200":
+          description: The list of children nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Node"
+        "404":
+          description: One of the nodes does not exist
 
   /node/{nodeId}/move:
     post:
@@ -301,6 +344,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -324,6 +368,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -348,6 +393,7 @@ paths: #
           name: nodeId
           schema:
             type: string
+            format: uuid
           required: true
       tags:
         - node
@@ -365,6 +411,40 @@ paths: #
           description: Permission denied/ node does not exist
         "409":
           description: The update was not accepted. This could be because the version is outdated
+  /path_between_nodes/:
+    get:
+      parameters:
+        - in: query
+          name: from_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+        - in: query
+          name: to_id
+          schema:
+            type: string
+            format: uuid
+          required: true
+      summary: Get the list of nodes that form a path between the 2 given nodes (inclusive)
+      tags:
+        - node
+      responses:
+        "200":
+          description: The list of nodes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Node"
+        "204":
+          description: No path exists
+        "404":
+          description: One of the nodes does not exist
+
+
+
 
 
 
@@ -436,7 +516,7 @@ paths: #
         "400":
           description: The node is not a file
 
-  /node/{nodeId}/{versionId}/commit:
+  /node/{nodeId}/versions/{versionId}/commit:
     post:
       tags:
         - file
@@ -444,12 +524,14 @@ paths: #
         - in: path
           name: nodeId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
         - in: path
           name: versionId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
 
       summary: Finish upload
@@ -470,6 +552,29 @@ paths: #
                 type: array
                 items:
                   type: integer
+  /node/{nodeId}/versions:
+    get:
+      tags:
+        - file
+      parameters:
+        - in: path
+          name: nodeId
+          schema:
+            type: string
+            format: uuid
+          required: true
+      summary: Get all file revisions
+      responses:
+        "200":
+          description: The list of versions belonging to that node
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FileRevision"
+        "404":
+          description: The node does not exist/missing permissions
 
 
 
@@ -485,7 +590,8 @@ paths: #
         - in: path
           name: parentId
           schema:
-            $ref: '#/components/schemas/Uuid'
+            type: string
+            format: uuid
           required: true
       requestBody:
         content:
@@ -623,7 +729,7 @@ components:
           type: integer
         user_type:
           type: string
-        password_hash:
+        password:
           type: string
     Id:
       properties:

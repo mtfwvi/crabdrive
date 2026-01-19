@@ -5,6 +5,7 @@ use diesel::sql_types::Text;
 use diesel::sqlite::Sqlite;
 use serde::{Deserialize, Serialize};
 
+use crate::iv::IV;
 use crate::uuid::UUID;
 
 /// Unique ID (UUID) for a single node within the file tree
@@ -50,3 +51,6 @@ pub type RevisionId = UUID;
 
 /// The index of a chunk within a file
 pub type ChunkIndex = u64;
+
+pub type MetadataIv = IV;
+pub type RevisionIv = IV;
