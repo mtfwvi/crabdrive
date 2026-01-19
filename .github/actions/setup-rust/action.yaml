@@ -7,8 +7,8 @@ inputs:
         description: "Rust toolchain version"
         required: false
         default: "1.85.0"
-    targets:
-        description: "Targets to compile to"
+    target:
+        description: "Target to compile to"
         required: false
         default: ""
 
@@ -18,7 +18,7 @@ runs:
         - name: Install Rust
           uses: actions-rust-lang/setup-rust-toolchain@v1
           with:
-              targets: ${{ inputs.targets }}
+              target: ${{ inputs.target }}
               toolchain: ${{ inputs.toolchain }}
               components: clippy, rustfmt
               cache-on-failure: true
