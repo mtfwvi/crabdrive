@@ -63,6 +63,7 @@ jobs:
     check-client-build:
         name: Check client build
         permissions:
+            contents: read
             pull-requests: read
         runs-on: ubuntu-latest
         if: >
