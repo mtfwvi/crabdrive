@@ -2,9 +2,9 @@ use tracing::error;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::File;
-use web_sys::js_sys::{ArrayBuffer};
+use web_sys::js_sys::ArrayBuffer;
 
-pub struct Chunk{
+pub struct Chunk {
     pub chunk: ArrayBuffer,
     pub block: u32,
     pub first_block: bool,
@@ -13,9 +13,9 @@ pub struct Chunk{
 
 pub async fn parse_file<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where
-    F:Fn(Chunk) -> Fut,
+    F: Fn(Chunk) -> Fut,
     Fut: Future<Output = Result<(), JsValue>>,
- {
+{
     const CHUNK_SIZE: f64 = 1024.0 * 1024.0 * 16.0;
 
     let file_size = file.size();
@@ -23,8 +23,7 @@ where
     let mut block = 0;
 
     loop {
-        let blob = file
-            .slice_with_f64_and_f64(offset, offset + CHUNK_SIZE)?;
+        let blob = file.slice_with_f64_and_f64(offset, offset + CHUNK_SIZE)?;
 
         let buffer = JsFuture::from(blob.array_buffer()).await?;
         let buffer = buffer.dyn_into::<ArrayBuffer>()?;

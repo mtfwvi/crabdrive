@@ -1,9 +1,9 @@
-use crate::requests::{request, uint8array_from_response, RequestBody, RequestMethod};
+use crate::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use formatx::formatx;
 use wasm_bindgen::JsValue;
-use web_sys::js_sys::Uint8Array;
 use web_sys::Response;
+use web_sys::js_sys::Uint8Array;
 
 pub enum GetChunkResponse {
     Ok(Uint8Array),

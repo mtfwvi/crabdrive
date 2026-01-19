@@ -1,13 +1,13 @@
+use crate::model::encryption::{ChildKey, EncryptionKey};
 use chrono::NaiveDateTime;
-use serde::{Deserialize, Serialize};
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{FileRevision, MetadataIv, NodeId, NodeType};
 use crabdrive_common::user::UserId;
-use crate::model::encryption::{ChildKey, EncryptionKey};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum NodeMetadata {
-    V1(MetadataV1)
+    V1(MetadataV1),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -21,9 +21,8 @@ pub struct MetadataV1 {
     /// used to encrypt chunks
     pub file_key: Option<EncryptionKey>,
 
-
     /// used to encrypt children
-    pub children_key: Vec<ChildKey>
+    pub children_key: Vec<ChildKey>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
