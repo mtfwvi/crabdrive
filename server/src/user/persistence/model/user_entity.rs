@@ -2,13 +2,7 @@ use crate::user::persistence::model::encryption_key::EncryptionKey;
 use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
-use crabdrive_common::user::UserId;
-
-pub(crate) enum UserType {
-    User,
-    Admin,
-    Restricted,
-}
+use crabdrive_common::user::{UserId, UserType};
 
 pub(crate) struct UserEntity {
     user_type: UserType,

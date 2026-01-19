@@ -2,6 +2,8 @@ use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 
+use serde::{Deserialize, Serialize};
+
 pub const KB: u64 = 1_000;
 pub const MB: u64 = KB * 1_000;
 pub const GB: u64 = MB * 1_000;
@@ -25,7 +27,7 @@ pub enum DataUnit {
     Tebibyte,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default, Serialize, Deserialize)]
 pub struct DataAmount(u64);
 
 impl DataAmount {

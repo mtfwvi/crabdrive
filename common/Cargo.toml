@@ -6,3 +6,7 @@ edition = "2024"
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 test-case = { workspace = true }
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+chrono = { workspace = true, features = ["serde"] }

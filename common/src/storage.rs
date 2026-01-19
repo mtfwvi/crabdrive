@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = u128;
+#[derive(Serialize, Deserialize, Debug)]
 pub enum NodeType {
     Folder,
     File,
@@ -11,3 +14,6 @@ pub type RevisionId = u128;
 
 /// The index of a chunk within a file
 pub type ChunkIndex = u64;
+
+pub type MetadataIv = [u8; 12];
+pub type RevisionIv = [u8; 12];

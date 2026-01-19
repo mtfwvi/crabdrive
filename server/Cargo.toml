@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+uuid = { workspace = true, features = ["serde"] }
 anyhow = { workspace = true }
 axum = { workspace = true }
 bytes = { workspace = true }
@@ -19,3 +20,4 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"
 tracing-appender = { workspace = true }
 
 crabdrive-common = { workspace = true }
+formatx = { workspace = true }
