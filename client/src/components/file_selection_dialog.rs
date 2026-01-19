@@ -1,16 +1,15 @@
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface,
-    DialogTitle, Space, Upload, UploadDragger,
+    DialogTitle, Upload, UploadDragger,
 };
 use web_sys::FileList;
 
 #[component]
 pub(crate) fn FileSelectionDialog<F, S>(
     #[prop(into)] open: RwSignal<bool>,
-    on_select: S,
+    on_confirm: S,
     title: F,
-    #[prop(into)] button_label: Signal<String>,
     #[prop(optional, default = true)] allow_multiple: bool,
 ) -> impl IntoView
 where
@@ -23,17 +22,20 @@ where
 
     view! {
         <Dialog open>
-            <DialogSurface>
+            <DialogSurface class="w-fit">
                 <DialogBody>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogContent>
-                        <Space vertical=true>
-                            <Show when=move || allow_multiple>Multiple files may be selected.</Show>
-                            <Upload custom_request multiple=allow_multiple>
-                                <UploadDragger>"Click or drag a file to this area"</UploadDragger>
-                            // TODO: Display list of selected files
-                            </Upload>
-                        </Space>
+                        <Upload custom_request multiple=allow_multiple>
+                            // This inline style is necessary since this div that needs styling
+                            // is inserted between Upload and UploadDragger in the DOM
+                            <style>".thaw-upload__trigger { width: 100% } "</style>
+
+                            <UploadDragger>
+                                // TODO: Display list of selected files
+                                "Click or drag a file to this area"
+                            </UploadDragger>
+                        </Upload>
                     </DialogContent>
                     <DialogActions>
                         <Button
@@ -44,10 +46,10 @@ where
                         </Button>
                         <Button
                             appearance=ButtonAppearance::Primary
-                            on_click=move |_| on_select(selection.get().unwrap())
+                            on_click=move |_| on_confirm(selection.get().unwrap())
                             disabled=Signal::derive(move || selection.get().is_none())
                         >
-                            {button_label}
+                            "Upload"
                         </Button>
                     </DialogActions>
                 </DialogBody>

@@ -1,27 +1,28 @@
 use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::file_selection_dialog::FileSelectionDialog;
+use crate::components::folder_creation_dialog::FolderCreationDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastIntent,
-    ToastOptions, ToastTitle, ToasterInjection,
+    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastBody, ToastIntent,
+    ToastOptions, ToasterInjection,
 };
 
 #[component]
 pub(crate) fn FolderView() -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
-    let add_toast = move |_| {
+    let add_toast = move |text: String| {
         toaster.dispatch_toast(
             move || {
                 view! {
                     <Toast>
-                        <ToastTitle>"TODO"</ToastTitle>
+                        <ToastBody>{text}</ToastBody>
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Error),
+            ToastOptions::default().with_intent(ToastIntent::Info),
         )
     };
 
@@ -45,6 +46,7 @@ pub(crate) fn FolderView() -> impl IntoView {
     );
 
     let file_selection_dialog_open = RwSignal::new(false);
+    let folder_creation_dialog_open = RwSignal::new(false);
     let selection = RwSignal::new(String::new());
 
     view! {
@@ -62,7 +64,10 @@ pub(crate) fn FolderView() -> impl IntoView {
                     >
                         Upload file
                     </Button>
-                    <Button on_click=add_toast icon=icondata::AiFolderAddOutlined>
+                    <Button
+                        on_click=move |_| folder_creation_dialog_open.set(true)
+                        icon=icondata::AiFolderAddOutlined
+                    >
                         Create folder
                     </Button>
                 </Space>
@@ -76,11 +81,21 @@ pub(crate) fn FolderView() -> impl IntoView {
 
             <FileSelectionDialog
                 open=file_selection_dialog_open
-                on_select=move |file_list| println!("{:?}", file_list)
+                on_confirm=move |file_list| {
+                    add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
+                    file_selection_dialog_open.set(false)
+                }
                 title=move || {
                     String::from("Upload files to ") + path.get_untracked().last().unwrap()
                 }
-                button_label=String::from("Upload")
+            />
+
+            <FolderCreationDialog
+                open=folder_creation_dialog_open
+                on_confirm=move |name| {
+                    add_toast(format!("Received folder name '{}'", name));
+                    folder_creation_dialog_open.set(false)
+                }
             />
         </Layout>
     }

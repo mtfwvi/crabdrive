@@ -16,16 +16,16 @@ pub(crate) fn FileDetails(
 
     let toaster = ToasterInjection::expect_context();
 
-    let add_toast = move |_| {
+    let add_toast = move |text: String| {
         toaster.dispatch_toast(
             move || {
                 view! {
                     <Toast>
-                        <ToastTitle>"TODO"</ToastTitle>
+                        <ToastTitle>{text}</ToastTitle>
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Error),
+            ToastOptions::default().with_intent(ToastIntent::Info),
         )
     };
 
@@ -54,7 +54,7 @@ pub(crate) fn FileDetails(
             <Divider class="my-3" />
             <Space class="flex-1">
                 <Button
-                    on_click=add_toast
+                    on_click=move |_| add_toast(String::from("TODO"))
                     appearance=ButtonAppearance::Primary
                     icon=icondata::AiCloudDownloadOutlined
                 >
@@ -70,9 +70,11 @@ pub(crate) fn FileDetails(
 
             <FileSelectionDialog
                 open=file_selection_dialog_open
-                on_select=move |file_list| println!("{:?}", file_list)
+                on_confirm=move |file_list| {
+                    add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
+                    file_selection_dialog_open.set(false)
+                }
                 title=move || String::from("Upload new revision of ") + &selection.get()
-                button_label=String::from("Upload")
                 allow_multiple=false
             />
         </Space>
