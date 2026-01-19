@@ -455,10 +455,10 @@ dependencies = [
  "pretty_assertions",
  "test-case",
  "thaw",
- "tracing",
  "tracing-subscriber",
  "tracing-web",
  "wasm-bindgen-test",
+ "web-sys",
 ]
 
 [[package]]

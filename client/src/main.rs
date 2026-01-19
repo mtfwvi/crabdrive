@@ -26,7 +26,7 @@ fn main() {
         .with(perf_layer)
         .init();
 
-    let theme = RwSignal::new(get_theme());
+    let theme = RwSignal::new(get_theme(false));
 
     mount_to_body(move || {
         view! {

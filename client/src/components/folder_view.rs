@@ -50,7 +50,7 @@ pub(crate) fn FolderView() -> impl IntoView {
     let selection = RwSignal::new(String::new());
 
     view! {
-        <Layout class="flex-1 rounded-sm outline outline-gray-300" has_sider=true>
+        <Layout class="h-fit flex-1 rounded-sm outline outline-gray-300" has_sider=true>
             <Space vertical=true class="flex-1 flex-column gap-3 p-8">
                 <PathBreadcrumb node_names=path />
                 <Divider class="mb-3" />

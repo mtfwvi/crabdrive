@@ -1,6 +1,7 @@
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::display_utils::format_date_time;
 use chrono::Utc;
+use crabdrive_common::da;
 use icondata::AiCloseOutlined;
 use leptos::prelude::*;
 use thaw::{
@@ -41,7 +42,7 @@ pub(crate) fn FileDetails(
                 />
             </Space>
 
-            <Text>"Size: 86 KB"</Text>
+            <Text>{format!("Size: {}", da!(86 KB))}</Text>
             <Text>"Last modified: "{format_date_time(Utc::now().naive_utc())}</Text>
             <Text>Created: {format_date_time(Utc::now().naive_utc())}</Text>
 

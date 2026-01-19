@@ -13,6 +13,8 @@ tracing-subscriber = { workspace = true }
 tracing-web = { workspace = true }
 web-sys = { workspace = true }
 
+crabdrive-common = {workspace = true}
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 test-case = { workspace = true }

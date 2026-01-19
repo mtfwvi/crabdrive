@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface,
-    DialogTitle, Upload, UploadDragger,
+    DialogTitle, Divider, Text, Upload, UploadDragger,
 };
 use web_sys::FileList;
 
@@ -20,6 +20,11 @@ where
 
     let custom_request = move |file_list: FileList| selection.set(Some(file_list));
 
+    let handle_confirm = move || {
+        on_confirm(selection.get().unwrap());
+        selection.set(None)
+    };
+
     view! {
         <Dialog open>
             <DialogSurface class="w-fit">
@@ -34,6 +39,19 @@ where
                             <UploadDragger>
                                 // TODO: Display list of selected files
                                 "Click or drag a file to this area"
+                                <Show when=move || selection.get().is_some()>
+                                    <Divider class="py-4" />
+                                    <Text>
+                                        {move || {
+                                            let length = selection.get().unwrap().length();
+                                            format!(
+                                                "{} {} selected",
+                                                length,
+                                                if length == 1 { "file" } else { "files" },
+                                            )
+                                        }}
+                                    </Text>
+                                </Show>
                             </UploadDragger>
                         </Upload>
                     </DialogContent>
@@ -46,7 +64,7 @@ where
                         </Button>
                         <Button
                             appearance=ButtonAppearance::Primary
-                            on_click=move |_| on_confirm(selection.get().unwrap())
+                            on_click=move |_| handle_confirm()
                             disabled=Signal::derive(move || selection.get().is_none())
                         >
                             "Upload"
