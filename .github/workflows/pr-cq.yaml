@@ -62,8 +62,9 @@ jobs:
 
     check-client-build:
         name: Check client build
+        permissions:
+            pull-requests: read
         runs-on: ubuntu-latest
-        # TODO: Skip if changes are only in server
         if: >
             github.event_name != 'pull_request' || !github.event.pull_request.draft
         steps:
