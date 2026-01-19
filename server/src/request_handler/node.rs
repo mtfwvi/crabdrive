@@ -10,25 +10,27 @@ use crabdrive_common::payloads::node::response::node::{
     NodeInfo, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
     PostMoveNodeToTrashResponse,
 };
+
+use crabdrive_common::iv::IV;
+use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
-use uuid::Uuid;
 
 pub fn get_example_node_info() -> NodeInfo {
     NodeInfo {
-        id: 0,
+        id: NodeId::random(),
         change_count: 0,
-        parent_id: 0,
-        owner_id: 0,
+        parent_id: NodeId::random(),
+        owner_id: NodeId::random(),
         deleted_on: None,
         node_type: NodeType::Folder,
         current_revision: None,
         encrypted_metadata: vec![],
-        metadata_iv: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        metadata_iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
     }
 }
 
 pub async fn delete_node(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
     Json(_payload): Json<DeleteNodeRequest>,
 ) -> (StatusCode, Json<DeleteNodeResponse>) {
     // (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict))
@@ -38,7 +40,7 @@ pub async fn delete_node(
     (StatusCode::OK, Json(DeleteNodeResponse::Ok))
 }
 
-pub async fn get_node(Path(_node_id): Path<Uuid>) -> (StatusCode, Json<GetNodeResponse>) {
+pub async fn get_node(Path(_node_id): Path<NodeId>) -> (StatusCode, Json<GetNodeResponse>) {
     //(StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound))
 
     //TODO implement
@@ -49,7 +51,7 @@ pub async fn get_node(Path(_node_id): Path<Uuid>) -> (StatusCode, Json<GetNodeRe
 }
 
 pub async fn patch_node(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PatchNodeRequest>,
 ) -> (StatusCode, Json<PatchNodeResponse>) {
     //(StatusCode::NOT_FOUND, Json(PatchNodeResponse::NotFound))
@@ -63,7 +65,7 @@ pub async fn patch_node(
 }
 
 pub async fn post_move_node(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PostMoveNodeRequest>,
 ) -> (StatusCode, Json<PostMoveNodeResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound))
@@ -74,7 +76,7 @@ pub async fn post_move_node(
 }
 
 pub async fn post_move_node_to_trash(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PostMoveNodeToTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeToTrashResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostMoveNodeToTrashResponse::NotFound))
@@ -85,7 +87,7 @@ pub async fn post_move_node_to_trash(
 }
 
 pub async fn post_move_node_out_of_trash(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PostMoveNodeOutOfTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeOutOfTrashResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostMoveNodeOutOfTrashResponse::NotFound))
@@ -108,7 +110,7 @@ pub async fn get_path_between_nodes(
 }
 
 pub async fn get_node_children(
-    Path(_node_id): Path<Uuid>,
+    Path(_node_id): Path<NodeId>,
 ) -> (StatusCode, Json<GetNodeChildrenResponse>) {
     //(StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound))
 

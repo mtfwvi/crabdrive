@@ -5,14 +5,14 @@ use crabdrive_common::payloads::admin::request::user::{PatchUserRequest, PostUse
 use crabdrive_common::payloads::admin::response::user::{
     DeleteUserResponse, GetUserResponse, PatchUserResponse, PostUserResponse, UserInfo,
 };
-use uuid::Uuid;
+use crabdrive_common::user::UserId;
 
 //TODO remove this
 pub fn get_example_user_info() -> UserInfo {
     todo!()
 }
 
-pub async fn get_user(Path(_user_id): Path<Uuid>) -> (StatusCode, Json<GetUserResponse>) {
+pub async fn get_user(Path(_user_id): Path<UserId>) -> (StatusCode, Json<GetUserResponse>) {
     //TODO implement
     (
         StatusCode::OK,
@@ -20,7 +20,7 @@ pub async fn get_user(Path(_user_id): Path<Uuid>) -> (StatusCode, Json<GetUserRe
     )
 }
 
-pub async fn delete_user(Path(_user_id): Path<Uuid>) -> (StatusCode, Json<DeleteUserResponse>) {
+pub async fn delete_user(Path(_user_id): Path<UserId>) -> (StatusCode, Json<DeleteUserResponse>) {
     //TODO implement
     (
         StatusCode::OK,
@@ -29,7 +29,7 @@ pub async fn delete_user(Path(_user_id): Path<Uuid>) -> (StatusCode, Json<Delete
 }
 
 pub async fn patch_user(
-    Path(_user_id): Path<Uuid>,
+    Path(_user_id): Path<UserId>,
     Json(_payload): Json<PatchUserRequest>,
 ) -> (StatusCode, Json<PatchUserResponse>) {
     //TODO implement

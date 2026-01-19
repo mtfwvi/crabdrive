@@ -3,37 +3,43 @@ use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::{UserId, UserType};
+use diesel::{AsChangeset, Insertable, Queryable, Selectable};
+use serde::{Deserialize, Serialize};
 
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
+#[diesel(table_name = crate::db::schema::User)]
+#[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(belongs_to(encryptionKey))]
 pub(crate) struct UserEntity {
-    user_type: UserType,
-    created_at: NaiveDateTime,
-    id: UserId,
+    pub user_type: UserType,
+    pub id: UserId,
+    pub created_at: NaiveDateTime,
 
-    username: String,
-    password_hash: String,
-    storage_limit: DataAmount,
-    encryption_uninitialized: bool, // default: false
+    pub username: String,
+    pub password_hash: String,
+    pub storage_limit: DataAmount,
+    pub encryption_uninitialized: bool, // default: false
 
     // encrypted with key derived from user password
-    master_key: EncryptionKey,
+    pub master_key: EncryptionKey,
 
     // encrypted with master key
-    private_key: EncryptionKey,
+    pub private_key: EncryptionKey,
 
     // not encrypted (needs to be verified before each usage as the server could modify it
-    public_key: Vec<u8>,
+    pub public_key: Vec<u8>,
 
     // encrypted with master key
     // used to encrypt the users root folder metadata
-    root_key: EncryptionKey,
+    pub root_key: EncryptionKey,
 
     // should be created when the user first logs in
-    root_node: Option<NodeId>,
+    pub root_node: Option<NodeId>,
 
     // encrypted with master key
     // used to encrypt the trash folder metadata
-    trash_key: EncryptionKey,
+    pub trash_key: EncryptionKey,
 
     // should be created when the user first logs in
-    trash_node: Option<NodeId>,
+    pub trash_node: Option<NodeId>,
 }

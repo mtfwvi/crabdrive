@@ -1,4 +1,7 @@
-use crate::http::{AppConfig, routes};
+use crate::{
+    db::connection::create_pool,
+    http::{AppConfig, routes},
+};
 use std::io::ErrorKind;
 
 use crate::http::AppState;
@@ -17,7 +20,9 @@ async fn shutdown(state: AppState) {
 }
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
-    let state = AppState::new(config.clone());
+    let pool = create_pool(&config.db.path, config.db.pool_size);
+
+    let state = AppState::new(config.clone(), pool);
 
     let app = Router::<AppState>::new()
         .with_state(state.clone())

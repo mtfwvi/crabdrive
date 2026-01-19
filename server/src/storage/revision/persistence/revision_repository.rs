@@ -1,7 +1,7 @@
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
-use crate::user::persistence::model::encryption_key::IV;
 use anyhow::Result;
 use chrono::NaiveDateTime;
+use crabdrive_common::iv::IV;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
 
