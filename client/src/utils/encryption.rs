@@ -1,12 +1,11 @@
 use crate::model::encryption::EncryptionKey;
 use crate::model::node::DecryptedNode;
-use crate::utils::file::Chunk;
+use crate::utils::file::ChunkInfo;
+use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
-use leptos::server_fn::response::Res;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::js_sys::ArrayBuffer;
 use web_sys::js_sys::Uint8Array;
-use crabdrive_common::iv::IV;
 
 pub async fn decrypt_node(
     node: EncryptedNode,
@@ -52,10 +51,10 @@ pub async fn encrypt_node(
     Ok(encrypted_node)
 }
 
-pub async fn decrypt_chunk(chunk: Chunk, key: EncryptionKey) -> Result<ArrayBuffer, JsValue> {
+pub async fn decrypt_chunk(chunk: ChunkInfo, key: EncryptionKey) -> Result<ArrayBuffer, JsValue> {
     Ok(chunk.chunk)
 }
 
-pub async fn encrypt_chunk(chunk: Chunk, key: EncryptionKey) -> Result<Uint8Array, JsValue> {
+pub async fn encrypt_chunk(chunk: ChunkInfo, key: EncryptionKey) -> Result<Uint8Array, JsValue> {
     Ok(Uint8Array::new(&chunk.chunk))
 }

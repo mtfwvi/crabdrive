@@ -98,3 +98,59 @@ async fn uint8array_from_response(response: Response) -> Result<Uint8Array, JsVa
     let array = Uint8Array::new(&bytes_arraybuffer);
     Ok(array)
 }
+
+mod test {
+    use serde::{Deserialize, Serialize};
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use crate::requests::{request, string_from_response, RequestBody, RequestMethod};
+
+    #[allow(non_snake_case)]
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    struct Post {
+        pub userId: u64,
+        pub id: u64,
+        pub body: String,
+        pub title: String,
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_request_1() {
+        let url = "https://jsonplaceholder.typicode.com/posts";
+        let method = RequestMethod::GET;
+        let body = RequestBody::Empty;
+        let query_parameters = vec![];
+        let auth_token = None;
+
+        let response = request(url.to_string(), method, body, query_parameters, auth_token).await.unwrap();
+        assert_eq!(response.status(), 200);
+
+        let response_text = string_from_response(response).await.unwrap();
+
+        let post_list: Vec<Post> = serde_json::from_str(&response_text).unwrap();
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_request_2() {
+        let example_post = Post {
+            userId: 69,
+            id: 1234,
+            body: "test".to_string(),
+            title: "nice".to_string(),
+        };
+
+        let url = "https://jsonplaceholder.typicode.com/posts";
+        let method = RequestMethod::PUT;
+        let body = RequestBody::Json(serde_json::to_string(&example_post).unwrap());
+        let query_parameters = vec![];
+        let auth_token = None;
+
+        let response = request(url.to_string(), method, body, query_parameters, auth_token).await.unwrap();
+        assert_eq!(response.status(), 200);
+
+        let response_text = string_from_response(response).await.unwrap();
+
+        let post: Post = serde_json::from_str(&response_text).unwrap();
+
+        assert_eq!(example_post, post);
+    }
+}

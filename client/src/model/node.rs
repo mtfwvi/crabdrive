@@ -1,7 +1,7 @@
 use crate::model::encryption::{ChildKey, EncryptionKey};
 use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
-use crabdrive_common::storage::{FileRevision, MetadataIv, NodeId, NodeType};
+use crabdrive_common::storage::{FileRevision, NodeId, NodeType};
 use crabdrive_common::user::UserId;
 use serde::{Deserialize, Serialize};
 

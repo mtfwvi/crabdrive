@@ -1,19 +1,18 @@
-use tracing::error;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::File;
-use web_sys::js_sys::ArrayBuffer;
+use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
+use web_sys::{Blob, File};
 
-pub struct Chunk {
+pub struct ChunkInfo {
     pub chunk: ArrayBuffer,
     pub block: u32,
     pub first_block: bool,
     pub last_block: bool,
 }
 
-pub async fn parse_file<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
+async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where
-    F: Fn(Chunk) -> Fut,
+    F: Fn(ChunkInfo) -> Fut,
     Fut: Future<Output = Result<(), JsValue>>,
 {
     const CHUNK_SIZE: f64 = 1024.0 * 1024.0 * 16.0;
@@ -22,6 +21,8 @@ where
     let mut offset = 0.0;
     let mut block = 0;
 
+
+    // go through the file in 16mb chunks
     loop {
         let blob = file.slice_with_f64_and_f64(offset, offset + CHUNK_SIZE)?;
 
@@ -36,12 +37,7 @@ where
         let first_block = block == 1;
         let last_block = offset >= file_size;
 
-        error!(offset);
-
-        // TODO
-        // chunk handling
-
-        let chunk_info = Chunk {
+        let chunk_info = ChunkInfo {
             chunk: buffer,
             block,
             first_block,
@@ -56,4 +52,40 @@ where
     }
 
     Ok(())
+}
+
+fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
+    let buffers_js = Array::new();
+
+    buffers.iter().for_each(|buffer| {
+        buffers_js.push(buffer);
+    });
+
+    // this failing does not seem recoverable and should not be possible with correctly typed objects
+    Blob::new_with_u8_array_sequence(&buffers_js).unwrap()
+}
+
+mod test {
+    use crate::utils::file::combine_chunks;
+    use wasm_bindgen_futures::JsFuture;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use web_sys::js_sys::Uint8Array;
+
+    #[wasm_bindgen_test]
+    async fn test_combine_chunks() {
+        let mut vec1 = vec![1, 2, 3];
+        let mut vec2 = vec![4, 5, 6];
+
+        let part1 = Uint8Array::new_from_slice(&vec1);
+        let part2 = Uint8Array::new_from_slice(&vec2);
+
+        let combined = combine_chunks(vec![part1, part2]);
+        let combined = JsFuture::from(combined.array_buffer()).await.unwrap();
+        let combined = Uint8Array::from(combined);
+        let combined_vec = combined.to_vec();
+
+        vec1.append(&mut vec2);
+
+        assert!(combined_vec.eq(&vec1));
+    }
 }
