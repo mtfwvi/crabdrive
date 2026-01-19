@@ -1,10 +1,10 @@
 use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
-use uuid::Uuid;
+use crabdrive_common::storage::{NodeId, RevisionId};
 
 pub async fn post_chunk(
-    Path((_node_id, _revision_id, _chunk_index)): Path<(Uuid, Uuid, u64)>,
+    Path((_node_id, _revision_id, _chunk_index)): Path<(NodeId, RevisionId, u64)>,
     _chunk: axum::body::Bytes,
 ) -> (StatusCode, Json<()>) {
     //TODO implement
@@ -12,7 +12,7 @@ pub async fn post_chunk(
 }
 
 pub async fn get_chunk(
-    Path((_node_id, _revision_id, _chunk_index)): Path<(Uuid, Uuid, u64)>,
+    Path((_node_id, _revision_id, _chunk_index)): Path<(NodeId, RevisionId, u64)>,
 ) -> (StatusCode, Vec<u8>) {
     //TODO implement
     (StatusCode::OK, vec![0])

@@ -1,8 +1,12 @@
+use diesel::deserialize::{self, FromSql, FromSqlRow};
+use diesel::expression::AsExpression;
+use diesel::serialize::{self, IsNull, Output, ToSql};
+use diesel::sql_types::BigInt;
+use diesel::sqlite::Sqlite;
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
-
-use serde::{Deserialize, Serialize};
 
 pub const KB: u64 = 1_000;
 pub const MB: u64 = KB * 1_000;
@@ -27,8 +31,50 @@ pub enum DataUnit {
     Tebibyte,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default, Serialize, Deserialize)]
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    PartialOrd,
+    Eq,
+    Ord,
+    Default,
+    Serialize,
+    Deserialize,
+    FromSqlRow,
+    AsExpression,
+)]
+#[diesel( sql_type = BigInt)]
 pub struct DataAmount(u64);
+
+impl ToSql<BigInt, Sqlite> for DataAmount {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
+        let value: i64 = self.as_bytes().try_into().map_err(|_| {
+            Box::new(std::io::Error::new(
+                std::io::ErrorKind::InvalidInput,
+                "DataAmount too large for SQLite INTEGER",
+            ))
+        })?;
+
+        out.set_value(value);
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<BigInt, Sqlite> for DataAmount {
+    fn from_sql(
+        bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
+    ) -> deserialize::Result<Self> {
+        let value = i64::from_sql(bytes)?;
+
+        if value < 0 {
+            return Err("Negative value cannot be converted to DataAmount".into());
+        }
+
+        Ok(DataAmount(value as u64))
+    }
+}
 
 impl DataAmount {
     pub fn new(amount: f64, unit: DataUnit) -> Self {

@@ -2,14 +2,14 @@ use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetad
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use anyhow::Result;
 use crabdrive_common::storage::NodeId;
-use crabdrive_common::user::UserId;
+use crabdrive_common::uuid::UUID;
 
 pub(crate) trait NodeRepository {
     fn create_node(
         &self,
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
-        owner: UserId,
+        owner: UUID,
         node_type: crabdrive_common::storage::NodeType,
     ) -> Result<NodeEntity>;
 

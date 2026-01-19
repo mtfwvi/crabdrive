@@ -6,6 +6,7 @@ use leptos::server_fn::response::Res;
 use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::js_sys::ArrayBuffer;
 use web_sys::js_sys::Uint8Array;
+use crabdrive_common::iv::IV;
 
 pub async fn decrypt_node(
     node: EncryptedNode,
@@ -45,7 +46,7 @@ pub async fn encrypt_node(
         node_type: node.node_type,
         current_revision: node.current_revision,
         encrypted_metadata,
-        metadata_iv: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        metadata_iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
     };
 
     Ok(encrypted_node)

@@ -9,7 +9,7 @@ use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
 use crabdrive_common::storage::FileRevision;
-use uuid::Uuid;
+use crabdrive_common::storage::{NodeId, RevisionId};
 
 //TODO remove this
 pub fn get_example_revision_info() -> FileRevision {
@@ -17,7 +17,7 @@ pub fn get_example_revision_info() -> FileRevision {
 }
 
 pub async fn post_create_file(
-    Path(_parent_id): Path<Uuid>,
+    Path(_parent_id): Path<NodeId>,
     Json(_payload): Json<PostCreateFileRequest>,
 ) -> (StatusCode, Json<PostCreateFileResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostCreateFileResponse::NotFound))
@@ -32,7 +32,7 @@ pub async fn post_create_file(
 }
 
 pub async fn post_update_file(
-    Path(_file_id): Path<Uuid>,
+    Path(_file_id): Path<NodeId>,
     Json(_payload): Json<PostUpdateFileRequest>,
 ) -> (StatusCode, Json<PostUpdateFileResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostUpdateFileResponse::NotFound))
@@ -46,7 +46,7 @@ pub async fn post_update_file(
 }
 
 pub async fn post_commit_file(
-    Path((_file_id, _revision_id)): Path<(Uuid, Uuid)>,
+    Path((_file_id, _revision_id)): Path<(NodeId, RevisionId)>,
 ) -> (StatusCode, Json<PostCommitFileResponse>) {
     //(StatusCode::NOT_FOUND, Json(PostCommitFileResponse::NotFound))
     //(StatusCode::BAD_REQUEST, Json(PostCommitFileResponse::BadRequest(vec![1,2,3])))
@@ -59,7 +59,7 @@ pub async fn post_commit_file(
 }
 
 pub async fn get_file_versions(
-    Path(_file_id): Path<Uuid>,
+    Path(_file_id): Path<NodeId>,
 ) -> (StatusCode, Json<GetVersionsResponse>) {
     //TODO implement
     (StatusCode::OK, Json(GetVersionsResponse::Ok(vec![])))

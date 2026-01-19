@@ -8,5 +8,7 @@ pretty_assertions = { workspace = true }
 test-case = { workspace = true }
 
 [dependencies]
-serde = { workspace = true, features = ["derive"] }
 chrono = { workspace = true, features = ["serde"] }
+diesel = { workspace = true, features = ["sqlite"] }
+serde = { workspace = true }
+uuid = { workspace = true }

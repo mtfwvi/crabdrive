@@ -11,7 +11,11 @@ bytes = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = ["cargo"] }
 confique = { workspace = true, features = ["toml"] }
+diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "returning_clauses_for_sqlite_3_35"] }
+diesel_migrations = { workspace = true }
 dotenvy = { workspace = true }
+formatx = { workspace = true }
+libsqlite3-sys = { workspace = true }
 nanoid = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["full"] }
@@ -20,4 +24,3 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"
 tracing-appender = { workspace = true }
 
 crabdrive-common = { workspace = true }
-formatx = { workspace = true }

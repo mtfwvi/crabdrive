@@ -1,12 +1,13 @@
 use bytes::Bytes;
 use crabdrive_common::storage::ChunkIndex;
+use crabdrive_common::uuid::UUID;
 
 /// Internal storage key for a file
 pub(crate) type FileKey = String;
 
 /// Crated when starting a transfer, this acts as a handle and is needed for all subsequent operations
 /// (upload, end, abort).
-pub(crate) type TransferSessionId = u128;
+pub(crate) type TransferSessionId = UUID;
 
 pub(crate) struct FileChunk {
     pub id: ChunkIndex,
