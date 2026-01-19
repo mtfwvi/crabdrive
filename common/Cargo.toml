@@ -3,12 +3,16 @@ name = "crabdrive-common"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = []
+server = ["dep:diesel"]
+
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 test-case = { workspace = true }
 
 [dependencies]
 chrono = { workspace = true, features = ["serde"] }
-diesel = { workspace = true, features = ["sqlite"] }
+diesel = { workspace = true, features = ["sqlite"], optional = true }
 serde = { workspace = true }
 uuid = { workspace = true }

@@ -23,4 +23,4 @@ tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"] }
 tracing-appender = { workspace = true }
 
-crabdrive-common = { workspace = true }
+crabdrive-common = { workspace = true, features = ["server"] }

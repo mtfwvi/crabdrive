@@ -1,22 +1,31 @@
-use diesel::deserialize::{self, FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::Text;
-use diesel::sqlite::Sqlite;
+use crate::uuid::UUID;
+
 use serde::{Deserialize, Serialize};
 
-use crate::uuid::UUID;
+#[cfg(feature = "server")]
+use diesel::{
+    sqlite::Sqlite,
+    sql_types::Text,
+    expression::AsExpression,
+    serialize::{self, IsNull, Output, ToSql},
+    deserialize::{self, FromSql, FromSqlRow},
+};
 
 pub type UserId = UUID;
 
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, PartialEq, AsExpression, Clone)]
-#[diesel(sql_type = Text)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(
+    FromSqlRow, AsExpression
+))]
+#[cfg_attr(feature = "server", diesel(sql_type = Text))]
 pub enum UserType {
     User,
     Admin,
     Restricted,
 }
 
+#[cfg(feature = "server")]
 impl ToSql<Text, Sqlite> for UserType {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         let value = match self {
@@ -30,6 +39,7 @@ impl ToSql<Text, Sqlite> for UserType {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<Text, Sqlite> for UserType {
     fn from_sql(
         bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,

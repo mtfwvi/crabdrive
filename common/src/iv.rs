@@ -1,15 +1,23 @@
-use diesel::backend::Backend;
-use diesel::deserialize::FromSqlRow;
-use diesel::deserialize::{self, FromSql};
-use diesel::expression::AsExpression;
-use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::Binary;
-use diesel::sqlite::Sqlite;
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "server")]
 use std::convert::TryInto;
 
-#[derive(Debug, Clone, Copy, FromSqlRow, Serialize, Deserialize, PartialEq, AsExpression)]
-#[diesel(sql_type = Binary)]
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "server")]
+use diesel::{
+    sqlite::Sqlite,
+    sql_types::Binary,
+    expression::AsExpression,
+    serialize::{self, IsNull, Output, ToSql},
+    deserialize::{self, FromSql, FromSqlRow},
+};
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(
+    FromSqlRow, AsExpression
+))]
+#[cfg_attr(feature = "server", diesel(sql_type = Binary))]
 pub struct IV([u8; 12]);
 
 impl IV {
@@ -30,6 +38,7 @@ impl IV {
     }
 }
 
+#[cfg(feature = "server")]
 impl ToSql<Binary, Sqlite> for IV {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         out.set_value(self.0.as_slice());
@@ -37,12 +46,11 @@ impl ToSql<Binary, Sqlite> for IV {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<Binary, Sqlite> for IV {
-    fn from_sql(bytes: <Sqlite as Backend>::RawValue<'_>) -> deserialize::Result<Self> {
+    fn from_sql(bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>) -> deserialize::Result<Self> {
         let bytes_vec = Vec::<u8>::from_sql(bytes)?;
-
         let array: [u8; 12] = bytes_vec.try_into().map_err(|_| "IV not 12 bytes")?;
-
         Ok(IV(array))
     }
 }

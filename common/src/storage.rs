@@ -1,23 +1,33 @@
-use diesel::deserialize::{self, FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::Text;
-use diesel::sqlite::Sqlite;
-use serde::{Deserialize, Serialize};
-
 use crate::iv::IV;
 use crate::uuid::UUID;
 
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "server")]
+use diesel::{
+    sqlite::Sqlite,
+    sql_types::Text,
+    expression::AsExpression,
+    serialize::{self, IsNull, Output, ToSql},
+    deserialize::{self, FromSql, FromSqlRow},
+};
+
 /// Unique ID (UUID) for a single node within the file tree
 pub type NodeId = UUID;
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression, Clone)]
-#[diesel(sql_type = Text)]
+
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(
+    FromSqlRow, AsExpression
+))]
+#[cfg_attr(feature = "server", diesel(sql_type = Text))]
 pub enum NodeType {
     Folder,
     File,
     Link,
 }
 
+#[cfg(feature = "server")]
 impl ToSql<Text, Sqlite> for NodeType {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         let value = match self {
@@ -31,6 +41,7 @@ impl ToSql<Text, Sqlite> for NodeType {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<Text, Sqlite> for NodeType {
     fn from_sql(
         bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
