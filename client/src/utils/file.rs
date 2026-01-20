@@ -75,12 +75,24 @@ fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
     Blob::new_with_u8_array_sequence(&buffers_js).unwrap()
 }
 
+
+fn combine_chunks2(buffers: Vec<Uint8Array>) -> Result<Blob, JsValue> {
+    let buffers_js = Array::new();
+
+    buffers.iter().for_each(|buffer| {
+        buffers_js.push(buffer);
+    });
+
+    // this failing does not seem recoverable and should not be possible with correctly typed objects
+    Blob::new_with_u8_array_sequence(&buffers_js)
+}
+
 mod test {
-    use crate::utils::file::combine_chunks;
+    use crate::utils::file::combine_chunks2;
     use wasm_bindgen_futures::JsFuture;
-    use wasm_bindgen_test::wasm_bindgen_test;
-    use web_sys::js_sys::Uint8Array;
-    
+    use wasm_bindgen_test::wasm_bindgen_test;    
+    use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
+
     #[wasm_bindgen_test]
     async fn test_combine_chunks() {
         let mut vec1 = vec![1, 2, 3];
@@ -89,7 +101,12 @@ mod test {
         let part1 = Uint8Array::new_from_slice(&vec1);
         let part2 = Uint8Array::new_from_slice(&vec2);
 
-        let combined = combine_chunks(vec![part1, part2]);
+        //let buffers = Array::new();
+        //buffers.push(&part1);
+        //buffers.push(&part2);
+    
+
+        let combined = combine_chunks2(vec![part1, part2]).unwrap();
         let combined = JsFuture::from(combined.array_buffer()).await.unwrap();
         let combined = Uint8Array::from(combined);
         let combined_vec = combined.to_vec();

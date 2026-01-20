@@ -12,6 +12,12 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_web::{performance_layer, MakeWebConsoleWriter};
 
+#[cfg(test)]
+use wasm_bindgen_test::wasm_bindgen_test_configure;
+
+#[cfg(test)]
+wasm_bindgen_test_configure!(run_in_browser);
+
 fn main() {
     console_error_panic_hook::set_once();
 
