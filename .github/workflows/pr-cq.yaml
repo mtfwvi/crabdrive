@@ -101,3 +101,36 @@ jobs:
               run: |
                   cd ./client
                   trunk build --release --verbose
+    test-wasm-bindgen:
+        name: Run wasm-bindgen-test
+        permissions:
+            contents: read
+            pull-requests: read
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Detect changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      client:
+                      - 'client/**'
+                      - 'common/**'
+                      - 'Cargo.toml'
+                      - 'Cargo.lock'
+                      - 'Trunk.toml'
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
+              if: steps.filter.outputs.client == 'true'
+              with:
+                  target: wasm32-unknown-unknown
+            - name: Install wasm-pack
+              run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+            - run: wasm-pack test --headless --chrome
+            - run: wasm-pack test --headless --firefox
