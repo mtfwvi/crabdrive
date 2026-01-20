@@ -1,15 +1,16 @@
 pub(crate) mod components;
-mod model;
+pub(crate) mod model;
 pub(crate) mod pages;
 pub(crate) mod requests;
 pub(crate) mod utils;
+pub(crate) mod constants;
 
 use leptos::prelude::*;
 use pages::demo_page::DemoPage;
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-use tracing_web::{MakeWebConsoleWriter, performance_layer};
+use tracing_web::{performance_layer, MakeWebConsoleWriter};
 
 fn main() {
     console_error_panic_hook::set_once();

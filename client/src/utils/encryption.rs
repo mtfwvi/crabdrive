@@ -1,11 +1,36 @@
+use std::str::FromStr;
 use crate::model::encryption::EncryptionKey;
 use crate::model::node::DecryptedNode;
-use crate::utils::file::ChunkInfo;
+use crate::utils::file::{DecryptedChunk, EncryptedChunk};
 use crabdrive_common::iv::IV;
-use crabdrive_common::storage::EncryptedNode;
-use wasm_bindgen::JsValue;
+use crabdrive_common::storage::{ChunkIndex, EncryptedNode};
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::js_sys::ArrayBuffer;
-use web_sys::js_sys::Uint8Array;
+use wasm_bindgen_futures::JsFuture;
+use web_sys::js_sys::{Array, JsString, Uint8Array};
+use web_sys::{CryptoKey, SubtleCrypto};
+
+fn get_subtle_crypto() -> SubtleCrypto {
+    web_sys::window().unwrap().crypto().unwrap().subtle()
+}
+
+async fn get_key_from_bytes(key: EncryptionKey) -> CryptoKey {
+    let format = "raw";
+    let key_data = Uint8Array::new_from_slice(&key);
+    let algorithm = "AES-GCM";
+    let extractable = false;
+    let key_usage = Array::new();
+    key_usage.push(&JsString::from_str("encrypt").unwrap());
+    key_usage.push(&JsString::from_str("decrypt").unwrap());
+
+    JsFuture::from(get_subtle_crypto().import_key_with_str(
+        format,
+        &key_data,
+        algorithm,
+        extractable,
+        &key_usage
+    ).unwrap()).await.unwrap().dyn_into().unwrap()
+}
 
 pub async fn decrypt_node(
     node: EncryptedNode,
@@ -51,10 +76,67 @@ pub async fn encrypt_node(
     Ok(encrypted_node)
 }
 
-pub async fn decrypt_chunk(chunk: ChunkInfo, key: EncryptionKey) -> Result<ArrayBuffer, JsValue> {
-    Ok(chunk.chunk)
+pub async fn decrypt_chunk(
+    chunk: &EncryptedChunk,
+    key: EncryptionKey,
+) -> Result<DecryptedChunk, JsValue> {
+    let subtle_crypto  = get_subtle_crypto();
+
+
+    //TODO actual encryption
+    Ok(DecryptedChunk {
+        chunk: chunk.chunk.clone(),
+        index: chunk.index,
+        first_block: chunk.first_block,
+        last_block: chunk.last_block,
+    })
 }
 
-pub async fn encrypt_chunk(chunk: ChunkInfo, key: EncryptionKey) -> Result<Uint8Array, JsValue> {
-    Ok(Uint8Array::new(&chunk.chunk))
+pub async fn encrypt_chunk(
+    chunk: &DecryptedChunk,
+    key: EncryptionKey,
+) -> Result<EncryptedChunk, JsValue> {
+     //TODO actual encryption
+
+    Ok(EncryptedChunk {
+        chunk: chunk.chunk.clone(),
+        index: chunk.index,
+        first_block: chunk.first_block,
+        last_block: chunk.last_block,
+
+        iv_prefix: IV::new([0,0,0,0,0,0,0,0,0,0,0,0]),
+    })
+}
+
+mod test {
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use web_sys::js_sys::Uint8Array;
+    use crate::constants::EMPTY_KEY;
+    use crate::model::encryption::EncryptionKey;
+    use crate::utils::encryption::{decrypt_chunk, encrypt_chunk, get_key_from_bytes};
+    use crate::utils::file::DecryptedChunk;
+
+    #[wasm_bindgen_test]
+    async fn test_get_key_from_bytes() {
+        get_key_from_bytes(EncryptionKey::default()).await;
+    }
+    #[wasm_bindgen_test]
+    async fn test_encrypt_decrypt_chunk() {
+        let example_buffer = vec![1,2,3,4,5,6,7,8,9];
+
+        let chunk = DecryptedChunk {
+            chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
+            index: 0,
+            first_block: false,
+            last_block: false,
+        };
+
+        let encrypted_chunk = encrypt_chunk(&chunk, EMPTY_KEY).await.unwrap();
+
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, EMPTY_KEY).await.unwrap();
+
+        let decrypted_chunk_array = Uint8Array::new(&decrypted_chunk.chunk).to_vec();
+
+        assert_eq!(example_buffer, decrypted_chunk_array);
+    }
 }

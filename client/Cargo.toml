@@ -10,7 +10,7 @@ thaw = { workspace = true, features = ["csr"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-web = { workspace = true }
-web-sys = { workspace = true, features = ["Request", "RequestInit", "RequestMode", "Response", "Window", "Blob", "ProgressEvent", "EventTarget"] }
+web-sys = { workspace = true, features = ["Request", "RequestInit", "RequestMode", "Response", "Window", "Blob", "SubtleCrypto", "Crypto", "CryptoKey"] }
 wasm-bindgen-futures = { workspace = true }
 wasm-bindgen = { workspace = true }
 crabdrive-common = { workspace = true }

@@ -2,17 +2,27 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
+use crabdrive_common::iv::IV;
+use crabdrive_common::storage::ChunkIndex;
 
-pub struct ChunkInfo {
+pub struct DecryptedChunk {
     pub chunk: ArrayBuffer,
-    pub block: u32,
+    pub index: ChunkIndex,
     pub first_block: bool,
     pub last_block: bool,
 }
 
+pub struct EncryptedChunk {
+    pub chunk: ArrayBuffer,
+    pub index: ChunkIndex,
+    pub first_block: bool,
+    pub last_block: bool,
+    pub iv_prefix: IV
+}
+
 async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where
-    F: Fn(ChunkInfo) -> Fut,
+    F: Fn(DecryptedChunk) -> Fut,
     Fut: Future<Output = Result<(), JsValue>>,
 {
     const CHUNK_SIZE: f64 = 1024.0 * 1024.0 * 16.0;
@@ -37,9 +47,9 @@ where
         let first_block = block == 1;
         let last_block = offset >= file_size;
 
-        let chunk_info = ChunkInfo {
+        let chunk_info = DecryptedChunk {
             chunk: buffer,
-            block,
+            index: block,
             first_block,
             last_block,
         };
@@ -70,7 +80,7 @@ mod test {
     use wasm_bindgen_futures::JsFuture;
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::js_sys::Uint8Array;
-
+    
     #[wasm_bindgen_test]
     async fn test_combine_chunks() {
         let mut vec1 = vec![1, 2, 3];
