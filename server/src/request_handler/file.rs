@@ -2,6 +2,7 @@ use crate::request_handler::node::get_example_node_info;
 use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
+use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
 };
@@ -10,10 +11,18 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{NodeId, RevisionId};
+use crabdrive_common::storage::NodeType::File;
+use crabdrive_common::uuid::UUID;
 
 //TODO remove this
 pub fn get_example_revision_info() -> FileRevision {
-    todo!()
+    FileRevision {
+        id: UUID::random(),
+        upload_ended_on: None,
+        upload_started_on: Default::default(),
+        iv: IV::new([0,0,0,0,0,0,0,0,0,0,0,0]),
+        chunk_count: 0,
+    }
 }
 
 pub async fn post_create_file(
