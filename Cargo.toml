@@ -22,7 +22,7 @@ clap = "4.5.54"
 confique = { version = "0.4.0", git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options" }
 console_error_panic_hook = "0.1.7"
 crabdrive-common = { path = "common" }
-diesel = { version = "=2.2.0", default-features = false }
+diesel = { version = "=2.2.12", default-features = false }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"
 leptos = "=0.8.3"
