@@ -1,12 +1,17 @@
-use diesel::deserialize::{self, FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::serialize::{self, IsNull, Output, ToSql};
-use diesel::sql_types::BigInt;
-use diesel::sqlite::Sqlite;
-use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::iter::Sum;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "server")]
+use diesel::{
+    deserialize::{self, FromSql, FromSqlRow},
+    expression::AsExpression,
+    serialize::{self, IsNull, Output, ToSql},
+    sql_types::BigInt,
+    sqlite::Sqlite,
+};
 
 pub const KB: u64 = 1_000;
 pub const MB: u64 = KB * 1_000;
@@ -31,23 +36,12 @@ pub enum DataUnit {
     Tebibyte,
 }
 
-#[derive(
-    Debug,
-    Clone,
-    Copy,
-    PartialEq,
-    PartialOrd,
-    Eq,
-    Ord,
-    Default,
-    Serialize,
-    Deserialize,
-    FromSqlRow,
-    AsExpression,
-)]
-#[diesel( sql_type = BigInt)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "server", diesel(sql_type = BigInt))]
 pub struct DataAmount(u64);
 
+#[cfg(feature = "server")]
 impl ToSql<BigInt, Sqlite> for DataAmount {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Sqlite>) -> serialize::Result {
         let value: i64 = self.as_bytes().try_into().map_err(|_| {
@@ -62,6 +56,7 @@ impl ToSql<BigInt, Sqlite> for DataAmount {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<BigInt, Sqlite> for DataAmount {
     fn from_sql(
         bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
@@ -215,42 +210,41 @@ impl fmt::Display for DataAmount {
 #[macro_export]
 macro_rules! da {
     ($val:expr) => {
-        DataAmount::new($val as f64, DataUnit::Byte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Byte)
     };
 
     ($val:literal B) => {
-        DataAmount::new($val as f64, DataUnit::Byte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Byte)
     };
     ($val:literal KB) => {
-        DataAmount::new($val as f64, DataUnit::Kilobyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Kilobyte)
     };
     ($val:literal MB) => {
-        DataAmount::new($val as f64, DataUnit::Megabyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Megabyte)
     };
     ($val:literal GB) => {
-        DataAmount::new($val as f64, DataUnit::Gigabyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Gigabyte)
     };
     ($val:literal TB) => {
-        DataAmount::new($val as f64, DataUnit::Terabyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Terabyte)
     };
 
     ($val:literal KiB) => {
-        DataAmount::new($val as f64, DataUnit::Kibibyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Kibibyte)
     };
     ($val:literal MiB) => {
-        DataAmount::new($val as f64, DataUnit::Mebibyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Mebibyte)
     };
     ($val:literal GiB) => {
-        DataAmount::new($val as f64, DataUnit::Gibibyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Gibibyte)
     };
     ($val:literal TiB) => {
-        DataAmount::new($val as f64, DataUnit::Tebibyte)
+        $crate::data::DataAmount::new($val as f64, $crate::data::DataUnit::Tebibyte)
     };
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::data::{DataAmount, DataUnit};
     use pretty_assertions::assert_eq;
     use test_case::test_case;
 
