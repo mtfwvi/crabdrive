@@ -3,16 +3,22 @@ name: "Setup Rust Environment"
 description: "Checkout code and install Rust toolchain"
 
 inputs:
-  toolchain:
-    description: "Rust toolchain version"
-    required: false
-    default: "1.85.0"
+    toolchain:
+        description: "Rust toolchain version"
+        required: false
+        default: "1.85.0"
+    target:
+        description: "Target to compile to"
+        required: false
+        default: ""
 
 runs:
-  using: "composite"
-  steps:
-    - name: Install Rust
-      uses: actions-rust-lang/setup-rust-toolchain@v1
-      with:
-        toolchain: ${{ inputs.toolchain }}
-        components: clippy, rustfmt
+    using: "composite"
+    steps:
+        - name: Install Rust
+          uses: actions-rust-lang/setup-rust-toolchain@v1
+          with:
+              target: ${{ inputs.target }}
+              toolchain: ${{ inputs.toolchain }}
+              components: clippy, rustfmt
+              cache-on-failure: true
