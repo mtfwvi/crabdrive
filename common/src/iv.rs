@@ -65,6 +65,7 @@ impl FromSql<Binary, Sqlite> for IV {
     }
 }
 
+#[cfg(test)]
 mod test {
     use crate::iv::IV;
 

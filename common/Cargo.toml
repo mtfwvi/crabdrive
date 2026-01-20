@@ -16,3 +16,4 @@ chrono = { workspace = true, features = ["serde"] }
 diesel = { workspace = true, features = ["sqlite"], optional = true }
 serde = { workspace = true }
 uuid = { workspace = true }
+wasm-bindgen-test = "0.3.58"

@@ -56,7 +56,7 @@ async fn request(
         url.search_params().append(&key, &value);
     }
 
-    let request = Request::new_with_str_and_init(&url.as_string().unwrap(), &opts)?;
+    let request = Request::new_with_str_and_init(&url.to_string().as_string().unwrap(), &opts)?;
 
     match &body {
         RequestBody::Empty => {}
@@ -99,6 +99,7 @@ async fn uint8array_from_response(response: Response) -> Result<Uint8Array, JsVa
     Ok(array)
 }
 
+#[cfg(test)]
 mod test {
     use serde::{Deserialize, Serialize};
     use wasm_bindgen_test::wasm_bindgen_test;
@@ -132,13 +133,13 @@ mod test {
     #[wasm_bindgen_test]
     async fn test_request_2() {
         let example_post = Post {
-            userId: 69,
-            id: 1234,
-            body: "test".to_string(),
-            title: "nice".to_string(),
+            userId: 1,
+            id: 1,
+            body: "rust".to_string(),
+            title: "hello".to_string(),
         };
 
-        let url = "https://jsonplaceholder.typicode.com/posts";
+        let url = "https://jsonplaceholder.typicode.com/posts/1";
         let method = RequestMethod::PUT;
         let body = RequestBody::Json(serde_json::to_string(&example_post).unwrap());
         let query_parameters = vec![];

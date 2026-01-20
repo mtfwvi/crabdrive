@@ -1,9 +1,9 @@
+use crabdrive_common::iv::IV;
+use crabdrive_common::storage::ChunkIndex;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
-use crabdrive_common::iv::IV;
-use crabdrive_common::storage::ChunkIndex;
 
 pub struct DecryptedChunk {
     pub chunk: ArrayBuffer,
@@ -71,27 +71,16 @@ fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
         buffers_js.push(buffer);
     });
 
-    // this failing does not seem recoverable and should not be possible with correctly typed objects
     Blob::new_with_u8_array_sequence(&buffers_js).unwrap()
 }
 
-
-fn combine_chunks2(buffers: Vec<Uint8Array>) -> Result<Blob, JsValue> {
-    let buffers_js = Array::new();
-
-    buffers.iter().for_each(|buffer| {
-        buffers_js.push(buffer);
-    });
-
-    // this failing does not seem recoverable and should not be possible with correctly typed objects
-    Blob::new_with_u8_array_sequence(&buffers_js)
-}
-
+#[cfg(test)]
 mod test {
-    use crate::utils::file::combine_chunks2;
+    use wasm_bindgen::JsCast;
+    use crate::utils::file::combine_chunks;
     use wasm_bindgen_futures::JsFuture;
-    use wasm_bindgen_test::wasm_bindgen_test;    
-    use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use web_sys::js_sys::{ArrayBuffer, Uint8Array};
 
     #[wasm_bindgen_test]
     async fn test_combine_chunks() {
@@ -101,14 +90,10 @@ mod test {
         let part1 = Uint8Array::new_from_slice(&vec1);
         let part2 = Uint8Array::new_from_slice(&vec2);
 
-        //let buffers = Array::new();
-        //buffers.push(&part1);
-        //buffers.push(&part2);
-    
+        let combined = combine_chunks(vec![part1, part2]);
+        let combined: ArrayBuffer = JsFuture::from(combined.array_buffer()).await.unwrap().dyn_into().unwrap();
 
-        let combined = combine_chunks2(vec![part1, part2]).unwrap();
-        let combined = JsFuture::from(combined.array_buffer()).await.unwrap();
-        let combined = Uint8Array::from(combined);
+        let combined = Uint8Array::new(&combined);
         let combined_vec = combined.to_vec();
 
         vec1.append(&mut vec2);

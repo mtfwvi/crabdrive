@@ -108,6 +108,7 @@ pub async fn encrypt_chunk(
     })
 }
 
+#[cfg(test)]
 mod test {
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::js_sys::Uint8Array;
