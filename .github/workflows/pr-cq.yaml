@@ -124,6 +124,7 @@ jobs:
                       - 'Cargo.toml'
                       - 'Cargo.lock'
                       - 'Trunk.toml'
+            
             - name: Setup Rust
               uses: ./.github/actions/setup-rust
               if: steps.filter.outputs.client == 'true'
@@ -132,7 +133,14 @@ jobs:
             - name: Install wasm-pack
               run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
+            - name: Setup Chrome
+              uses: browser-actions/setup-chrome@v2
+              
             - name: Test on Chrome
               run: wasm-pack test --headless --chrome client
+
+            - name: Setup Firefox
+              uses: browser-actions/setup-firefox@v1
+            
             - name: Test on Firefox
               run: wasm-pack test --headless --firefox client
