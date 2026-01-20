@@ -2,60 +2,102 @@
 name: Code Quality (PR)
 
 on:
-  workflow_dispatch:
-  pull_request:
-    types: [ opened, synchronize, reopened, ready_for_review ]
-    paths-ignore:
-      - "docs/**"
-      - ".github/**"
-      - "README.md"
-      - "CONTRIBUTING.md"
-      - ".devcontainer/**"
-      - "Dockerfile"
+    workflow_dispatch:
+    pull_request:
+        types: [opened, synchronize, reopened, ready_for_review]
+        paths-ignore:
+            - "docs/**"
+            - ".github/**"
+            - "README.md"
+            - "CONTRIBUTING.md"
+            - ".devcontainer/**"
+            - "Dockerfile"
 
 env:
-  CARGO_TERM_COLOR: always
+    CARGO_TERM_COLOR: always
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+    group: ${{ github.workflow }}-${{ github.ref }}
+    cancel-in-progress: true
 
 jobs:
-  check-formatted:
-    name: Check formatting
-    runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'pull_request' || !github.event.pull_request.draft
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    check-formatted:
+        name: Check formatting
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: ./.github/actions/setup-rust
-        with:
-          toolchain: nightly
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
+              with:
+                  toolchain: nightly
 
-      - name: rs-fmt-check
-        uses: clechasseur/rs-fmt-check@v3.0.1
+            - name: rs-fmt-check
+              uses: clechasseur/rs-fmt-check@v3.0.1
 
-      - name: leptosfmt-check
-        uses: LesnyRumcajs/leptosfmt-action@v0.1.0
+            - name: leptosfmt-check
+              uses: LesnyRumcajs/leptosfmt-action@v0.1.0
 
-  check-build:
-    name: Check build
-    runs-on: ubuntu-latest
-    if: >
-      github.event_name != 'pull_request' || !github.event.pull_request.draft
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+    check-build:
+        name: Check build
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: ./.github/actions/setup-rust
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
 
-      - name: Check for linter errors / warnings
-        run: cargo clippy --all-targets --all-features
+            - name: Check for linter errors / warnings
+              run: cargo clippy --all-targets --all-features
 
-      - name: Run tests
-        shell: bash
-        run: cargo test --all-features --all-targets --no-fail-fast
+            - name: Run tests
+              shell: bash
+              run: cargo test --all-features --all-targets --no-fail-fast
+
+    check-client-build:
+        name: Check client build
+        permissions:
+            contents: read
+            pull-requests: read
+        runs-on: ubuntu-latest
+        if: >
+            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Detect changes
+              uses: dorny/paths-filter@v3
+              id: filter
+              with:
+                  filters: |
+                      client:
+                      - 'client/**'
+                      - 'common/**'
+                      - 'Cargo.toml'
+                      - 'Cargo.lock'
+                      - 'Trunk.toml'
+
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
+              if: steps.filter.outputs.client == 'true'
+              with:
+                  target: wasm32-unknown-unknown
+
+            - name: Install Trunk
+              uses: jetli/trunk-action@v0.5.0
+              if: steps.filter.outputs.client == 'true'
+              with:
+                  version: "latest"
+
+            - name: Build with Trunk
+              if: steps.filter.outputs.client == 'true'
+              run: |
+                  cd ./client
+                  trunk build --release --verbose
