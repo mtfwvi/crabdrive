@@ -26,6 +26,10 @@ impl UUID {
     pub fn random() -> Self {
         Self(uuid::Uuid::new_v4())
     }
+
+    pub fn nil() -> Self {
+        Self(uuid::Uuid::nil())
+    }
 }
 
 // Allow easy conversion from UUID to the wanted uuid::Uuid
