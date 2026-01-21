@@ -16,7 +16,7 @@ pub struct MetadataV1 {
     pub last_modified: NaiveDateTime,
     pub created: NaiveDateTime,
     pub size: Option<DataAmount>,
-    pub mime_type: String,
+    pub mime_type: Option<String>,
 
     /// used to encrypt chunks
     pub file_key: Option<EncryptionKey>,
@@ -35,4 +35,5 @@ pub struct DecryptedNode {
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
     pub metadata: NodeMetadata,
+    pub encryption_key: EncryptionKey,
 }

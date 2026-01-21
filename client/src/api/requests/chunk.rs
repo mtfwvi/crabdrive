@@ -1,4 +1,4 @@
-use crate::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
+use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use formatx::formatx;
 use wasm_bindgen::JsValue;

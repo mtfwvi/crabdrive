@@ -1,4 +1,4 @@
-use crate::requests::{RequestBody, RequestMethod, request, string_from_response};
+use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;

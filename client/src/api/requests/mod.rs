@@ -101,7 +101,7 @@ async fn uint8array_from_response(response: Response) -> Result<Uint8Array, JsVa
 
 #[cfg(test)]
 mod test {
-    use crate::requests::{RequestBody, RequestMethod, request, string_from_response};
+    use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
     use serde::{Deserialize, Serialize};
     use wasm_bindgen_test::wasm_bindgen_test;
 

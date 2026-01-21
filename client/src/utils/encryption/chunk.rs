@@ -21,7 +21,7 @@ fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
 
 pub async fn decrypt_chunk(
     chunk: &EncryptedChunk,
-    key: EncryptionKey,
+    key: &EncryptionKey,
 ) -> Result<DecryptedChunk, JsValue> {
     let subtle_crypto = encryption::get_subtle_crypto();
     let key = encryption::get_key_from_bytes(key).await;
@@ -50,7 +50,7 @@ pub async fn decrypt_chunk(
 
 pub async fn encrypt_chunk(
     chunk: &DecryptedChunk,
-    key: EncryptionKey,
+    key: &EncryptionKey,
     iv_prefix: IV,
 ) -> Result<EncryptedChunk, JsValue> {
     let subtle_crypto = encryption::get_subtle_crypto();

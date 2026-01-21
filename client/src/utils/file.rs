@@ -5,7 +5,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DecryptedChunk {
     pub chunk: ArrayBuffer,
     pub index: ChunkIndex,
@@ -22,9 +22,9 @@ pub struct EncryptedChunk {
     pub iv_prefix: IV,
 }
 
-async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
+pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where
-    F: Fn(DecryptedChunk) -> Fut,
+    F: Fn(&DecryptedChunk) -> Fut,
     Fut: Future<Output = Result<(), JsValue>>,
 {
     const CHUNK_SIZE: f64 = 1024.0 * 1024.0 * 16.0;
@@ -55,7 +55,7 @@ where
             last_block,
         };
 
-        handle_chunk(chunk_info).await?;
+        handle_chunk(&chunk_info).await?;
 
         if last_block || buffer_size == 0 {
             break;
