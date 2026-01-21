@@ -5,12 +5,12 @@ use crabdrive_common::storage::{FileRevision, NodeId, NodeType};
 use crabdrive_common::user::UserId;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum NodeMetadata {
     V1(MetadataV1),
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct MetadataV1 {
     pub name: String,
     pub last_modified: NaiveDateTime,
@@ -25,7 +25,7 @@ pub struct MetadataV1 {
     pub children_key: Vec<ChildKey>,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
 pub struct DecryptedNode {
     pub id: NodeId,
     pub change_count: u64,

@@ -65,7 +65,7 @@ pub type ChunkIndex = u32;
 pub type MetadataIv = IV;
 pub type RevisionIv = IV;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EncryptedNode {
     pub id: NodeId,
     pub change_count: u64,
@@ -78,7 +78,7 @@ pub struct EncryptedNode {
     pub metadata_iv: MetadataIv,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct FileRevision {
     pub id: RevisionId,
     pub upload_ended_on: Option<NaiveDateTime>,
