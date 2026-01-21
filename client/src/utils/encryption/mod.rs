@@ -18,6 +18,8 @@ fn get_subtle_crypto() -> SubtleCrypto {
     web_sys::window().unwrap().crypto().unwrap().subtle()
 }
 
+/// The byte in the authenticated data that indicates the start and end of files to prevent
+/// truncating by the server
 fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
     match (first_chunk, last_chunk) {
         (true, false) => 1, // start chunk
@@ -50,8 +52,21 @@ pub async fn decrypt_node(
     node: EncryptedNode,
     key: EncryptionKey,
 ) -> Result<DecryptedNode, JsValue> {
-    //TODO do actual decryption
-    let decrypted_metadata = serde_json::from_slice(node.encrypted_metadata.as_slice()).unwrap();
+    let encrypted_metadata = Uint8Array::new_from_slice(&node.encrypted_metadata);
+
+    let subtle_crypto  = get_subtle_crypto();
+    let key = get_key_from_bytes(key).await;
+
+    let iv_bytes = node.metadata_iv;
+    let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
+    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
+
+    let decrypted_arraybuffer_promise = subtle_crypto.decrypt_with_object_and_buffer_source(&algorithm, &key, &encrypted_metadata)?;
+    let decrypted_arraybuffer: ArrayBuffer = JsFuture::from(decrypted_arraybuffer_promise).await?.dyn_into()?;
+    let decrypted_array = Uint8Array::new(&decrypted_arraybuffer);
+    let decrypted_metadata = decrypted_array.to_vec();
+
+    let metadata = serde_json::from_slice(&decrypted_metadata).unwrap();
 
     let decrypted_node = DecryptedNode {
         id: node.id,
@@ -61,7 +76,7 @@ pub async fn decrypt_node(
         deleted_on: node.deleted_on,
         node_type: node.node_type,
         current_revision: node.current_revision,
-        metadata: decrypted_metadata,
+        metadata,
     };
 
     Ok(decrypted_node)
@@ -71,9 +86,22 @@ pub async fn encrypt_node(
     node: DecryptedNode,
     key: EncryptionKey,
 ) -> Result<EncryptedNode, JsValue> {
-    //TODO do actual encryption
+    let decrypted_metadata = serde_json::to_vec(&node.metadata).unwrap();
+    let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
 
-    let encrypted_metadata = serde_json::to_vec(&node.metadata).unwrap();
+    let iv: [u8; 12] = random::get_random_bytes(12).try_into().unwrap();
+
+
+    let subtle_crypto  = get_subtle_crypto();
+    let key = get_key_from_bytes(key).await;
+
+    let iv_bytes_array = Uint8Array::new_from_slice(&iv);
+    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
+
+    let encrypted_arraybuffer_promise = subtle_crypto.encrypt_with_object_and_buffer_source(&algorithm, &key, &decrypted_metadata_array)?;
+    let encrypted_arraybuffer: ArrayBuffer = JsFuture::from(encrypted_arraybuffer_promise).await?.dyn_into()?;
+    let encrypted_array = Uint8Array::new(&encrypted_arraybuffer);
+    let encrypted_metadata = encrypted_array.to_vec();
 
     let encrypted_node = EncryptedNode {
         id: node.id,
@@ -84,7 +112,7 @@ pub async fn encrypt_node(
         node_type: node.node_type,
         current_revision: node.current_revision,
         encrypted_metadata,
-        metadata_iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+        metadata_iv: IV::new(iv),
     };
 
     Ok(encrypted_node)
@@ -169,8 +197,8 @@ mod test {
 
         let chunk = DecryptedChunk {
             chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
-            index: 0,
-            first_block: false,
+            index: 1,
+            first_block: true,
             last_block: false
         };
 
@@ -182,6 +210,31 @@ mod test {
 
         assert_eq!(example_buffer, decrypted_chunk_array);
     }
+
+
+
+    #[wasm_bindgen_test]
+    async fn test_truncate_chunk() {
+        let example_buffer = vec![1,2,3,4,5,6,7,8,9];
+
+        let chunk = DecryptedChunk {
+            chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
+            index: 2,
+            first_block: false,
+            last_block: false
+        };
+
+        let mut encrypted_chunk = encrypt_chunk(&chunk, EMPTY_KEY, IV::new([1,2,3,4,5,6,7,8,9,10,11,12])).await.expect("encrypt chunk");
+        
+        // server tries to truncate first block 
+        encrypted_chunk.index = 1;
+        encrypted_chunk.first_block = true;
+
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, EMPTY_KEY).await;
+        
+        assert!(decrypted_chunk.is_err())
+    }
+
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_node() {
