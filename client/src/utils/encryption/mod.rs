@@ -37,15 +37,14 @@ async fn get_key_from_bytes(key: &EncryptionKey) -> CryptoKey {
 mod test {
     use crate::constants::EMPTY_KEY;
     use crate::model::encryption::EncryptionKey;
-    use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
+    use crate::model::node::{MetadataV1, NodeMetadata};
     use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
     use crate::utils::encryption::get_key_from_bytes;
-    use crate::utils::encryption::node::{decrypt_metadata, decrypt_node, encrypt_metadata};
+    use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
     use crate::utils::file::DecryptedChunk;
     use chrono::NaiveDateTime;
     use crabdrive_common::iv::IV;
-    use crabdrive_common::storage::NodeId;
-    use crabdrive_common::user::UserId;
+
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::js_sys::Uint8Array;
 
@@ -113,19 +112,18 @@ mod test {
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_metadata() {
         let example_metadata = NodeMetadata::V1(MetadataV1 {
-                name: "hello.txt".to_string(),
-                last_modified: NaiveDateTime::default(),
-                created: NaiveDateTime::default(),
-                size: None,
-                mime_type: Some("txt".to_string()),
-                file_key: None,
-                children_key: vec![],
+            name: "hello.txt".to_string(),
+            last_modified: NaiveDateTime::default(),
+            created: NaiveDateTime::default(),
+            size: None,
+            mime_type: Some("txt".to_string()),
+            file_key: None,
+            children_key: vec![],
         });
 
         let encrypted_metadata = encrypt_metadata(&example_metadata, &EMPTY_KEY)
             .await
             .expect("could not encrypt node");
-
 
         let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &EMPTY_KEY)
             .await

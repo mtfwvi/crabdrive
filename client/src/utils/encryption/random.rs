@@ -1,6 +1,6 @@
+use crate::model::encryption::EncryptionKey;
 use wasm_bindgen::JsCast;
 use web_sys::js_sys::Uint8Array;
-use crate::model::encryption::EncryptionKey;
 
 pub fn get_random_bytes(count: u32) -> Vec<u8> {
     let window = web_sys::window().expect("window does not exist");
@@ -25,7 +25,9 @@ pub fn get_random_encryption_key() -> EncryptionKey {
 
 #[cfg(test)]
 mod test {
-    use crate::utils::encryption::random::{get_random_bytes, get_random_encryption_key, get_random_iv};
+    use crate::utils::encryption::random::{
+        get_random_bytes, get_random_encryption_key, get_random_iv,
+    };
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]

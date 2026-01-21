@@ -1,5 +1,5 @@
 use crate::constants::AES_GCM;
-use crate::model::encryption::{DecryptedMetadata, EncryptedMetadata, EncryptionKey};
+use crate::model::encryption::{EncryptedMetadata, EncryptionKey};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption;
 use crate::utils::encryption::random;
@@ -16,7 +16,7 @@ pub async fn decrypt_node(
 ) -> Result<DecryptedNode, JsValue> {
     let encrypted_metadata = EncryptedMetadata {
         data: node.encrypted_metadata,
-        iv: node.metadata_iv
+        iv: node.metadata_iv,
     };
 
     let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &key).await?;
@@ -30,7 +30,7 @@ pub async fn decrypt_node(
         node_type: node.node_type,
         current_revision: node.current_revision,
         metadata: decrypted_metadata,
-        encryption_key: key
+        encryption_key: key,
     };
 
     Ok(decrypted_node)
@@ -67,7 +67,7 @@ pub async fn decrypt_metadata(
 
 pub async fn encrypt_metadata(
     metadata: &NodeMetadata,
-    key: &EncryptionKey
+    key: &EncryptionKey,
 ) -> Result<EncryptedMetadata, JsValue> {
     let decrypted_metadata = serde_json::to_vec(metadata).unwrap();
     let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);

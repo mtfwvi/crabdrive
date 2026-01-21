@@ -1,4 +1,4 @@
-use crate::api::requests::chunk::{post_chunk, PostChunkResponse};
+use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::api::requests::folder::post_create_folder;
 use crate::constants::EMPTY_KEY;
@@ -7,7 +7,7 @@ use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::chunk::encrypt_chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
-use crate::utils::file::{load_file_by_chunk, DecryptedChunk};
+use crate::utils::file::{DecryptedChunk, load_file_by_chunk};
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
@@ -17,8 +17,8 @@ use crabdrive_common::payloads::node::response::file::{
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::{NodeId, RevisionId};
 use wasm_bindgen::JsValue;
-use web_sys::js_sys::Uint8Array;
 use web_sys::File;
+use web_sys::js_sys::Uint8Array;
 
 pub mod requests;
 
@@ -172,21 +172,22 @@ pub async fn create_file(
             // if this fails the server is lying to us
             assert_eq!(file_revision.iv, file_iv);
 
-
             //TODO test this
             let result = load_file_by_chunk(file, |chunk| {
                 //TODO check if clone copies the ref or the object
                 let chunk = chunk.clone();
-                    async move {
-                        encrypt_and_upload_chunk(
-                            &chunk,
-                            file_iv,
-                            &file_encryption_key,
-                            new_node_id,
-                            file_revision.id,
-                        ).await
-                    }
-            }).await;
+                async move {
+                    encrypt_and_upload_chunk(
+                        &chunk,
+                        file_iv,
+                        &file_encryption_key,
+                        new_node_id,
+                        file_revision.id,
+                    )
+                    .await
+                }
+            })
+            .await;
 
             if let Err(error) = result {
                 return CreateNodeResponse::Failed(format!("could not upload chunks: {:?}", error));
@@ -214,15 +215,11 @@ pub async fn create_file(
                 }
             }
         }
-        PostCreateFileResponse::NotFound => {
-            CreateNodeResponse::Failed(format!(
-                "no such node: {}. Check if you have permission to access it",
-                parent.id
-            ))
-        }
-        PostCreateFileResponse::BadRequest => {
-            CreateNodeResponse::Failed("bad request".to_string())
-        }
+        PostCreateFileResponse::NotFound => CreateNodeResponse::Failed(format!(
+            "no such node: {}. Check if you have permission to access it",
+            parent.id
+        )),
+        PostCreateFileResponse::BadRequest => CreateNodeResponse::Failed("bad request".to_string()),
         PostCreateFileResponse::Conflict => {
             CreateNodeResponse::Failed("Please try again".to_string())
         }
