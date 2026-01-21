@@ -11,9 +11,11 @@ mod tests {
 
     use rand::{Rng, rng};
 
+    use pretty_assertions::assert_eq;
+
     #[test]
     fn test_sfs_write_read_cycle() {
-        // This writes
+        // This test writes all files into a temporary directory, which are then deleted directly after.
         let tempdir = tempdir().unwrap();
         let storage_path = tempdir.path();
 
@@ -63,7 +65,8 @@ mod tests {
                 assert_eq!(
                     chunk.data.as_ref(),
                     &original_data[i as usize],
-                    "Chunk {} data mismatch",
+                    "File {} - Chunk #{} data mismatch",
+                    file_key,
                     i
                 );
             }
