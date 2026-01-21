@@ -5,6 +5,7 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
 
+#[derive(Debug)]
 pub struct DecryptedChunk {
     pub chunk: ArrayBuffer,
     pub index: ChunkIndex,
@@ -12,6 +13,7 @@ pub struct DecryptedChunk {
     pub last_block: bool,
 }
 
+#[derive(Debug)]
 pub struct EncryptedChunk {
     pub chunk: ArrayBuffer,
     pub index: ChunkIndex,

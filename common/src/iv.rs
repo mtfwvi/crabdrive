@@ -34,7 +34,7 @@ impl IV {
         self.0.is_empty()
     }
 
-    pub fn prefix_with_u32(&self, prefix: u32) -> [u8; 16] {
+    pub fn prefix_with_u32(&self, prefix: u32) -> IvWithPrefix {
         let prefix_bytes = prefix.to_be_bytes();
 
         let mut full_iv: [u8; 16] = [0; 16];
@@ -45,6 +45,8 @@ impl IV {
         full_iv
     }
 }
+
+pub type IvWithPrefix = [u8; 16];
 
 #[cfg(feature = "server")]
 impl ToSql<Binary, Sqlite> for IV {
