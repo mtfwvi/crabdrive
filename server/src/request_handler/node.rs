@@ -12,8 +12,8 @@ use crabdrive_common::payloads::node::response::node::{
 };
 
 use crabdrive_common::iv::IV;
-use crabdrive_common::storage::{EncryptedNode, NodeId};
 use crabdrive_common::storage::NodeType;
+use crabdrive_common::storage::{EncryptedNode, NodeId};
 
 pub fn get_example_node_info() -> EncryptedNode {
     EncryptedNode {

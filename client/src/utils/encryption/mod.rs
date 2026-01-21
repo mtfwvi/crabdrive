@@ -1,33 +1,15 @@
 use crate::model::encryption::EncryptionKey;
-use crate::model::node::DecryptedNode;
-use crate::utils::file::{DecryptedChunk, EncryptedChunk};
-use crabdrive_common::iv::{IvWithPrefix, IV};
-use crabdrive_common::storage::EncryptedNode;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::js_sys::ArrayBuffer;
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::js_sys::{Array, JsString, Object, Uint8Array};
-use web_sys::{AesGcmParams, CryptoKey, SubtleCrypto};
-use crate::constants::AES_GCM;
-
+use web_sys::js_sys::{Array, JsString, Uint8Array};
+use web_sys::{CryptoKey, SubtleCrypto};
+mod chunk;
+mod node;
 mod random;
 
 fn get_subtle_crypto() -> SubtleCrypto {
     web_sys::window().unwrap().crypto().unwrap().subtle()
-}
-
-/// The byte in the authenticated data that indicates the start and end of files to prevent
-/// truncating by the server
-fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
-    match (first_chunk, last_chunk) {
-        (true, false) => 1, // start chunk
-        (false, true) => 2, // end chunk
-        (true, true) => 3, // only chunk
-        (false, false) => 4, // in between chunk
-
-    }
 }
 
 async fn get_key_from_bytes(key: EncryptionKey) -> CryptoKey {
@@ -39,135 +21,15 @@ async fn get_key_from_bytes(key: EncryptionKey) -> CryptoKey {
     key_usage.push(&JsString::from_str("encrypt").unwrap());
     key_usage.push(&JsString::from_str("decrypt").unwrap());
 
-    JsFuture::from(get_subtle_crypto().import_key_with_str(
-        format,
-        &key_data,
-        algorithm,
-        extractable,
-        &key_usage
-    ).unwrap()).await.unwrap().dyn_into().unwrap()
-}
-
-pub async fn decrypt_node(
-    node: EncryptedNode,
-    key: EncryptionKey,
-) -> Result<DecryptedNode, JsValue> {
-    let encrypted_metadata = Uint8Array::new_from_slice(&node.encrypted_metadata);
-
-    let subtle_crypto  = get_subtle_crypto();
-    let key = get_key_from_bytes(key).await;
-
-    let iv_bytes = node.metadata_iv;
-    let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
-    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
-
-    let decrypted_arraybuffer_promise = subtle_crypto.decrypt_with_object_and_buffer_source(&algorithm, &key, &encrypted_metadata)?;
-    let decrypted_arraybuffer: ArrayBuffer = JsFuture::from(decrypted_arraybuffer_promise).await?.dyn_into()?;
-    let decrypted_array = Uint8Array::new(&decrypted_arraybuffer);
-    let decrypted_metadata = decrypted_array.to_vec();
-
-    let metadata = serde_json::from_slice(&decrypted_metadata).unwrap();
-
-    let decrypted_node = DecryptedNode {
-        id: node.id,
-        change_count: node.change_count,
-        parent_id: node.parent_id,
-        owner_id: node.owner_id,
-        deleted_on: node.deleted_on,
-        node_type: node.node_type,
-        current_revision: node.current_revision,
-        metadata,
-    };
-
-    Ok(decrypted_node)
-}
-
-pub async fn encrypt_node(
-    node: DecryptedNode,
-    key: EncryptionKey,
-) -> Result<EncryptedNode, JsValue> {
-    let decrypted_metadata = serde_json::to_vec(&node.metadata).unwrap();
-    let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
-
-    let iv: [u8; 12] = random::get_random_bytes(12).try_into().unwrap();
-
-
-    let subtle_crypto  = get_subtle_crypto();
-    let key = get_key_from_bytes(key).await;
-
-    let iv_bytes_array = Uint8Array::new_from_slice(&iv);
-    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
-
-    let encrypted_arraybuffer_promise = subtle_crypto.encrypt_with_object_and_buffer_source(&algorithm, &key, &decrypted_metadata_array)?;
-    let encrypted_arraybuffer: ArrayBuffer = JsFuture::from(encrypted_arraybuffer_promise).await?.dyn_into()?;
-    let encrypted_array = Uint8Array::new(&encrypted_arraybuffer);
-    let encrypted_metadata = encrypted_array.to_vec();
-
-    let encrypted_node = EncryptedNode {
-        id: node.id,
-        change_count: node.change_count,
-        parent_id: node.parent_id,
-        owner_id: node.owner_id,
-        deleted_on: node.deleted_on,
-        node_type: node.node_type,
-        current_revision: node.current_revision,
-        encrypted_metadata,
-        metadata_iv: IV::new(iv),
-    };
-
-    Ok(encrypted_node)
-}
-
-pub async fn decrypt_chunk(
-    chunk: &EncryptedChunk,
-    key: EncryptionKey,
-) -> Result<DecryptedChunk, JsValue> {
-    let subtle_crypto  = get_subtle_crypto();
-    let key = get_key_from_bytes(key).await;
-
-    let additional_byte = get_additional_byte(chunk.first_block, chunk.last_block);
-    let additional_data = Uint8Array::new_from_slice(&[additional_byte]);
-
-    let iv_bytes = chunk.iv_prefix.prefix_with_u32(chunk.index);
-    let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes);
-    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
-    algorithm.set_additional_data(&additional_data);
-
-    let decrypted_arraybuffer_promise = subtle_crypto.decrypt_with_object_and_buffer_source(&algorithm, &key, &chunk.chunk)?;
-    let decrypted_arraybuffer: ArrayBuffer = JsFuture::from(decrypted_arraybuffer_promise).await?.dyn_into()?;
-
-    Ok(DecryptedChunk {
-        chunk: decrypted_arraybuffer,
-        index: chunk.index,
-        first_block: chunk.first_block,
-        last_block: chunk.last_block,
-    })
-}
-
-pub async fn encrypt_chunk(
-    chunk: &DecryptedChunk,
-    key: EncryptionKey,
-    iv_prefix: IV
-) -> Result<EncryptedChunk, JsValue> {
-    let subtle_crypto  = get_subtle_crypto();
-    let key = get_key_from_bytes(key).await;
-
-    let additional_byte = get_additional_byte(chunk.first_block, chunk.last_block);
-    let additional_data = Uint8Array::new_from_slice(&[additional_byte]);
-    let iv_bytes = iv_prefix.prefix_with_u32(chunk.index);
-    let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes);
-    let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
-    algorithm.set_additional_data(&additional_data);
-    let encrypted_arraybuffer_promise = subtle_crypto.encrypt_with_object_and_buffer_source(&algorithm, &key, &chunk.chunk)?;
-    let encrypted_arraybuffer: ArrayBuffer = JsFuture::from(encrypted_arraybuffer_promise).await?.dyn_into()?;
-
-    Ok(EncryptedChunk {
-        chunk: encrypted_arraybuffer,
-        index: chunk.index,
-        first_block: chunk.first_block,
-        last_block: chunk.last_block,
-        iv_prefix,
-    })
+    JsFuture::from(
+        get_subtle_crypto()
+            .import_key_with_str(format, &key_data, algorithm, extractable, &key_usage)
+            .unwrap(),
+    )
+    .await
+    .unwrap()
+    .dyn_into()
+    .unwrap()
 }
 
 #[cfg(test)]
@@ -175,16 +37,16 @@ mod test {
     use crate::constants::EMPTY_KEY;
     use crate::model::encryption::EncryptionKey;
     use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-    use crate::utils::encryption::{decrypt_chunk, encrypt_chunk, get_key_from_bytes};
+    use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
+    use crate::utils::encryption::get_key_from_bytes;
+    use crate::utils::encryption::node::{decrypt_node, encrypt_node};
     use crate::utils::file::DecryptedChunk;
-    use chrono::{NaiveDate, NaiveDateTime};
+    use chrono::NaiveDateTime;
+    use crabdrive_common::iv::IV;
     use crabdrive_common::storage::NodeId;
     use crabdrive_common::user::UserId;
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::js_sys::Uint8Array;
-    use crabdrive_common::iv::IV;
-
-    use super::{decrypt_node, encrypt_node};
 
     #[wasm_bindgen_test]
     async fn test_get_key_from_bytes() {
@@ -193,82 +55,90 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_chunk() {
-        let example_buffer = vec![1,2,3,4,5,6,7,8,9];
+        let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
             chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
             index: 1,
             first_block: true,
-            last_block: false
+            last_block: false,
         };
 
-        let encrypted_chunk = encrypt_chunk(&chunk, EMPTY_KEY, IV::new([1,2,3,4,5,6,7,8,9,10,11,12])).await.expect("encrypt chunk");
+        let encrypted_chunk = encrypt_chunk(
+            &chunk,
+            EMPTY_KEY,
+            IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        )
+        .await
+        .expect("encrypt chunk");
 
-        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, EMPTY_KEY).await.expect("decrypt chunk");
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, EMPTY_KEY)
+            .await
+            .expect("decrypt chunk");
 
         let decrypted_chunk_array = Uint8Array::new(&decrypted_chunk.chunk).to_vec();
 
         assert_eq!(example_buffer, decrypted_chunk_array);
     }
 
-
-
     #[wasm_bindgen_test]
     async fn test_truncate_chunk() {
-        let example_buffer = vec![1,2,3,4,5,6,7,8,9];
+        let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
             chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
             index: 2,
             first_block: false,
-            last_block: false
+            last_block: false,
         };
 
-        let mut encrypted_chunk = encrypt_chunk(&chunk, EMPTY_KEY, IV::new([1,2,3,4,5,6,7,8,9,10,11,12])).await.expect("encrypt chunk");
-        
-        // server tries to truncate first block 
+        let mut encrypted_chunk = encrypt_chunk(
+            &chunk,
+            EMPTY_KEY,
+            IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        )
+        .await
+        .expect("encrypt chunk");
+
+        // server tries to truncate first block
         encrypted_chunk.index = 1;
         encrypted_chunk.first_block = true;
 
         let decrypted_chunk = decrypt_chunk(&encrypted_chunk, EMPTY_KEY).await;
-        
+
         assert!(decrypted_chunk.is_err())
     }
 
-
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_node() {
-        let example_node = DecryptedNode { 
-            id: NodeId::random(), 
-            change_count: 0, 
-            parent_id: NodeId::random(), 
-            owner_id: UserId::random(), 
-            deleted_on: None, 
-            node_type: crabdrive_common::storage::NodeType::Folder, 
-            current_revision: None, 
-            metadata: NodeMetadata::V1(MetadataV1 { 
-                name: "hello.txt".to_string(), 
-                last_modified: NaiveDateTime::default(), 
-                created: NaiveDateTime::default(), 
-                size: None, 
-                mime_type: "txt".to_string(), 
-                file_key: None, 
-                children_key: vec![] })
+        let example_node = DecryptedNode {
+            id: NodeId::random(),
+            change_count: 0,
+            parent_id: NodeId::random(),
+            owner_id: UserId::random(),
+            deleted_on: None,
+            node_type: crabdrive_common::storage::NodeType::Folder,
+            current_revision: None,
+            metadata: NodeMetadata::V1(MetadataV1 {
+                name: "hello.txt".to_string(),
+                last_modified: NaiveDateTime::default(),
+                created: NaiveDateTime::default(),
+                size: None,
+                mime_type: "txt".to_string(),
+                file_key: None,
+                children_key: vec![],
+            }),
         };
 
         let example_node_copy = example_node.clone();
 
-        let encrypted_node = encrypt_node(example_node, EMPTY_KEY).await.expect("could not encrypt node");
-        let decrypted_node = decrypt_node(encrypted_node, EMPTY_KEY).await.expect("could not decrypt node");
+        let encrypted_node = encrypt_node(example_node, EMPTY_KEY)
+            .await
+            .expect("could not encrypt node");
+        let decrypted_node = decrypt_node(encrypted_node, EMPTY_KEY)
+            .await
+            .expect("could not decrypt node");
 
         assert_eq!(decrypted_node, example_node_copy);
-
     }
-
-
-    // fn test_bytes_serialization() {
-    //     let vec = vec![1,2,3,4,5,6,7,8,9,10,11,12];
-    //     let vec_jsvalue = serde_wasm_bindgen::to_value(&vec).unwrap();
-    //     panic!("{:?}" ,vec_jsvalue)
-    // }
 }

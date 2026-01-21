@@ -1,7 +1,7 @@
-use crate::user::UserId;
-use chrono::NaiveDateTime;
 use crate::iv::IV;
+use crate::user::UserId;
 use crate::uuid::UUID;
+use chrono::NaiveDateTime;
 
 use serde::{Deserialize, Serialize};
 

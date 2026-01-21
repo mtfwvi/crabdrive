@@ -73,19 +73,25 @@ mod test {
 
     #[test]
     fn test_prefix_iv1() {
-        let iv = IV::new([1,2,3,4,5,6,7,8,9,10,11,12]);
+        let iv = IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
         let prefix = u32::MAX;
 
         let iv_with_prefix = iv.prefix_with_u32(prefix);
-        assert_eq!(iv_with_prefix, [255, 255, 255, 255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+        assert_eq!(
+            iv_with_prefix,
+            [255, 255, 255, 255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+        );
     }
 
     #[test]
     fn test_prefix_iv2() {
-        let iv = IV::new([1,2,3,4,5,6,25,8,9,10,11,12]);
+        let iv = IV::new([1, 2, 3, 4, 5, 6, 25, 8, 9, 10, 11, 12]);
         let prefix = 258;
 
         let iv_with_prefix = iv.prefix_with_u32(prefix);
-        assert_eq!(iv_with_prefix, [0, 0, 1, 2, 1, 2, 3, 4, 5, 6, 25, 8, 9, 10, 11, 12]);
+        assert_eq!(
+            iv_with_prefix,
+            [0, 0, 1, 2, 1, 2, 3, 4, 5, 6, 25, 8, 9, 10, 11, 12]
+        );
     }
 }

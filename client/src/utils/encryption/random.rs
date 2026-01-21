@@ -15,8 +15,8 @@ pub fn get_random_bytes(count: u32) -> Vec<u8> {
 }
 #[cfg(test)]
 mod test {
-    use wasm_bindgen_test::wasm_bindgen_test;
     use crate::utils::encryption::random::get_random_bytes;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     fn test_get_random_bytes() {

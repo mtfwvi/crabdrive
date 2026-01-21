@@ -19,7 +19,7 @@ pub struct EncryptedChunk {
     pub index: ChunkIndex,
     pub first_block: bool,
     pub last_block: bool,
-    pub iv_prefix: IV
+    pub iv_prefix: IV,
 }
 
 async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
@@ -32,7 +32,6 @@ where
     let file_size = file.size();
     let mut offset = 0.0;
     let mut block = 0;
-
 
     // go through the file in 16mb chunks
     loop {
@@ -78,8 +77,8 @@ fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
 
 #[cfg(test)]
 mod test {
-    use wasm_bindgen::JsCast;
     use crate::utils::file::combine_chunks;
+    use wasm_bindgen::JsCast;
     use wasm_bindgen_futures::JsFuture;
     use wasm_bindgen_test::wasm_bindgen_test;
     use web_sys::js_sys::{ArrayBuffer, Uint8Array};
@@ -93,7 +92,11 @@ mod test {
         let part2 = Uint8Array::new_from_slice(&vec2);
 
         let combined = combine_chunks(vec![part1, part2]);
-        let combined: ArrayBuffer = JsFuture::from(combined.array_buffer()).await.unwrap().dyn_into().unwrap();
+        let combined: ArrayBuffer = JsFuture::from(combined.array_buffer())
+            .await
+            .unwrap()
+            .dyn_into()
+            .unwrap();
 
         let combined = Uint8Array::new(&combined);
         let combined_vec = combined.to_vec();

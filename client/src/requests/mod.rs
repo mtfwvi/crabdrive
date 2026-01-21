@@ -7,7 +7,7 @@ use leptos::wasm_bindgen::JsValue;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Uint8Array;
-use web_sys::{Blob, Request, RequestInit, Response, Url};
+use web_sys::{Request, RequestInit, Response, Url};
 
 #[allow(clippy::upper_case_acronyms)]
 enum RequestMethod {
@@ -101,9 +101,9 @@ async fn uint8array_from_response(response: Response) -> Result<Uint8Array, JsVa
 
 #[cfg(test)]
 mod test {
+    use crate::requests::{RequestBody, RequestMethod, request, string_from_response};
     use serde::{Deserialize, Serialize};
     use wasm_bindgen_test::wasm_bindgen_test;
-    use crate::requests::{request, string_from_response, RequestBody, RequestMethod};
 
     #[allow(non_snake_case)]
     #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
@@ -122,7 +122,9 @@ mod test {
         let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(url.to_string(), method, body, query_parameters, auth_token).await.unwrap();
+        let response = request(url.to_string(), method, body, query_parameters, auth_token)
+            .await
+            .unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();
@@ -145,7 +147,9 @@ mod test {
         let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(url.to_string(), method, body, query_parameters, auth_token).await.unwrap();
+        let response = request(url.to_string(), method, body, query_parameters, auth_token)
+            .await
+            .unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();
