@@ -13,6 +13,15 @@ pub(crate) struct EncryptedMetadata {
     iv: IV,
 }
 
+impl EncryptedMetadata {
+    pub fn nil() -> Self {
+        EncryptedMetadata {
+            data: vec![0, 0, 0, 0],
+            iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+        }
+    }
+}
+
 impl ToSql<Binary, Sqlite> for EncryptedMetadata {
     fn to_sql<'b>(
         &'b self,
