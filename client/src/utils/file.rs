@@ -1,3 +1,4 @@
+use crate::constants::CHUNK_SIZE;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
 use wasm_bindgen::{JsCast, JsValue};
@@ -15,7 +16,7 @@ pub struct DecryptedChunk {
 
 #[derive(Debug)]
 pub struct EncryptedChunk {
-    pub chunk: ArrayBuffer,
+    pub chunk: Uint8Array,
     pub index: ChunkIndex,
     pub first_block: bool,
     pub last_block: bool,
@@ -27,8 +28,6 @@ where
     F: Fn(&DecryptedChunk) -> Fut,
     Fut: Future<Output = Result<(), JsValue>>,
 {
-    const CHUNK_SIZE: f64 = 1024.0 * 1024.0 * 16.0;
-
     let file_size = file.size();
     let mut offset = 0.0;
     let mut block = 0;
@@ -65,7 +64,7 @@ where
     Ok(())
 }
 
-fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
+pub fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
     let buffers_js = Array::new();
 
     buffers.iter().for_each(|buffer| {

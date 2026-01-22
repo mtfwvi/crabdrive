@@ -1,3 +1,5 @@
+#![allow(dead_code)] // TODO: Remove before submission
+
 pub(crate) mod api;
 pub(crate) mod components;
 pub(crate) mod constants;

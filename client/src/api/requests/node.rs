@@ -69,7 +69,7 @@ pub async fn patch_node(
     Ok(response_object)
 }
 
-pub async fn get_children(
+pub async fn get_node_children(
     parent_id: NodeId,
     token: &String,
 ) -> Result<GetNodeChildrenResponse, JsValue> {

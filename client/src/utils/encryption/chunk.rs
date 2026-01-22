@@ -1,8 +1,10 @@
+use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
 use crate::constants::AES_GCM;
 use crate::model::encryption::EncryptionKey;
 use crate::utils::encryption;
 use crate::utils::file::{DecryptedChunk, EncryptedChunk};
 use crabdrive_common::iv::IV;
+use crabdrive_common::storage::{NodeId, RevisionId};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
@@ -69,10 +71,50 @@ pub async fn encrypt_chunk(
         .dyn_into()?;
 
     Ok(EncryptedChunk {
-        chunk: encrypted_arraybuffer,
+        chunk: Uint8Array::new(&encrypted_arraybuffer),
         index: chunk.index,
         first_block: chunk.first_block,
         last_block: chunk.last_block,
         iv_prefix,
     })
+}
+
+pub async fn encrypt_and_upload_chunk(
+    chunk: &DecryptedChunk,
+    iv_prefix: IV,
+    key: &EncryptionKey,
+    node_id: NodeId,
+    revision_id: RevisionId,
+) -> Result<(), JsValue> {
+    let encrypted_chunk = encrypt_chunk(chunk, key, iv_prefix)
+        .await
+        .expect("failed to encrypt chunk");
+
+    let request_body = Uint8Array::new(&encrypted_chunk.chunk);
+
+    let response = post_chunk(
+        node_id,
+        revision_id,
+        chunk.index,
+        request_body,
+        &"".to_string(),
+    )
+    .await?;
+
+    //TODO error handling
+    match response {
+        PostChunkResponse::Created => Ok(()),
+        PostChunkResponse::NotFound => {
+            panic!("404 when uploading chunk")
+        }
+        PostChunkResponse::BadRequest => {
+            panic!("400 when uploading chunk")
+        }
+        PostChunkResponse::Conflict => {
+            panic!("409 when uploading chunk")
+        }
+        PostChunkResponse::OutOfStorage => {
+            panic!("413 when uploading chunk")
+        }
+    }
 }

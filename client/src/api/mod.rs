@@ -1,13 +1,14 @@
-use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
+use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::api::requests::folder::post_create_folder;
-use crate::constants::EMPTY_KEY;
-use crate::model::encryption::EncryptionKey;
+use crate::api::requests::node::get_node_children;
+use crate::constants::{CHUNK_SIZE, EMPTY_KEY};
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-use crate::utils::encryption::chunk::encrypt_chunk;
+use crate::utils::encryption::chunk;
+use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
-use crate::utils::file::{DecryptedChunk, load_file_by_chunk};
+use crate::utils::file::{EncryptedChunk, combine_chunks, load_file_by_chunk};
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
@@ -15,19 +16,17 @@ use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::storage::{NodeId, RevisionId};
-use wasm_bindgen::JsValue;
-use web_sys::File;
+use crabdrive_common::payloads::node::response::node::GetNodeChildrenResponse;
+use crabdrive_common::storage::NodeId;
 use web_sys::js_sys::Uint8Array;
+use web_sys::{Blob, File};
 
 pub mod requests;
 
-pub enum CreateNodeResponse {
-    Created(DecryptedNode),
-    Failed(String),
-}
-
-pub async fn create_folder(parent: &mut DecryptedNode, folder_name: String) -> CreateNodeResponse {
+pub async fn create_folder(
+    parent: &mut DecryptedNode,
+    folder_name: String,
+) -> Result<DecryptedNode, String> {
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
         last_modified: Default::default(),
@@ -82,18 +81,14 @@ pub async fn create_folder(parent: &mut DecryptedNode, folder_name: String) -> C
                 .await
                 .unwrap();
 
-            CreateNodeResponse::Created(decrypted_node)
+            Ok(decrypted_node)
         }
-        PostCreateFolderResponse::NotFound => CreateNodeResponse::Failed(format!(
+        PostCreateFolderResponse::NotFound => Err(format!(
             "no such node: {}. Check if you have permission to access it",
             parent.id
         )),
-        PostCreateFolderResponse::BadRequest => {
-            CreateNodeResponse::Failed("bad request".to_string())
-        }
-        PostCreateFolderResponse::Conflict => {
-            CreateNodeResponse::Failed("Please try again".to_string())
-        }
+        PostCreateFolderResponse::BadRequest => Err("bad request".to_string()),
+        PostCreateFolderResponse::Conflict => Err("Please try again".to_string()),
     }
 }
 
@@ -101,7 +96,7 @@ pub async fn create_file(
     parent: &mut DecryptedNode,
     file_name: String,
     file: File,
-) -> CreateNodeResponse {
+) -> Result<DecryptedNode, String> {
     //TODO actually generate encryption keys
     //let new_encryption_key = get_random_encryption_key();
 
@@ -137,6 +132,8 @@ pub async fn create_file(
         .await
         .unwrap();
 
+    let chunk_count = (file.size() / CHUNK_SIZE).ceil() as u64;
+
     let file_iv = IV::new(get_random_iv());
     let request_body = PostCreateFileRequest {
         parent_metadata_iv: encrypted_parent_metadata.iv,
@@ -145,14 +142,14 @@ pub async fn create_file(
         node_metadata_iv: encrypted_metadata.iv,
         node_metadata: encrypted_metadata.data,
         file_iv,
-        chunk_count: 0,
+        chunk_count,
         node_id: new_node_id,
     };
 
     let response = post_create_file(parent.id, request_body, &"".to_string()).await;
 
     if let Err(error) = response {
-        return CreateNodeResponse::Failed(format!("could not upload chunks: {:?}", error));
+        return Err(format!("could not upload chunks: {:?}", error));
     }
 
     let response = response.unwrap();
@@ -177,7 +174,7 @@ pub async fn create_file(
                 //TODO check if clone copies the ref or the object
                 let chunk = chunk.clone();
                 async move {
-                    encrypt_and_upload_chunk(
+                    chunk::encrypt_and_upload_chunk(
                         &chunk,
                         file_iv,
                         &file_encryption_key,
@@ -190,13 +187,13 @@ pub async fn create_file(
             .await;
 
             if let Err(error) = result {
-                return CreateNodeResponse::Failed(format!("could not upload chunks: {:?}", error));
+                return Err(format!("could not upload chunks: {:?}", error));
             }
 
             let response = post_commit_file(new_node_id, file_revision.id, &"".to_string()).await;
 
             if let Err(ref error) = response {
-                return CreateNodeResponse::Failed(format!("could not commit file: {:?}", error));
+                return Err(format!("could not commit file: {:?}", error));
             };
 
             let response = response.unwrap();
@@ -205,63 +202,94 @@ pub async fn create_file(
                     let decrypted_node = decrypt_node(encrypted_node, new_node_encryption_key)
                         .await
                         .unwrap();
-                    CreateNodeResponse::Created(decrypted_node)
+                    Ok(decrypted_node)
                 }
                 PostCommitFileResponse::BadRequest(missing_chunks) => {
-                    CreateNodeResponse::Failed(format!("missing chunks: {:?}", missing_chunks))
+                    Err(format!("missing chunks: {:?}", missing_chunks))
                 }
-                PostCommitFileResponse::NotFound => {
-                    CreateNodeResponse::Failed(format!("no such node: {}", new_node_id))
-                }
+                PostCommitFileResponse::NotFound => Err(format!("no such node: {}", new_node_id)),
             }
         }
-        PostCreateFileResponse::NotFound => CreateNodeResponse::Failed(format!(
+        PostCreateFileResponse::NotFound => Err(format!(
             "no such node: {}. Check if you have permission to access it",
             parent.id
         )),
-        PostCreateFileResponse::BadRequest => CreateNodeResponse::Failed("bad request".to_string()),
-        PostCreateFileResponse::Conflict => {
-            CreateNodeResponse::Failed("Please try again".to_string())
-        }
+        PostCreateFileResponse::BadRequest => Err("bad request".to_string()),
+        PostCreateFileResponse::Conflict => Err("Please try again".to_string()),
     }
 }
 
-async fn encrypt_and_upload_chunk(
-    chunk: &DecryptedChunk,
-    iv_prefix: IV,
-    key: &EncryptionKey,
-    node_id: NodeId,
-    revision_id: RevisionId,
-) -> Result<(), JsValue> {
-    let encrypted_chunk = encrypt_chunk(chunk, key, iv_prefix)
-        .await
-        .expect("failed to encrypt chunk");
+pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>, String> {
+    let response_result = get_node_children(parent.id, &"".to_string()).await;
 
-    let request_body = Uint8Array::new(&encrypted_chunk.chunk);
+    match response_result {
+        Ok(response) => match response {
+            GetNodeChildrenResponse::Ok(children) => {
+                let mut decrypted_children = Vec::with_capacity(children.len());
 
-    let response = post_chunk(
-        node_id,
-        revision_id,
-        chunk.index,
-        request_body,
-        &"".to_string(),
-    )
-    .await?;
+                for child in children {
+                    let decrypted_child = decrypt_node(child, EMPTY_KEY).await;
+                    if let Ok(decrypted_child) = decrypted_child {
+                        decrypted_children.push(decrypted_child);
+                    } else {
+                        return Err(format!(
+                            "could not decrypt node: {:?}",
+                            decrypted_child.err().unwrap()
+                        ));
+                    }
+                }
 
-    //TODO error handling
-    match response {
-        PostChunkResponse::Created => Ok(()),
-        PostChunkResponse::NotFound => {
-            panic!("404 when uploading chunk")
-        }
-        PostChunkResponse::BadRequest => {
-            panic!("400 when uploading chunk")
-        }
-        PostChunkResponse::Conflict => {
-            panic!("409 when uploading chunk")
-        }
-        PostChunkResponse::OutOfStorage => {
-            panic!("413 when uploading chunk")
+                Ok(decrypted_children)
+            }
+            GetNodeChildrenResponse::NotFound => Err("Could not query children: 404".to_string()),
+        },
+        Err(err) => Err(format!("Could not query children: {:?}", err)),
+    }
+}
+
+pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
+    // TODO support chunked downloads in chrom(e/ium)
+
+    let current_revision = node.current_revision;
+    if current_revision.is_none() {
+        return Err("this node does not have a file associated with".to_string());
+    }
+    let current_revision = current_revision.unwrap();
+
+    let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
+
+    for i in 1..(current_revision.chunk_count as u32) {
+        let chunk_result = get_chunk(node.id, current_revision.id, i, &"".to_string()).await;
+        if let Ok(chunk_response) = chunk_result {
+            match chunk_response {
+                GetChunkResponse::Ok(encrypted_chunk_buffer) => {
+                    let encrypted_chunk = EncryptedChunk {
+                        chunk: encrypted_chunk_buffer,
+                        index: i,
+                        first_block: i == 1,
+                        last_block: i == current_revision.chunk_count as u32,
+                        iv_prefix: current_revision.iv,
+                    };
+                    let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
+                    if decrypted_chunk.is_err() {
+                        return Err(format!(
+                            "chunk decryption failed for chunk {i}: {:?}",
+                            decrypted_chunk.err().unwrap()
+                        ));
+                    }
+                    chunks.push(Uint8Array::new(&decrypted_chunk.unwrap().chunk));
+                }
+                GetChunkResponse::NotFound => {
+                    return Err(format!("chunk {i} return 404"));
+                }
+            }
+        } else {
+            return Err(format!(
+                "could not download chunk: {:?}",
+                chunk_result.err().unwrap()
+            ));
         }
     }
+
+    Ok(combine_chunks(chunks))
 }

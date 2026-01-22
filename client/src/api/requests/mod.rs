@@ -129,7 +129,7 @@ mod test {
 
         let response_text = string_from_response(response).await.unwrap();
 
-        let post_list: Vec<Post> = serde_json::from_str(&response_text).unwrap();
+        let _post_list: Vec<Post> = serde_json::from_str(&response_text).unwrap();
     }
 
     #[wasm_bindgen_test]
