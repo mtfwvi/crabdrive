@@ -293,3 +293,7 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
 
     Ok(combine_chunks(chunks))
 }
+
+pub async fn get_root_node() -> Result<DecryptedNode, String> {
+    unimplemented!("waiting to merge serve root node");
+}
