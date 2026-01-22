@@ -57,3 +57,34 @@ fn PathBreadcrumbItem(
         </BreadcrumbItem>
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::components::path_breadcrumb::PathBreadcrumb;
+    use leptos::prelude::*;
+    use thaw::{ConfigProvider, ToasterProvider};
+    use wasm_bindgen_test::__rt::wasm_bindgen::JsCast;
+    use wasm_bindgen_test::wasm_bindgen_test;
+
+    #[wasm_bindgen_test]
+    async fn test_path_breadcrumb() {
+        let document = document();
+        let test_wrapper = document.create_element("section").unwrap();
+        let _ = document.body().unwrap().append_child(&test_wrapper);
+
+        let _dispose = mount_to(test_wrapper.clone().unchecked_into(), || {
+            view! {
+                <ConfigProvider>
+                    <ToasterProvider>
+                        <PathBreadcrumb node_names=RwSignal::new(
+                            vec![String::from("superfolder"), String::from("subfolder")],
+                        ) />
+                    </ToasterProvider>
+                </ConfigProvider>
+            }
+        });
+
+        assert!(test_wrapper.outer_html().contains("superfolder"));
+        assert!(test_wrapper.outer_html().contains("subfolder"));
+    }
+}
