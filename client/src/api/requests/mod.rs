@@ -3,12 +3,12 @@ pub mod file;
 pub mod folder;
 pub mod node;
 
+use crate::constants::API_BASE_PATH;
 use leptos::wasm_bindgen::JsValue;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Uint8Array;
 use web_sys::{Request, RequestInit, Response, Url};
-use crate::constants::API_BASE_PATH;
 
 #[allow(clippy::upper_case_acronyms)]
 enum RequestMethod {
@@ -52,7 +52,6 @@ async fn request(
         }
     }
 
-
     let url = Url::new(&if use_api_base_path {
         let mut url_string = API_BASE_PATH.to_string();
         url_string.push_str(&url);
@@ -60,7 +59,6 @@ async fn request(
     } else {
         url
     })?;
-
 
     for (key, value) in query_parameters {
         url.search_params().append(&key, &value);
@@ -132,9 +130,16 @@ mod test {
         let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(url.to_string(), method, body, query_parameters, auth_token, false)
-            .await
-            .unwrap();
+        let response = request(
+            url.to_string(),
+            method,
+            body,
+            query_parameters,
+            auth_token,
+            false,
+        )
+        .await
+        .unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();
@@ -157,9 +162,16 @@ mod test {
         let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(url.to_string(), method, body, query_parameters, auth_token, false)
-            .await
-            .unwrap();
+        let response = request(
+            url.to_string(),
+            method,
+            body,
+            query_parameters,
+            auth_token,
+            false,
+        )
+        .await
+        .unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();

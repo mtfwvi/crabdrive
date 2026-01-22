@@ -25,8 +25,15 @@ pub async fn delete_node(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -41,8 +48,15 @@ pub async fn get_node(node_id: NodeId, token: &String) -> Result<GetNodeResponse
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -61,8 +75,15 @@ pub async fn patch_node(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -80,8 +101,15 @@ pub async fn get_node_children(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -100,8 +128,15 @@ pub async fn post_move_node(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -120,8 +155,15 @@ pub async fn post_move_node_to_trash(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -140,8 +182,15 @@ pub async fn post_move_node_out_of_trash(
     let query_parameters = vec![];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
@@ -163,8 +212,15 @@ pub async fn get_path_between_nodes(
     ];
     let auth_token = Some(token);
 
-    let response: Response =
-        request(url, request_method, body, query_parameters, auth_token, true).await?;
+    let response: Response = request(
+        url,
+        request_method,
+        body,
+        query_parameters,
+        auth_token,
+        true,
+    )
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
