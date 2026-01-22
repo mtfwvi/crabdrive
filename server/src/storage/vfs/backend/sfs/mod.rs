@@ -71,26 +71,30 @@ impl FileRepository for Sfs {
         chunk: crate::storage::vfs::FileChunk,
     ) -> Result<(), FileError> {
         let _s = debug_span!("WriteChunk", session = session.to_string()).entered();
-        if let Some(path) = self.sessions.get(session) {
-            let mut path = path.clone();
-            path.push(chunk.id.to_string());
-            path.set_extension("bin");
-            let mut file_handle = OpenOptions::new()
-                .write(true)
-                .create_new(true)
-                .open(&path)?;
-            file_handle.write_all(&chunk.data)?;
-            debug!(
-                "Wrote chunk {} (Size: {}) to {}",
-                chunk.id,
-                da!(chunk.data.len()),
-                path.display()
-            );
-            Ok(())
-        } else {
+
+        if self.sessions.get(session).is_none() {
             error!("Invalid session");
-            Err(FileError::InvalidSession)
+            return Err(FileError::InvalidSession);
         }
+
+        let path = self.sessions.get(session).unwrap();
+
+        let mut pathbuf = path.clone();
+        pathbuf.push(chunk.id.to_string());
+        pathbuf.set_extension("bin");
+        let mut file_handle = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&pathbuf)?;
+        file_handle.write_all(&chunk.data)?;
+        debug!(
+            "Wrote chunk {} (Size: {}) to {}",
+            chunk.id,
+            da!(chunk.data.len()),
+            pathbuf.display()
+        );
+
+        Ok(())
     }
 
     fn end_transfer(
@@ -122,26 +126,31 @@ impl FileRepository for Sfs {
         chunk_size: crabdrive_common::data::DataAmount,
     ) -> Result<FileChunk, FileError> {
         let _s = debug_span!("GetChunk", key = key).entered();
-        if self.exists(&key) {
-            let mut path = self.storage_dir.clone();
-            path.push(&key);
-            path.push(chunk_index.to_string());
-            path.set_extension("bin");
-            let mut file_handle = OpenOptions::new().read(true).open(&path)?;
-            debug!("Creating zeroed buffer");
-            let mut bytes = BytesMut::zeroed(chunk_size.as_bytes() as usize);
-            debug!(
-                "Reading {} from {} into buffer",
-                &chunk_size,
-                &path.display()
-            );
-            file_handle.read_exact(&mut bytes)?;
-            Ok(FileChunk {
-                id: chunk_index,
-                data: bytes.freeze(),
-            })
-        } else {
-            Err(FileError::KeyNotFound)
+
+        if !self.exists(&key) {
+            return Err(FileError::KeyNotFound);
         }
+
+        let mut pathbuf = self.storage_dir.clone();
+        pathbuf.push(&key);
+        pathbuf.push(chunk_index.to_string());
+        pathbuf.set_extension("bin");
+
+        let mut file_handle = OpenOptions::new().read(true).open(&pathbuf)?;
+        debug!("Creating zeroed buffer");
+        let mut bytes = BytesMut::zeroed(chunk_size.as_bytes() as usize);
+
+        debug!(
+            "Reading {} from {} into buffer",
+            &chunk_size,
+            &pathbuf.display()
+        );
+
+        file_handle.read_exact(&mut bytes)?;
+
+        Ok(FileChunk {
+            id: chunk_index,
+            data: bytes.freeze(),
+        })
     }
 }
