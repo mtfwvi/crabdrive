@@ -24,3 +24,8 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"
 tracing-appender = { workspace = true }
 
 crabdrive-common = { workspace = true, features = ["server"] }
+
+[dev-dependencies]
+pretty_assertions = { workspace = true }
+rand = { workspace = true }
+tempfile = { workspace = true }

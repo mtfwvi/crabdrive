@@ -1,5 +1,4 @@
-use crate::storage::file::model::{FileChunk, FileKey, TransferSessionId};
-use anyhow::Result;
+use crate::storage::vfs::model::{FileChunk, FileError, FileKey, TransferSessionId};
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::ChunkIndex;
 
@@ -7,7 +6,7 @@ use crabdrive_common::storage::ChunkIndex;
 pub(crate) trait FileRepository {
     // Meta-operations
     /// Checks if the key exists
-    fn exists(&self, key: FileKey) -> bool;
+    fn exists(&self, key: &FileKey) -> bool;
     /// Check if the session exists
     fn session_exists(&self, session: &TransferSessionId) -> bool;
     /// Estimates the number of chunks. Ultimately, however, this is managed by the client.
@@ -22,15 +21,15 @@ pub(crate) trait FileRepository {
     ///
     /// Under the hood, it stores all uploaded chunks in a separate staging area until the upload
     /// is finished.
-    fn start_transfer(&self, key: FileKey) -> Result<TransferSessionId>;
+    fn start_transfer(&mut self, key: FileKey) -> Result<TransferSessionId, FileError>;
     /// Uploads a chunk of data to the active transfer. Not order-sensitive.
-    fn write_chunk(&self, session: &TransferSessionId, chunk: FileChunk) -> Result<()>;
+    fn write_chunk(&self, session: &TransferSessionId, chunk: FileChunk) -> Result<(), FileError>;
     /// Finalizes ("commit") the transfer and persists it.
     /// **This will invalidate the `TransferSessionId`**.
-    fn end_transfer(&self, session: TransferSessionId) -> Result<()>;
+    fn end_transfer(&mut self, session: TransferSessionId) -> Result<(), FileError>;
     /// Cancels the transfer and cleans up temporary resources.
     /// **This will invalidate the `TransferSessionId`**.
-    fn abort_transfer(&self, session: TransferSessionId) -> Result<()>;
+    fn abort_transfer(&mut self, session: TransferSessionId) -> Result<(), FileError>;
 
     // Read files
 
@@ -50,5 +49,5 @@ pub(crate) trait FileRepository {
         key: FileKey,
         chunk_index: ChunkIndex,
         chunk_size: DataAmount,
-    ) -> Result<FileChunk>;
+    ) -> Result<FileChunk, FileError>;
 }
