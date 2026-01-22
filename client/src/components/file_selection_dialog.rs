@@ -60,7 +60,7 @@ where
                             appearance=ButtonAppearance::Secondary
                             on_click=move |_| open.set(false)
                         >
-                            Cancel
+                            "Cancel"
                         </Button>
                         <Button
                             appearance=ButtonAppearance::Primary

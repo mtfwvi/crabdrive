@@ -62,13 +62,13 @@ pub(crate) fn FolderView() -> impl IntoView {
                         appearance=ButtonAppearance::Primary
                         icon=icondata::AiPlusOutlined
                     >
-                        Upload file
+                        "Upload file"
                     </Button>
                     <Button
                         on_click=move |_| folder_creation_dialog_open.set(true)
                         icon=icondata::AiFolderAddOutlined
                     >
-                        Create folder
+                        "Create folder"
                     </Button>
                 </Space>
             </Space>

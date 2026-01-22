@@ -43,8 +43,8 @@ pub(crate) fn FileDetails(
             </Space>
 
             <Text>{format!("Size: {}", da!(86 KB))}</Text>
-            <Text>"Last modified: "{format_date_time(Utc::now().naive_utc())}</Text>
-            <Text>Created: {format_date_time(Utc::now().naive_utc())}</Text>
+            <Text>{format!("Last modified: {}", format_date_time(Utc::now().naive_utc()))}</Text>
+            <Text>{format!("Created: {}", format_date_time(Utc::now().naive_utc()))}</Text>
 
             // <Divider class="my-3" />
             // <Space class="content-center">
@@ -59,13 +59,13 @@ pub(crate) fn FileDetails(
                     appearance=ButtonAppearance::Primary
                     icon=icondata::AiCloudDownloadOutlined
                 >
-                    Download
+                    "Download"
                 </Button>
                 <Button
                     on_click=move |_| file_selection_dialog_open.set(true)
                     icon=icondata::AiDiffOutlined
                 >
-                    Modify
+                    "Modify"
                 </Button>
             </Space>
 
