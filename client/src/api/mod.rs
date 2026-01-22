@@ -1,14 +1,14 @@
-use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
+use crate::api::requests::chunk::{get_chunk, GetChunkResponse};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::api::requests::folder::post_create_folder;
-use crate::api::requests::node::get_node_children;
+use crate::api::requests::node::{get_node, get_node_children};
 use crate::constants::{CHUNK_SIZE, EMPTY_KEY};
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::chunk;
 use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
-use crate::utils::file::{EncryptedChunk, combine_chunks, load_file_by_chunk};
+use crate::utils::file::{combine_chunks, load_file_by_chunk, EncryptedChunk};
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
@@ -16,7 +16,7 @@ use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::payloads::node::response::node::GetNodeChildrenResponse;
+use crabdrive_common::payloads::node::response::node::{GetNodeChildrenResponse, GetNodeResponse};
 use crabdrive_common::storage::NodeId;
 use web_sys::js_sys::Uint8Array;
 use web_sys::{Blob, File};
@@ -148,8 +148,8 @@ pub async fn create_file(
 
     let response = post_create_file(parent.id, request_body, &"".to_string()).await;
 
-    if let Err(error) = response {
-        return Err(format!("could not upload chunks: {:?}", error));
+    if let Err(js_error) = response {
+        return Err(format!("could not upload chunks: {:?}", js_error));
     }
 
     let response = response.unwrap();
@@ -158,9 +158,6 @@ pub async fn create_file(
         PostCreateFileResponse::Created(new_file) => {
             parent.metadata = new_parent_metadata;
             parent.change_count += 1;
-
-            //let decrypted_node = decrypt_node(new_file, new_node_encryption_key).await.unwrap();
-            //CreateNodeResponse::Created(decrypted_node)
 
             let file_revision = new_file
                 .current_revision
@@ -171,7 +168,7 @@ pub async fn create_file(
 
             //TODO test this
             let result = load_file_by_chunk(file, |chunk| {
-                //TODO check if clone copies the ref or the object
+                // this does not clone the arraybuffer, just the ref to it
                 let chunk = chunk.clone();
                 async move {
                     chunk::encrypt_and_upload_chunk(
@@ -186,14 +183,14 @@ pub async fn create_file(
             })
             .await;
 
-            if let Err(error) = result {
-                return Err(format!("could not upload chunks: {:?}", error));
+            if let Err(js_error) = result {
+                return Err(format!("could not upload chunks: {:?}", js_error));
             }
 
             let response = post_commit_file(new_node_id, file_revision.id, &"".to_string()).await;
 
-            if let Err(ref error) = response {
-                return Err(format!("could not commit file: {:?}", error));
+            if let Err(ref js_error) = response {
+                return Err(format!("could not commit file: {:?}", js_error));
             };
 
             let response = response.unwrap();
@@ -295,5 +292,54 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
 }
 
 pub async fn get_root_node() -> Result<DecryptedNode, String> {
-    unimplemented!("waiting to merge serve root node");
+    let get_node_result = get_node(NodeId::nil(), &"".to_string()).await;
+    if let Err(js_error) = get_node_result {
+        return Err(format!("could not get root node: {:?}", js_error));
+    }
+    let get_node_response = get_node_result.unwrap();
+
+    match get_node_response {
+        GetNodeResponse::Ok(encrypted_node) => {
+            if encrypted_node.encrypted_metadata.eq(&[0, 0, 0, 0]) {
+                // TODO remove when actually implementing users, as each user should have a root
+
+                // this is the empty node the server created on start => cannot be decrypted
+
+                // metadata will be uploaded to the server during the next update (e.g. adding children)
+                let root_node_metadata = NodeMetadata::V1(MetadataV1 {
+                    name: "root".to_string(),
+                    last_modified: Default::default(),
+                    created: Default::default(),
+                    size: None,
+                    mime_type: None,
+                    file_key: None,
+                    children_key: vec![],
+                });
+
+                let decrypted_node = DecryptedNode {
+                    id: encrypted_node.id,
+                    change_count: 0,
+                    parent_id: encrypted_node.parent_id,
+                    owner_id: encrypted_node.owner_id,
+                    deleted_on: encrypted_node.deleted_on,
+                    node_type: encrypted_node.node_type,
+                    current_revision: encrypted_node.current_revision,
+                    metadata: root_node_metadata,
+                    encryption_key: EMPTY_KEY,
+                };
+
+                Ok(decrypted_node)
+            } else {
+                let decrypted_node_result = decrypt_node(encrypted_node, EMPTY_KEY).await;
+
+                if let Err(js_error) = decrypted_node_result {
+                    return Err(format!("could not decrypt node: {:?}", js_error));
+                }
+
+                let decrypted_node = decrypted_node_result.unwrap();
+                Ok(decrypted_node)
+            }
+        }
+        GetNodeResponse::NotFound => Err("root node returned 404".to_string()),
+    }
 }

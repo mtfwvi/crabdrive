@@ -1,9 +1,9 @@
-use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
+use crate::api::requests::{request, uint8array_from_response, RequestBody, RequestMethod};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use formatx::formatx;
 use wasm_bindgen::JsValue;
-use web_sys::Response;
 use web_sys::js_sys::Uint8Array;
+use web_sys::Response;
 
 pub enum GetChunkResponse {
     Ok(Uint8Array),
@@ -38,7 +38,7 @@ pub async fn get_chunk(
     let auth_token = Some(token);
 
     let response: Response =
-        request(url, request_method, body, query_parameters, auth_token).await?;
+        request(url, request_method, body, query_parameters, auth_token, true).await?;
     let parsed_response = match response.status() {
         200 => GetChunkResponse::Ok(uint8array_from_response(response).await?),
         404 => GetChunkResponse::NotFound,
@@ -69,7 +69,7 @@ pub async fn post_chunk(
     let auth_token = Some(token);
 
     let response: Response =
-        request(url, request_method, body, query_parameters, auth_token).await?;
+        request(url, request_method, body, query_parameters, auth_token, true).await?;
     let parsed_response = match response.status() {
         201 => PostChunkResponse::Created,
         404 => PostChunkResponse::NotFound,

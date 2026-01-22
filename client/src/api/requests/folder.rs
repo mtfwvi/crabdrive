@@ -19,7 +19,7 @@ pub async fn post_create_folder(
     let auth_token = Some(token);
 
     let response: Response =
-        request(url, request_method, body, query_parameters, auth_token).await?;
+        request(url, request_method, body, query_parameters, auth_token, true).await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string).unwrap();
