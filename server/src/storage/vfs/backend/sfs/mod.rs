@@ -72,7 +72,7 @@ impl FileRepository for Sfs {
     ) -> Result<(), FileError> {
         let _s = debug_span!("WriteChunk", session = session.to_string()).entered();
 
-        if self.sessions.get(session).is_none() {
+        if !self.sessions.contains_key(session) {
             error!("Invalid session");
             return Err(FileError::InvalidSession);
         }
