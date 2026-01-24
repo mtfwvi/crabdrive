@@ -34,6 +34,8 @@ impl IV {
         self.0.is_empty()
     }
 
+    /// used to encrypt chunks to prevent chunk reordering
+    // 2^32 chunks is enough as this allows you to have a max file size of 2^32 * 16 MB (chunk size)
     pub fn prefix_with_u32(&self, prefix: u32) -> IvWithPrefix {
         let prefix_bytes = prefix.to_be_bytes();
 

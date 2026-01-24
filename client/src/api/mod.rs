@@ -255,7 +255,7 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
 
     let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
 
-    for i in 1..(current_revision.chunk_count as u32) {
+    for i in 1..(current_revision.chunk_count) {
         let chunk_result = get_chunk(node.id, current_revision.id, i, &"".to_string()).await;
         if let Ok(chunk_response) = chunk_result {
             match chunk_response {
@@ -264,7 +264,7 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
                         chunk: encrypted_chunk_buffer,
                         index: i,
                         first_block: i == 1,
-                        last_block: i == current_revision.chunk_count as u32,
+                        last_block: i == current_revision.chunk_count,
                         iv_prefix: current_revision.iv,
                     };
                     let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;

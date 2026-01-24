@@ -31,7 +31,7 @@ pub async fn decrypt_chunk(
     let additional_byte = get_additional_byte(chunk.first_block, chunk.last_block);
     let additional_data = Uint8Array::new_from_slice(&[additional_byte]);
 
-    let iv_bytes = chunk.iv_prefix.prefix_with_u32(chunk.index);
+    let iv_bytes = chunk.iv_prefix.prefix_with_u32(chunk.index as u32);
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes);
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
     algorithm.set_additional_data(&additional_data);
@@ -60,7 +60,7 @@ pub async fn encrypt_chunk(
 
     let additional_byte = get_additional_byte(chunk.first_block, chunk.last_block);
     let additional_data = Uint8Array::new_from_slice(&[additional_byte]);
-    let iv_bytes = iv_prefix.prefix_with_u32(chunk.index);
+    let iv_bytes = iv_prefix.prefix_with_u32(chunk.index as u32);
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes);
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
     algorithm.set_additional_data(&additional_data);

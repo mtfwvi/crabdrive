@@ -60,7 +60,7 @@ impl FromSql<Text, Sqlite> for NodeType {
 pub type RevisionId = UUID;
 
 /// The index of a chunk within a file
-pub type ChunkIndex = u32;
+pub type ChunkIndex = u64;
 
 pub type MetadataIv = IV;
 pub type RevisionIv = IV;
