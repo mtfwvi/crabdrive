@@ -168,7 +168,7 @@ pub async fn create_file(
 
             //TODO test this
             let result = load_file_by_chunk(file, |chunk| {
-                // this does not clone the arraybuffer, just the ref to it
+                // this does not clone the actual arraybuffer, just the ref to it
                 let chunk = chunk.clone();
                 async move {
                     chunk::encrypt_and_upload_chunk(
@@ -219,28 +219,30 @@ pub async fn create_file(
 pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>, String> {
     let response_result = get_node_children(parent.id, &"".to_string()).await;
 
-    match response_result {
-        Ok(response) => match response {
-            GetNodeChildrenResponse::Ok(children) => {
-                let mut decrypted_children = Vec::with_capacity(children.len());
+    if let Err(err) = response_result {
+        return Err(format!("Could not query children: {:?}", err));
+    }
 
-                for child in children {
-                    let decrypted_child = decrypt_node(child, EMPTY_KEY).await;
-                    if let Ok(decrypted_child) = decrypted_child {
-                        decrypted_children.push(decrypted_child);
-                    } else {
-                        return Err(format!(
-                            "could not decrypt node: {:?}",
-                            decrypted_child.err().unwrap()
-                        ));
-                    }
+    let response = response_result.unwrap();
+    match response {
+        GetNodeChildrenResponse::Ok(children) => {
+            let mut decrypted_children = Vec::with_capacity(children.len());
+
+            for child in children {
+                let decrypted_child = decrypt_node(child, EMPTY_KEY).await;
+                if let Ok(decrypted_child) = decrypted_child {
+                    decrypted_children.push(decrypted_child);
+                } else {
+                    return Err(format!(
+                        "could not decrypt node: {:?}",
+                        decrypted_child.err().unwrap()
+                    ));
                 }
-
-                Ok(decrypted_children)
             }
-            GetNodeChildrenResponse::NotFound => Err("Could not query children: 404".to_string()),
-        },
-        Err(err) => Err(format!("Could not query children: {:?}", err)),
+
+            Ok(decrypted_children)
+        }
+        GetNodeChildrenResponse::NotFound => Err("Could not query children: 404".to_string()),
     }
 }
 
@@ -257,34 +259,33 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
 
     for i in 1..(current_revision.chunk_count) {
         let chunk_result = get_chunk(node.id, current_revision.id, i, &"".to_string()).await;
-        if let Ok(chunk_response) = chunk_result {
-            match chunk_response {
-                GetChunkResponse::Ok(encrypted_chunk_buffer) => {
-                    let encrypted_chunk = EncryptedChunk {
-                        chunk: encrypted_chunk_buffer,
-                        index: i,
-                        first_block: i == 1,
-                        last_block: i == current_revision.chunk_count,
-                        iv_prefix: current_revision.iv,
-                    };
-                    let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
-                    if decrypted_chunk.is_err() {
-                        return Err(format!(
-                            "chunk decryption failed for chunk {i}: {:?}",
-                            decrypted_chunk.err().unwrap()
-                        ));
-                    }
-                    chunks.push(Uint8Array::new(&decrypted_chunk.unwrap().chunk));
+
+        if let Err(js_error) = chunk_result {
+            return Err(format!("could not download chunk: {:?}", js_error));
+        }
+
+        let chunk_response = chunk_result.unwrap();
+        match chunk_response {
+            GetChunkResponse::Ok(encrypted_chunk_buffer) => {
+                let encrypted_chunk = EncryptedChunk {
+                    chunk: encrypted_chunk_buffer,
+                    index: i,
+                    first_block: i == 1,
+                    last_block: i == current_revision.chunk_count,
+                    iv_prefix: current_revision.iv,
+                };
+                let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
+                if decrypted_chunk.is_err() {
+                    return Err(format!(
+                        "chunk decryption failed for chunk {i}: {:?}",
+                        decrypted_chunk.err().unwrap()
+                    ));
                 }
-                GetChunkResponse::NotFound => {
-                    return Err(format!("chunk {i} return 404"));
-                }
+                chunks.push(Uint8Array::new(&decrypted_chunk.unwrap().chunk));
             }
-        } else {
-            return Err(format!(
-                "could not download chunk: {:?}",
-                chunk_result.err().unwrap()
-            ));
+            GetChunkResponse::NotFound => {
+                return Err(format!("chunk {i} return 404"));
+            }
         }
     }
 

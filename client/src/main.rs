@@ -17,6 +17,7 @@ use tracing_web::{MakeWebConsoleWriter, performance_layer};
 #[cfg(test)]
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 
+// instruct wasm-pack to run all test in the browser (otherwise node is used)
 #[cfg(test)]
 wasm_bindgen_test_configure!(run_in_browser);
 
