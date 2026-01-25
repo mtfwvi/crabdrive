@@ -1,6 +1,7 @@
 use crate::model::encryption::EncryptionKey;
 use wasm_bindgen::JsCast;
 use web_sys::js_sys::Uint8Array;
+use crabdrive_common::iv::IV;
 
 pub fn get_random_bytes(count: u32) -> Vec<u8> {
     let window = web_sys::window().expect("window does not exist");
@@ -15,8 +16,9 @@ pub fn get_random_bytes(count: u32) -> Vec<u8> {
     random_bytes.to_vec()
 }
 
-pub fn get_random_iv() -> [u8; 12] {
-    get_random_bytes(12).try_into().unwrap()
+pub fn get_random_iv() -> IV {
+    let iv_bytes = get_random_bytes(12).try_into().unwrap();
+    IV::new(iv_bytes)
 }
 
 pub fn get_random_encryption_key() -> EncryptionKey {
@@ -40,7 +42,7 @@ mod test {
     #[wasm_bindgen_test]
     fn test_get_random_iv() {
         let iv = get_random_iv();
-        assert!(!iv.eq(&[0; 12]));
+        assert!(!iv.get().eq(&[0; 12]));
     }
 
     #[wasm_bindgen_test]

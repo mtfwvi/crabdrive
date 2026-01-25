@@ -38,7 +38,7 @@ pub async fn decrypt_metadata(
     metadata: &EncryptedMetadata,
     key: &EncryptionKey,
 ) -> Result<NodeMetadata, JsValue> {
-    let encrypted_metadata = Uint8Array::new_from_slice(&metadata.metadata());
+    let encrypted_metadata = Uint8Array::new_from_slice(metadata.metadata());
 
     let subtle_crypto = encryption::get_subtle_crypto();
     let crypto_key = encryption::get_key_from_bytes(key).await;
@@ -70,12 +70,12 @@ pub async fn encrypt_metadata(
     let decrypted_metadata = serde_json::to_vec(metadata).unwrap();
     let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
 
-    let iv: [u8; 12] = random::get_random_iv();
+    let iv: IV = random::get_random_iv();
 
     let subtle_crypto = encryption::get_subtle_crypto();
     let key = encryption::get_key_from_bytes(key).await;
 
-    let iv_bytes_array = Uint8Array::new_from_slice(&iv);
+    let iv_bytes_array = Uint8Array::new_from_slice(&iv.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
 
     let encrypted_arraybuffer_promise = subtle_crypto.encrypt_with_object_and_buffer_source(
@@ -89,7 +89,7 @@ pub async fn encrypt_metadata(
     let encrypted_array = Uint8Array::new(&encrypted_arraybuffer);
     let encrypted_metadata = encrypted_array.to_vec();
 
-    Ok(EncryptedMetadata::new(encrypted_metadata, IV::new(iv)))
+    Ok(EncryptedMetadata::new(encrypted_metadata, iv))
 }
 
 #[cfg(test)]

@@ -3,13 +3,13 @@ use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::api::requests::folder::post_create_folder;
 use crate::api::requests::node::{get_node, get_node_children};
 use crate::constants::{CHUNK_SIZE, EMPTY_KEY};
+use crate::model::chunk::EncryptedChunk;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::chunk;
 use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
 use crate::utils::file::{combine_chunks, load_file_by_chunk};
-use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::file::{
@@ -20,7 +20,6 @@ use crabdrive_common::payloads::node::response::node::{GetNodeChildrenResponse, 
 use crabdrive_common::storage::NodeId;
 use web_sys::js_sys::Uint8Array;
 use web_sys::{Blob, File};
-use crate::model::chunk::EncryptedChunk;
 
 pub mod requests;
 
@@ -61,10 +60,10 @@ pub async fn create_folder(
         .unwrap();
 
     let request_body = PostCreateFolderRequest {
-        parent_metadata_iv: encrypted_parent_metadata.iv().clone(),
+        parent_metadata_iv: *encrypted_parent_metadata.iv(),
         parent_metadata_version: parent.change_count,
         parent_metadata: encrypted_parent_metadata.metadata().clone(),
-        node_metadata_iv: encrypted_metadata.iv().clone(),
+        node_metadata_iv: *encrypted_metadata.iv(),
         node_metadata: encrypted_metadata.metadata().clone(),
         node_id: new_node_id,
     };
@@ -135,12 +134,12 @@ pub async fn create_file(
 
     let chunk_count = (file.size() / CHUNK_SIZE).ceil() as u64;
 
-    let file_iv = IV::new(get_random_iv());
+    let file_iv = get_random_iv();
     let request_body = PostCreateFileRequest {
-        parent_metadata_iv: encrypted_parent_metadata.iv().clone(),
+        parent_metadata_iv: *encrypted_parent_metadata.iv(),
         parent_metadata_version: parent.change_count,
         parent_metadata: encrypted_parent_metadata.metadata().clone(),
-        node_metadata_iv: encrypted_metadata.iv().clone(),
+        node_metadata_iv: *encrypted_metadata.iv(),
         node_metadata: encrypted_metadata.metadata().clone(),
         file_iv,
         chunk_count,
