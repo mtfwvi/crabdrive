@@ -1,4 +1,4 @@
-use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
+use crate::api::requests::chunk::{get_chunk, GetChunkResponse};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::api::requests::folder::post_create_folder;
 use crate::api::requests::node::{get_node, get_node_children};
@@ -8,7 +8,7 @@ use crate::utils::encryption::chunk;
 use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
-use crate::utils::file::{EncryptedChunk, combine_chunks, load_file_by_chunk};
+use crate::utils::file::{combine_chunks, load_file_by_chunk};
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
@@ -20,6 +20,7 @@ use crabdrive_common::payloads::node::response::node::{GetNodeChildrenResponse, 
 use crabdrive_common::storage::NodeId;
 use web_sys::js_sys::Uint8Array;
 use web_sys::{Blob, File};
+use crate::model::chunk::EncryptedChunk;
 
 pub mod requests;
 

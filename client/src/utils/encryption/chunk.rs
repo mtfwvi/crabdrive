@@ -1,14 +1,14 @@
-use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
+use crate::api::requests::chunk::{post_chunk, PostChunkResponse};
 use crate::constants::AES_GCM;
 use crate::model::encryption::EncryptionKey;
 use crate::utils::encryption;
-use crate::utils::file::{DecryptedChunk, EncryptedChunk};
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::{NodeId, RevisionId};
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
+use crate::model::chunk::{DecryptedChunk, EncryptedChunk};
 
 /// The byte in the authenticated data that indicates the start and end of files to prevent
 /// truncating by the server

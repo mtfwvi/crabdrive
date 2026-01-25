@@ -20,7 +20,7 @@ pub async fn delete_node(
 ) -> Result<DeleteNodeResponse, JsValue> {
     let url = formatx!(crabdrive_common::routes::NODE_ROUTE_NODEID, node_id).unwrap();
 
-    let request_method = RequestMethod::GET;
+    let request_method = RequestMethod::DELETE;
     let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
     let query_parameters = vec![];
     let auth_token = Some(token);
@@ -148,7 +148,7 @@ pub async fn post_move_node_to_trash(
     body: PostMoveNodeToTrashRequest,
     token: &String,
 ) -> Result<PostMoveNodeToTrashResponse, JsValue> {
-    let url = formatx!(crabdrive_common::routes::MOVE_NODE_ROUTE, node_id).unwrap();
+    let url = formatx!(crabdrive_common::routes::MOVE_NODE_TO_TRASH_ROUTE, node_id).unwrap();
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
@@ -175,7 +175,7 @@ pub async fn post_move_node_out_of_trash(
     body: PostMoveNodeOutOfTrashRequest,
     token: &String,
 ) -> Result<PostMoveNodeOutOfTrashResponse, JsValue> {
-    let url = formatx!(crabdrive_common::routes::MOVE_NODE_ROUTE, node_id).unwrap();
+    let url = formatx!(crabdrive_common::routes::MOVE_NODE_OUT_OF_TASH_ROUTE, node_id).unwrap();
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Json(serde_json::to_string(&body).unwrap());

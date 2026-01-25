@@ -1,27 +1,9 @@
 use crate::constants::CHUNK_SIZE;
-use crabdrive_common::iv::IV;
-use crabdrive_common::storage::ChunkIndex;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
-
-#[derive(Debug, Clone)]
-pub struct DecryptedChunk {
-    pub chunk: ArrayBuffer,
-    pub index: ChunkIndex,
-    pub first_block: bool,
-    pub last_block: bool,
-}
-
-#[derive(Debug)]
-pub struct EncryptedChunk {
-    pub chunk: Uint8Array,
-    pub index: ChunkIndex,
-    pub first_block: bool,
-    pub last_block: bool,
-    pub iv_prefix: IV,
-}
+use crate::model::chunk::DecryptedChunk;
 
 pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where

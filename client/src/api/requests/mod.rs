@@ -3,6 +3,7 @@ pub mod file;
 pub mod folder;
 pub mod node;
 
+use std::fmt::Display;
 use crate::constants::API_BASE_PATH;
 use leptos::wasm_bindgen::JsValue;
 use wasm_bindgen::JsCast;
@@ -11,12 +12,19 @@ use web_sys::js_sys::Uint8Array;
 use web_sys::{Request, RequestInit, Response, Url};
 
 #[allow(clippy::upper_case_acronyms)]
+#[derive(Debug)]
 enum RequestMethod {
     GET,
     POST,
     PATCH,
     DELETE,
     PUT,
+}
+
+impl Display for RequestMethod {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }
 
 enum RequestBody {
@@ -34,13 +42,7 @@ async fn request(
     use_api_base_path: bool,
 ) -> Result<Response, JsValue> {
     let opts = RequestInit::new();
-    opts.set_method(match method {
-        RequestMethod::GET => "GET",
-        RequestMethod::POST => "POST",
-        RequestMethod::PATCH => "PATCH",
-        RequestMethod::DELETE => "DELETE",
-        RequestMethod::PUT => "PUT",
-    });
+    opts.set_method(&method.to_string());
 
     match &body {
         RequestBody::Empty => {}
@@ -179,5 +181,10 @@ mod test {
         let post: Post = serde_json::from_str(&response_text).unwrap();
 
         assert_eq!(example_post, post);
+    }
+
+    #[test]
+    fn test_display_request_method() {
+        assert_eq!("GET", RequestMethod::GET.to_string());
     }
 }

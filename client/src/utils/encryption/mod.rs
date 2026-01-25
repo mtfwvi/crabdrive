@@ -41,7 +41,7 @@ mod test {
     use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
     use crate::utils::encryption::get_key_from_bytes;
     use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
-    use crate::utils::file::DecryptedChunk;
+    use crate::model::chunk::DecryptedChunk;
     use chrono::NaiveDateTime;
     use crabdrive_common::iv::IV;
 
