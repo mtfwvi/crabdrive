@@ -474,7 +474,6 @@ dependencies = [
  "serde",
  "test-case",
  "uuid",
- "wasm-bindgen-test",
 ]
 
 [[package]]

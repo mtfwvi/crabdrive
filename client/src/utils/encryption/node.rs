@@ -92,6 +92,22 @@ pub async fn encrypt_metadata(
     Ok(EncryptedMetadata::new(encrypted_metadata, iv))
 }
 
+pub async fn decrypt_node_with_parent(parent: &DecryptedNode, child: EncryptedNode) -> Result<DecryptedNode, JsValue> {
+    let key = match parent.metadata {
+        NodeMetadata::V1(ref metadata_v1) => {
+            // find the key in the list of keys
+            metadata_v1.children_key.iter().find(|(id,_)| id.eq(&child.id))
+        }
+    };
+
+    if key.is_none() {
+        //TODO error handling instead of creating js strings
+        return Err(JsValue::from_str("Key not found"))
+    }
+    let key = key.unwrap();
+    decrypt_node(child, key.1).await
+}
+
 #[cfg(test)]
 mod test {
     use chrono::NaiveDateTime;
