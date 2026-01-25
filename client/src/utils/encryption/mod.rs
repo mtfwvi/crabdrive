@@ -1,5 +1,4 @@
 use crate::model::encryption::EncryptionKey;
-use std::str::FromStr;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, Uint8Array};
