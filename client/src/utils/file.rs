@@ -72,18 +72,17 @@ mod test {
         let part1 = Uint8Array::new_from_slice(&vec1);
         let part2 = Uint8Array::new_from_slice(&vec2);
 
-        let combined = combine_chunks(vec![part1, part2]);
-        let combined: ArrayBuffer = JsFuture::from(combined.array_buffer())
+        let result = combine_chunks(vec![part1, part2]);
+        let result_buf: ArrayBuffer = JsFuture::from(result.array_buffer())
             .await
             .unwrap()
             .dyn_into()
             .unwrap();
 
-        let combined = Uint8Array::new(&combined);
-        let combined_vec = combined.to_vec();
+        let result_vec = Uint8Array::new(&result_buf).to_vec();
 
         vec1.append(&mut vec2);
 
-        assert!(combined_vec.eq(&vec1));
+        assert_eq!(result_vec, vec1);
     }
 }
