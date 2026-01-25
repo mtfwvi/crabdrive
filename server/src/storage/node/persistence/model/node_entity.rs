@@ -1,4 +1,4 @@
-use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use chrono::NaiveDateTime;
 use crabdrive_common::storage::RevisionId;
 use crabdrive_common::storage::{NodeId, NodeType};

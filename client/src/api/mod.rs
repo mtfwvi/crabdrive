@@ -61,11 +61,11 @@ pub async fn create_folder(
         .unwrap();
 
     let request_body = PostCreateFolderRequest {
-        parent_metadata_iv: encrypted_parent_metadata.iv,
+        parent_metadata_iv: encrypted_parent_metadata.iv().clone(),
         parent_metadata_version: parent.change_count,
-        parent_metadata: encrypted_parent_metadata.data,
-        node_metadata_iv: encrypted_metadata.iv,
-        node_metadata: encrypted_metadata.data,
+        parent_metadata: encrypted_parent_metadata.metadata().clone(),
+        node_metadata_iv: encrypted_metadata.iv().clone(),
+        node_metadata: encrypted_metadata.metadata().clone(),
         node_id: new_node_id,
     };
 
@@ -137,11 +137,11 @@ pub async fn create_file(
 
     let file_iv = IV::new(get_random_iv());
     let request_body = PostCreateFileRequest {
-        parent_metadata_iv: encrypted_parent_metadata.iv,
+        parent_metadata_iv: encrypted_parent_metadata.iv().clone(),
         parent_metadata_version: parent.change_count,
-        parent_metadata: encrypted_parent_metadata.data,
-        node_metadata_iv: encrypted_metadata.iv,
-        node_metadata: encrypted_metadata.data,
+        parent_metadata: encrypted_parent_metadata.metadata().clone(),
+        node_metadata_iv: encrypted_metadata.iv().clone(),
+        node_metadata: encrypted_metadata.metadata().clone(),
         file_iv,
         chunk_count,
         node_id: new_node_id,

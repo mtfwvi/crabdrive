@@ -7,3 +7,4 @@ pub mod routes;
 pub mod storage;
 pub mod user;
 pub mod uuid;
+pub mod encrypted_metadata;

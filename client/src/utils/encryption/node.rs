@@ -1,5 +1,6 @@
 use crate::constants::AES_GCM;
-use crate::model::encryption::{EncryptedMetadata, EncryptionKey};
+use crate::model::encryption::{EncryptionKey};
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption;
 use crate::utils::encryption::random;
@@ -14,10 +15,7 @@ pub async fn decrypt_node(
     node: EncryptedNode,
     key: EncryptionKey,
 ) -> Result<DecryptedNode, JsValue> {
-    let encrypted_metadata = EncryptedMetadata {
-        data: node.encrypted_metadata,
-        iv: node.metadata_iv,
-    };
+    let encrypted_metadata = EncryptedMetadata::new(node.encrypted_metadata, node.metadata_iv);
 
     let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &key).await?;
 
@@ -40,12 +38,12 @@ pub async fn decrypt_metadata(
     metadata: &EncryptedMetadata,
     key: &EncryptionKey,
 ) -> Result<NodeMetadata, JsValue> {
-    let encrypted_metadata = Uint8Array::new_from_slice(&metadata.data);
+    let encrypted_metadata = Uint8Array::new_from_slice(&metadata.metadata());
 
     let subtle_crypto = encryption::get_subtle_crypto();
     let crypto_key = encryption::get_key_from_bytes(key).await;
 
-    let iv_bytes = metadata.iv;
+    let iv_bytes = metadata.iv();
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
 
@@ -91,8 +89,5 @@ pub async fn encrypt_metadata(
     let encrypted_array = Uint8Array::new(&encrypted_arraybuffer);
     let encrypted_metadata = encrypted_array.to_vec();
 
-    Ok(EncryptedMetadata {
-        data: encrypted_metadata,
-        iv: IV::new(iv),
-    })
+    Ok(EncryptedMetadata::new(encrypted_metadata, IV::new(iv)))
 }

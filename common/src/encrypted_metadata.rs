@@ -1,14 +1,20 @@
-use crabdrive_common::iv::IV;
-use diesel::deserialize::{FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::serialize::ToSql;
-use diesel::sql_types::Binary;
-use diesel::sqlite::Sqlite;
+use crate::iv::IV;
+
+#[cfg(feature = "server")]
+use diesel::{
+    deserialize::{FromSql, FromSqlRow},
+    expression::AsExpression,
+    serialize::ToSql,
+    sql_types::Binary,
+    sqlite::Sqlite,
+};
+
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression, Clone)]
-#[diesel(sql_type = Binary)]
-pub(crate) struct EncryptedMetadata {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "server", diesel(sql_type = Binary))]
+pub struct EncryptedMetadata {
     data: Vec<u8>,
     iv: IV,
 }
@@ -20,8 +26,21 @@ impl EncryptedMetadata {
             iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
         }
     }
+    
+    pub fn metadata(&self) -> &Vec<u8> {
+        &self.data
+    }
+    
+    pub fn iv(&self) -> &IV {
+        &self.iv
+    }
+    
+    pub fn new(data: Vec<u8>, iv: IV) -> Self {
+        Self { data, iv }
+    }
 }
 
+#[cfg(feature = "server")]
 impl ToSql<Binary, Sqlite> for EncryptedMetadata {
     fn to_sql<'b>(
         &'b self,
@@ -37,6 +56,7 @@ impl ToSql<Binary, Sqlite> for EncryptedMetadata {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<Binary, Sqlite> for EncryptedMetadata {
     fn from_sql(
         bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,

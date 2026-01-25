@@ -9,7 +9,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
 };
 use std::error::Error;
-
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crate::{
     db::{
         NodeDsl, RevisionDsl,
@@ -17,9 +17,7 @@ use crate::{
     },
     http::AppState,
     storage::{
-        node::persistence::model::{
-            encrypted_metadata::EncryptedMetadata, node_entity::NodeEntity,
-        },
+        node::persistence::model::node_entity::NodeEntity,
         revision::persistence::model::revision_entity::RevisionEntity,
     },
     user::persistence::model::user_entity::UserEntity,
