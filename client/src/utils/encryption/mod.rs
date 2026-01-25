@@ -1,8 +1,8 @@
 use crate::model::encryption::EncryptionKey;
 use std::str::FromStr;
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
-use web_sys::js_sys::{Array, JsString, Uint8Array};
+use web_sys::js_sys::{Array, Uint8Array};
 use web_sys::{CryptoKey, SubtleCrypto};
 
 pub mod chunk;
@@ -10,7 +10,11 @@ pub mod node;
 pub mod random;
 
 fn get_subtle_crypto() -> SubtleCrypto {
-    web_sys::window().unwrap().crypto().unwrap().subtle()
+    web_sys::window()
+        .expect("window property does not exist")
+        .crypto()
+        .expect("browser does not support crypto api")
+        .subtle()
 }
 
 async fn get_key_from_bytes(key: &EncryptionKey) -> CryptoKey {
@@ -19,8 +23,8 @@ async fn get_key_from_bytes(key: &EncryptionKey) -> CryptoKey {
     let algorithm = "AES-GCM";
     let extractable = false;
     let key_usage = Array::new();
-    key_usage.push(&JsString::from_str("encrypt").unwrap());
-    key_usage.push(&JsString::from_str("decrypt").unwrap());
+    key_usage.push(&JsValue::from("encrypt"));
+    key_usage.push(&JsValue::from("decrypt"));
 
     JsFuture::from(
         get_subtle_crypto()

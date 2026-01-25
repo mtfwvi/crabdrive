@@ -8,7 +8,7 @@ pub fn get_random_bytes(count: u32) -> Vec<u8> {
     let array = Uint8Array::new_with_length(count);
     let random_bytes: Uint8Array = window
         .crypto()
-        .unwrap()
+        .expect("no crypto api")
         .get_random_values_with_js_u8_array(&array)
         .expect("Failed to get random bytes")
         .dyn_into()

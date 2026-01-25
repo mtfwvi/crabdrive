@@ -42,9 +42,14 @@ pub async fn create_file(
 
     let new_node_id = NodeId::random();
 
-    let encrypted_metadata = encrypt_metadata(&file_metadata, &new_node_encryption_key)
-        .await
-        .unwrap();
+    let encrypted_metadata_result =
+        encrypt_metadata(&file_metadata, &new_node_encryption_key).await;
+
+    if let Err(js_error) = encrypted_metadata_result {
+        return Err(format!("could not encrypt metadata: {:?}", js_error));
+    }
+
+    let encrypted_metadata = encrypted_metadata_result.unwrap();
 
     let mut new_parent_metadata = parent.metadata.clone();
 
@@ -54,9 +59,13 @@ pub async fn create_file(
             .push((new_node_id, new_node_encryption_key)),
     }
 
-    let encrypted_parent_metadata = encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
-        .await
-        .unwrap();
+    let encrypted_parent_metadata_result =
+        encrypt_metadata(&new_parent_metadata, &parent.encryption_key).await;
+
+    if let Err(js_error) = encrypted_parent_metadata_result {
+        return Err(format!("could not encrypt metadata: {:?}", js_error));
+    }
+    let encrypted_parent_metadata = encrypted_parent_metadata_result.unwrap();
 
     let chunk_count = (file.size() / CHUNK_SIZE).ceil() as u64;
 
