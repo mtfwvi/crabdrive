@@ -1,7 +1,7 @@
 use crate::model::encryption::EncryptionKey;
+use crabdrive_common::iv::IV;
 use wasm_bindgen::JsCast;
 use web_sys::js_sys::Uint8Array;
-use crabdrive_common::iv::IV;
 
 pub fn get_random_bytes(count: u32) -> Vec<u8> {
     let window = web_sys::window().expect("window does not exist");

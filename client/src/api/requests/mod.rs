@@ -3,9 +3,9 @@ pub mod file;
 pub mod folder;
 pub mod node;
 
-use std::fmt::Display;
 use crate::constants::API_BASE_PATH;
 use leptos::wasm_bindgen::JsValue;
+use std::fmt::Display;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Uint8Array;

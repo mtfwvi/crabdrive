@@ -1,5 +1,5 @@
-use crabdrive_common::da;
 use crate::model::encryption::EncryptionKey;
+use crabdrive_common::da;
 
 pub const EMPTY_KEY: EncryptionKey = [0; 32];
 pub const AES_GCM: &str = "AES-GCM";

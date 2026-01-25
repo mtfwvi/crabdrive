@@ -1,6 +1,6 @@
-use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
+use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 
 #[derive(Debug, Clone)]
 pub struct DecryptedChunk {

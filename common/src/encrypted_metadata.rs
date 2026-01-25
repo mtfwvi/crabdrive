@@ -26,15 +26,15 @@ impl EncryptedMetadata {
             iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
         }
     }
-    
+
     pub fn metadata(&self) -> &Vec<u8> {
         &self.data
     }
-    
+
     pub fn iv(&self) -> &IV {
         &self.iv
     }
-    
+
     pub fn new(data: Vec<u8>, iv: IV) -> Self {
         Self { data, iv }
     }

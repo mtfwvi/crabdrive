@@ -76,7 +76,7 @@ mod test {
 
     #[test_case(u32::MAX, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], [255, 255, 255, 255, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]; "test_prefix_iv1")]
     #[test_case(258, [1, 2, 3, 4, 5, 6, 25, 8, 9, 10, 11, 12],  [0, 0, 1, 2, 1, 2, 3, 4, 5, 6, 25, 8, 9, 10, 11, 12]; "test_prefix_iv2")]
-    fn test_prefix_iv(prefix: u32, iv: [u8;12], expected: [u8; 16]) {
+    fn test_prefix_iv(prefix: u32, iv: [u8; 12], expected: [u8; 16]) {
         let iv = IV::new(iv);
         let iv_with_prefix = iv.prefix_with_u32(prefix);
 

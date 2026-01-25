@@ -1,4 +1,4 @@
-use crate::api::requests::chunk::{get_chunk, GetChunkResponse};
+use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
 use crate::constants::EMPTY_KEY;
 use crate::model::chunk::EncryptedChunk;
 use crate::model::node::DecryptedNode;
@@ -21,7 +21,8 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
     let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
 
     for i in 1..(current_revision.chunk_count) {
-        let decrypted_chunk_result = download_chunk_and_decrypt(node.id, &current_revision, i, &"".to_string()).await;
+        let decrypted_chunk_result =
+            download_chunk_and_decrypt(node.id, &current_revision, i, &"".to_string()).await;
         if let Err(js_error) = decrypted_chunk_result {
             return Err(format!("could not download/decrypt chunk: {:?}", js_error));
         }
@@ -31,7 +32,12 @@ pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
     Ok(combine_chunks(chunks))
 }
 
-async fn download_chunk_and_decrypt(node_id: NodeId, revision: &FileRevision, i: ChunkIndex, token: &String) -> Result<Uint8Array, JsValue> {
+async fn download_chunk_and_decrypt(
+    node_id: NodeId,
+    revision: &FileRevision,
+    i: ChunkIndex,
+    token: &String,
+) -> Result<Uint8Array, JsValue> {
     let chunk_response = get_chunk(node_id, revision.id, i, token).await?;
 
     match chunk_response {

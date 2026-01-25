@@ -1,9 +1,9 @@
 use crate::constants::AES_GCM;
-use crate::model::encryption::{EncryptionKey};
-use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crate::model::encryption::EncryptionKey;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption;
 use crate::utils::encryption::random;
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
 use wasm_bindgen::{JsCast, JsValue};
@@ -92,17 +92,23 @@ pub async fn encrypt_metadata(
     Ok(EncryptedMetadata::new(encrypted_metadata, iv))
 }
 
-pub async fn decrypt_node_with_parent(parent: &DecryptedNode, child: EncryptedNode) -> Result<DecryptedNode, JsValue> {
+pub async fn decrypt_node_with_parent(
+    parent: &DecryptedNode,
+    child: EncryptedNode,
+) -> Result<DecryptedNode, JsValue> {
     let key = match parent.metadata {
         NodeMetadata::V1(ref metadata_v1) => {
             // find the key in the list of keys
-            metadata_v1.children_key.iter().find(|(id,_)| id.eq(&child.id))
+            metadata_v1
+                .children_key
+                .iter()
+                .find(|(id, _)| id.eq(&child.id))
         }
     };
 
     if key.is_none() {
         //TODO error handling instead of creating js strings
-        return Err(JsValue::from_str("Key not found"))
+        return Err(JsValue::from_str("Key not found"));
     }
     let key = key.unwrap();
     decrypt_node(child, key.1).await
@@ -110,11 +116,11 @@ pub async fn decrypt_node_with_parent(parent: &DecryptedNode, child: EncryptedNo
 
 #[cfg(test)]
 mod test {
-    use chrono::NaiveDateTime;
-    use wasm_bindgen_test::wasm_bindgen_test;
     use crate::constants::EMPTY_KEY;
     use crate::model::node::{MetadataV1, NodeMetadata};
     use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
+    use chrono::NaiveDateTime;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_metadata() {

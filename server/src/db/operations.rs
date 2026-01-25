@@ -4,12 +4,6 @@
 // [ ] Selektieren für Node, User, Revision
 // [ ] Kinder von Node selektieren
 
-use crabdrive_common::uuid::UUID;
-use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
-};
-use std::error::Error;
-use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crate::{
     db::{
         NodeDsl, RevisionDsl,
@@ -22,6 +16,12 @@ use crate::{
     },
     user::persistence::model::user_entity::UserEntity,
 };
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::uuid::UUID;
+use diesel::{
+    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
+};
+use std::error::Error;
 
 // User Ops
 

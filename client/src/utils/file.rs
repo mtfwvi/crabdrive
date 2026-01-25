@@ -1,9 +1,9 @@
 use crate::constants::CHUNK_SIZE;
+use crate::model::chunk::DecryptedChunk;
 use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
-use crate::model::chunk::DecryptedChunk;
 
 pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
 where

@@ -1,4 +1,4 @@
-use crate::api::requests::chunk::{post_chunk, PostChunkResponse};
+use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::constants::{CHUNK_SIZE, EMPTY_KEY};
 use crate::model::chunk::DecryptedChunk;
@@ -93,7 +93,14 @@ pub async fn create_file(
             assert_eq!(file_revision.iv, file_iv);
 
             //TODO test this
-            upload_file(file, file_encryption_key, &file_revision, new_node_id, &"".to_string()).await
+            upload_file(
+                file,
+                file_encryption_key,
+                &file_revision,
+                new_node_id,
+                &"".to_string(),
+            )
+            .await
         }
         PostCreateFileResponse::NotFound => Err(format!(
             "no such node: {}. Check if you have permission to access it",
@@ -112,15 +119,14 @@ async fn upload_file(
     token: &String,
 ) -> Result<DecryptedNode, String> {
     //TODO test this
-    let result =
-        load_file_by_chunk(file, |chunk| {
-            // this does not clone the actual arraybuffer, just the ref to it
-            let chunk = chunk.clone();
-            async move {
-                encrypt_and_upload_chunk(&chunk, revision.iv, &key, node_id, revision.id, token).await
-            }
-        })
-        .await;
+    let result = load_file_by_chunk(file, |chunk| {
+        // this does not clone the actual arraybuffer, just the ref to it
+        let chunk = chunk.clone();
+        async move {
+            encrypt_and_upload_chunk(&chunk, revision.iv, &key, node_id, revision.id, token).await
+        }
+    })
+    .await;
 
     if let Err(js_error) = result {
         return Err(format!("could not upload chunks: {:?}", js_error));
@@ -151,7 +157,7 @@ async fn encrypt_and_upload_chunk(
     key: &EncryptionKey,
     node_id: NodeId,
     revision_id: RevisionId,
-    token: &String
+    token: &String,
 ) -> Result<(), JsValue> {
     let encrypted_chunk = chunk::encrypt_chunk(chunk, key, iv_prefix)
         .await
@@ -159,14 +165,7 @@ async fn encrypt_and_upload_chunk(
 
     let request_body = Uint8Array::new(&encrypted_chunk.chunk);
 
-    let response = post_chunk(
-        node_id,
-        revision_id,
-        chunk.index,
-        request_body,
-        token,
-    )
-    .await?;
+    let response = post_chunk(node_id, revision_id, chunk.index, request_body, token).await?;
 
     //TODO error handling
     match response {

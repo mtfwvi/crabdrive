@@ -1,19 +1,16 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{routes, AppConfig, AppState};
-use crate::storage::{
-    node::persistence::model::node_entity::NodeEntity,
-    vfs::backend::Sfs,
-};
+use crate::http::{AppConfig, AppState, routes};
+use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 
 use crabdrive_common::uuid::UUID;
 
 use std::io::ErrorKind;
 
-use axum::{middleware, Router};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use tracing::{error, info};
+use axum::{Router, middleware};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;

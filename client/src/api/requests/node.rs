@@ -175,7 +175,11 @@ pub async fn post_move_node_out_of_trash(
     body: PostMoveNodeOutOfTrashRequest,
     token: &String,
 ) -> Result<PostMoveNodeOutOfTrashResponse, JsValue> {
-    let url = formatx!(crabdrive_common::routes::MOVE_NODE_OUT_OF_TASH_ROUTE, node_id).unwrap();
+    let url = formatx!(
+        crabdrive_common::routes::MOVE_NODE_OUT_OF_TASH_ROUTE,
+        node_id
+    )
+    .unwrap();
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
