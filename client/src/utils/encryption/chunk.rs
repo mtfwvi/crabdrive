@@ -118,3 +118,69 @@ pub async fn encrypt_and_upload_chunk(
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use wasm_bindgen_futures::js_sys::Uint8Array;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use crabdrive_common::iv::IV;
+    use crate::constants::EMPTY_KEY;
+    use crate::model::chunk::DecryptedChunk;
+    use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
+
+    #[wasm_bindgen_test]
+    async fn test_encrypt_decrypt_chunk() {
+        let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let chunk = DecryptedChunk {
+            chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
+            index: 1,
+            first_block: true,
+            last_block: false,
+        };
+
+        let encrypted_chunk = encrypt_chunk(
+            &chunk,
+            &EMPTY_KEY,
+            IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        )
+            .await
+            .expect("encrypt chunk");
+
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY)
+            .await
+            .expect("decrypt chunk");
+
+        let decrypted_chunk_array = Uint8Array::new(&decrypted_chunk.chunk).to_vec();
+
+        assert_eq!(example_buffer, decrypted_chunk_array);
+    }
+
+    #[wasm_bindgen_test]
+    async fn test_detect_chunk_removal() {
+        let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+
+        let chunk = DecryptedChunk {
+            chunk: Uint8Array::new_from_slice(&example_buffer).buffer(),
+            index: 2,
+            first_block: false,
+            last_block: false,
+        };
+
+        let mut encrypted_chunk = encrypt_chunk(
+            &chunk,
+            &EMPTY_KEY,
+            IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
+        )
+            .await
+            .expect("encrypt chunk");
+
+        // server tries to truncate the file by removing the first block
+        encrypted_chunk.index = 1;
+        encrypted_chunk.first_block = true;
+
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
+
+        assert!(decrypted_chunk.is_err())
+    }
+}

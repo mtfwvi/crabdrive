@@ -91,3 +91,35 @@ pub async fn encrypt_metadata(
 
     Ok(EncryptedMetadata::new(encrypted_metadata, IV::new(iv)))
 }
+
+#[cfg(test)]
+mod test {
+    use chrono::NaiveDateTime;
+    use wasm_bindgen_test::wasm_bindgen_test;
+    use crate::constants::EMPTY_KEY;
+    use crate::model::node::{MetadataV1, NodeMetadata};
+    use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
+
+    #[wasm_bindgen_test]
+    async fn test_encrypt_decrypt_metadata() {
+        let example_metadata = NodeMetadata::V1(MetadataV1 {
+            name: "hello.txt".to_string(),
+            last_modified: NaiveDateTime::default(),
+            created: NaiveDateTime::default(),
+            size: None,
+            mime_type: Some("txt".to_string()),
+            file_key: None,
+            children_key: vec![],
+        });
+
+        let encrypted_metadata = encrypt_metadata(&example_metadata, &EMPTY_KEY)
+            .await
+            .expect("could not encrypt node");
+
+        let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &EMPTY_KEY)
+            .await
+            .expect("could not decrypt node");
+
+        assert_eq!(example_metadata, decrypted_metadata);
+    }
+}
