@@ -1,6 +1,7 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
+use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::{
     node::persistence::model::{encrypted_metadata::EncryptedMetadata, node_entity::NodeEntity},
     vfs::backend::Sfs,
@@ -9,6 +10,7 @@ use crate::storage::{
 use crabdrive_common::uuid::UUID;
 
 use std::io::ErrorKind;
+use std::sync::Arc;
 
 use axum::{Router, middleware};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -30,8 +32,9 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let mut storage_dir = std::path::PathBuf::new();
     storage_dir.push(&config.storage.dir);
     let vfs = Sfs::new(storage_dir);
+    let node_repository = NodeState::new(Arc::new(pool.clone()));
 
-    let state = AppState::new(config.clone(), pool, vfs);
+    let state = AppState::new(config.clone(), pool, vfs, node_repository);
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
     let mut conn = state.db_pool.get().unwrap();
@@ -39,7 +42,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 
     // HACK: Create a root node with a zeroed UUID, if it's not already existing.
     // TODO: Remove when adding auth!
-    if crate::db::operations::select_node(&state, UUID::nil())
+    if crate::db::operations::select_node(&state.db_pool, UUID::nil())
         .unwrap()
         .is_none()
     {
@@ -53,7 +56,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             metadata_change_counter: 0,
             node_type: crabdrive_common::storage::NodeType::Folder,
         };
-        crate::db::operations::insert_node(&state, &node, &EncryptedMetadata::nil()).unwrap();
+        crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
+            .unwrap();
     }
 
     let app = Router::<AppState>::new()
