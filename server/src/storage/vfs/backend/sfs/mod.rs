@@ -75,7 +75,7 @@ impl FileRepository for Sfs {
         let path = self.sessions.get(session).unwrap();
 
         let mut pathbuf = path.clone();
-        pathbuf.push(chunk.id.to_string());
+        pathbuf.push(chunk.index.to_string());
         pathbuf.set_extension("bin");
         let mut file_handle = OpenOptions::new()
             .write(true)
@@ -84,7 +84,7 @@ impl FileRepository for Sfs {
         file_handle.write_all(&chunk.data)?;
         debug!(
             "Wrote chunk {} (Size: {}) to {}",
-            chunk.id,
+            chunk.index,
             da!(chunk.data.len()),
             pathbuf.display()
         );
@@ -141,7 +141,7 @@ impl FileRepository for Sfs {
         file_handle.read_exact(&mut bytes)?;
 
         Ok(FileChunk {
-            id: chunk_index,
+            index: chunk_index,
             data: bytes.freeze(),
         })
     }

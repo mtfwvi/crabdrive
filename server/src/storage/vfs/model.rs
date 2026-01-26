@@ -38,7 +38,7 @@ pub(crate) type FileKey = String;
 pub(crate) type TransferSessionId = UUID;
 
 pub(crate) struct FileChunk {
-    pub id: ChunkIndex,
+    pub index: ChunkIndex,
     /// The chunk contents.
     /// The size of the file chunk can be accessed using `FileChunk::data::len()`. It is
     /// usually 16MB, however it may be smaller if this is the last (or only) chunk.
