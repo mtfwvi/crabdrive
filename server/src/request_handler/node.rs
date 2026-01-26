@@ -1,6 +1,7 @@
 use axum::Json;
 use axum::extract::{Path, Query};
 use axum::http::StatusCode;
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -24,8 +25,10 @@ pub fn get_example_node_info() -> EncryptedNode {
         deleted_on: None,
         node_type: NodeType::Folder,
         current_revision: None,
-        encrypted_metadata: vec![],
-        metadata_iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+        encrypted_metadata: EncryptedMetadata::new(
+            vec![],
+            IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+        ),
     }
 }
 

@@ -1,65 +1,56 @@
 use serde::{Deserialize, Serialize};
 
 use crate::storage::EncryptedNode;
-
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum GetNodeResponse {
-    Ok(EncryptedNode) = 200,
-    NotFound = 404,
+    Ok(EncryptedNode),
+    NotFound,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PatchNodeResponse {
-    Ok(EncryptedNode) = 200,
-    NotFound = 404,
-    Conflict = 409,
+    Ok(EncryptedNode),
+    NotFound,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeResponse {
-    Ok = 200,
-    NotFound = 404,
-    Conflict = 409,
+    Ok,
+    NotFound,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeToTrashResponse {
-    Ok = 200,
-    NotFound = 404,
-    Conflict = 409,
+    Ok,
+    NotFound,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeOutOfTrashResponse {
-    Ok = 200,
-    NotFound = 404,
-    Conflict = 409,
+    Ok,
+    NotFound,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum DeleteNodeResponse {
-    Ok = 200,
-    NotFound = 404,
-    Conflict = 409,
+    Ok,
+    NotFound,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum GetPathBetweenNodesResponse {
-    Ok(Vec<EncryptedNode>) = 200,
-    NoContent = 204,
-    NotFound = 404,
+    Ok(Vec<EncryptedNode>),
+    NoContent,
+    NotFound,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum GetNodeChildrenResponse {
-    Ok(Vec<EncryptedNode>) = 200,
-    NotFound = 404,
+    Ok(Vec<EncryptedNode>),
+    NotFound,
 }

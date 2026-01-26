@@ -1,34 +1,30 @@
 use crate::storage::{ChunkIndex, EncryptedNode, FileRevision};
 use serde::{Deserialize, Serialize};
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostCreateFileResponse {
-    Created(EncryptedNode) = 201,
-    NotFound = 404,
-    BadRequest = 400,
-    Conflict = 409,
+    Created(EncryptedNode),
+    NotFound,
+    BadRequest,
+    Conflict,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostUpdateFileResponse {
-    Ok(FileRevision) = 200,
-    NotFound = 404,
-    BadRequest = 400,
+    Ok(FileRevision),
+    NotFound,
+    BadRequest,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum PostCommitFileResponse {
-    Ok(EncryptedNode) = 200,
-    BadRequest(Vec<ChunkIndex>) = 400, // the missing parts
-    NotFound = 404,
+    Ok(EncryptedNode),
+    BadRequest(Vec<ChunkIndex>), // the missing parts
+    NotFound,
 }
 
-#[repr(u32)]
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug)]
 pub enum GetVersionsResponse {
-    Ok(Vec<FileRevision>) = 200,
-    NotFound = 404,
+    Ok(Vec<FileRevision>),
+    NotFound,
 }

@@ -15,9 +15,7 @@ pub async fn decrypt_node(
     node: EncryptedNode,
     key: EncryptionKey,
 ) -> Result<DecryptedNode, JsValue> {
-    let encrypted_metadata = EncryptedMetadata::new(node.encrypted_metadata, node.metadata_iv);
-
-    let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &key).await?;
+    let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &key).await?;
 
     let decrypted_node = DecryptedNode {
         id: node.id,

@@ -5,6 +5,7 @@ use chrono::NaiveDateTime;
 
 use serde::{Deserialize, Serialize};
 
+use crate::encrypted_metadata::EncryptedMetadata;
 #[cfg(feature = "server")]
 use diesel::{
     deserialize::{self, FromSql, FromSqlRow},
@@ -74,8 +75,7 @@ pub struct EncryptedNode {
     pub deleted_on: Option<NaiveDateTime>,
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
-    pub encrypted_metadata: Vec<u8>,
-    pub metadata_iv: MetadataIv,
+    pub encrypted_metadata: EncryptedMetadata,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
