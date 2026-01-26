@@ -1,3 +1,4 @@
+use crate::http::AppState;
 use crate::request_handler::admin::{delete_user, get_user, post_user};
 use crate::request_handler::auth::{post_login, post_logout, post_register};
 use crate::request_handler::chunk::{get_chunk, post_chunk};
@@ -14,7 +15,7 @@ use axum::routing::{delete, get, post};
 use crabdrive_common::routes::*;
 use formatx::formatx;
 
-pub fn routes() -> Router {
+pub fn routes() -> Router<AppState> {
     Router::new()
         // Add request handlers here
         .route("/", get(|| async { "Hello Crabdrive!" }))
@@ -23,7 +24,7 @@ pub fn routes() -> Router {
         .merge(auth_routes())
 }
 
-pub fn nodes_routes() -> Router {
+pub fn nodes_routes() -> Router<AppState> {
     Router::new()
         .route(
             &formatx!(NODE_ROUTE_NODEID, "{nodeId}").unwrap(),
@@ -75,14 +76,14 @@ pub fn nodes_routes() -> Router {
         )
 }
 
-pub fn auth_routes() -> Router {
+pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route(LOGIN_ROUTE, post(post_login))
         .route(REGISTER_ROUTE, post(post_register))
         .route(LOGOUT_ROUTE, post(post_logout))
 }
 
-pub fn admin_routes() -> Router {
+pub fn admin_routes() -> Router<AppState> {
     Router::new()
         .route(
             &formatx!(ADMIN_USER_ROUTE_ID, "{userId}").unwrap(),
