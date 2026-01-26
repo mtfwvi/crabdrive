@@ -1,6 +1,7 @@
 #![allow(dead_code)] // TODO: Remove before submission
 
 pub mod data;
+pub mod encrypted_metadata;
 pub mod iv;
 pub mod payloads;
 pub mod routes;

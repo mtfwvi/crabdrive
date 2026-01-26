@@ -1,5 +1,11 @@
+#![allow(dead_code)] // TODO: Remove before submission
+
+pub(crate) mod api;
 pub(crate) mod components;
+pub(crate) mod constants;
+pub(crate) mod model;
 pub(crate) mod pages;
+pub(crate) mod utils;
 
 use leptos::prelude::*;
 use pages::demo_page::DemoPage;
@@ -7,6 +13,13 @@ use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_web::{MakeWebConsoleWriter, performance_layer};
+
+#[cfg(test)]
+use wasm_bindgen_test::wasm_bindgen_test_configure;
+
+// instruct wasm-pack to run all test in the browser (otherwise node is used)
+#[cfg(test)]
+wasm_bindgen_test_configure!(run_in_browser);
 
 fn main() {
     console_error_panic_hook::set_once();

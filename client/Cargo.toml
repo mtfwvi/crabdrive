@@ -10,6 +10,14 @@ thaw = { workspace = true, features = ["csr"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-web = { workspace = true }
+web-sys = { workspace = true, features = ["Request", "RequestInit", "RequestMode", "Response", "Window", "Blob", "SubtleCrypto", "Crypto", "CryptoKey", "AesGcmParams"] }
+wasm-bindgen-futures = { workspace = true }
+wasm-bindgen = { workspace = true }
+crabdrive-common = { workspace = true }
+formatx = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true, features = ["serde"]}
+serde = { workspace = true, features = ["derive"]}
 
 [dev-dependencies]
 wasm-bindgen-test = { workspace = true }

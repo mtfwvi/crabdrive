@@ -1,11 +1,9 @@
-use crate::payloads::node::response::node::{FileRevision, NodeInfo};
-
-use crate::storage::ChunkIndex;
+use crate::storage::{ChunkIndex, EncryptedNode, FileRevision};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCreateFileResponse {
-    Created(NodeInfo),
+    Created(EncryptedNode),
     NotFound,
     BadRequest,
     Conflict,
@@ -20,7 +18,7 @@ pub enum PostUpdateFileResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostCommitFileResponse {
-    Ok(NodeInfo),
+    Ok(EncryptedNode),
     BadRequest(Vec<ChunkIndex>), // the missing parts
     NotFound,
 }

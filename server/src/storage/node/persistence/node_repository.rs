@@ -1,8 +1,8 @@
 use crate::db::connection::DbPool;
 use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
-use crate::storage::node::persistence::model::encrypted_metadata::EncryptedMetadata;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use anyhow::{Context, Result};
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;

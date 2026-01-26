@@ -447,13 +447,21 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "crabdrive-client"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "console_error_panic_hook",
+ "crabdrive-common",
+ "formatx",
  "leptos",
+ "serde",
+ "serde_json",
  "thaw",
  "tracing",
  "tracing-subscriber",
  "tracing-web",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
  "wasm-bindgen-test",
+ "web-sys",
 ]
 
 [[package]]
