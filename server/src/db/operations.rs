@@ -1,8 +1,8 @@
+use anyhow::Result;
 use crabdrive_common::uuid::UUID;
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
 };
-use std::error::Error;
 
 use crate::{
     db::{
@@ -22,7 +22,7 @@ use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 // User Ops
 // TODO: Change from AppState -> DbPool
 
-pub fn select_user(state: &AppState, user_id: UUID) -> Result<Option<UserEntity>, Box<dyn Error>> {
+pub fn select_user(state: &AppState, user_id: UUID) -> Result<Option<UserEntity>> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         let user = UserDsl::User
@@ -33,7 +33,7 @@ pub fn select_user(state: &AppState, user_id: UUID) -> Result<Option<UserEntity>
     })
 }
 
-pub fn insert_user(state: &AppState, user: &UserEntity) -> Result<(), Box<dyn Error>> {
+pub fn insert_user(state: &AppState, user: &UserEntity) -> Result<()> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         diesel::insert_into(UserDsl::User)
@@ -43,7 +43,7 @@ pub fn insert_user(state: &AppState, user: &UserEntity) -> Result<(), Box<dyn Er
     })
 }
 
-pub fn update_user(state: &AppState, user: &UserEntity) -> Result<(), Box<dyn Error>> {
+pub fn update_user(state: &AppState, user: &UserEntity) -> Result<()> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         diesel::update(UserDsl::User)
@@ -54,7 +54,7 @@ pub fn update_user(state: &AppState, user: &UserEntity) -> Result<(), Box<dyn Er
     })
 }
 
-pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity, Box<dyn Error>> {
+pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         let user: UserEntity = diesel::delete(UserDsl::User)
@@ -67,10 +67,7 @@ pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity, Box<dy
 
 // Node Ops
 
-pub fn get_all_children(
-    db_pool: &DbPool,
-    node_id: UUID,
-) -> Result<Vec<NodeEntity>, Box<dyn Error>> {
+pub fn get_all_children(db_pool: &DbPool, node_id: UUID) -> Result<Vec<NodeEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let nodes = NodeDsl::Node
@@ -80,7 +77,7 @@ pub fn get_all_children(
     })
 }
 
-pub fn select_node(db_pool: &DbPool, node_id: UUID) -> Result<Option<NodeEntity>, Box<dyn Error>> {
+pub fn select_node(db_pool: &DbPool, node_id: UUID) -> Result<Option<NodeEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = NodeDsl::Node
@@ -95,7 +92,7 @@ pub fn insert_node(
     db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: &EncryptedMetadata,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     // Insert Node
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
@@ -119,7 +116,7 @@ pub fn update_node(
     db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: Option<&EncryptedMetadata>,
-) -> Result<(), Box<dyn Error>> {
+) -> Result<()> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::update(NodeDsl::Node)
@@ -147,7 +144,7 @@ pub fn delete_node(
     db_pool: &DbPool,
     node_id: UUID,
     parent_mdata: &EncryptedMetadata,
-) -> Result<NodeEntity, Box<dyn Error>> {
+) -> Result<NodeEntity> {
     // Delete node
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
@@ -169,10 +166,7 @@ pub fn delete_node(
 
 // Revision Ops
 
-pub fn select_revision(
-    db_pool: &DbPool,
-    revision_id: UUID,
-) -> Result<Option<RevisionEntity>, Box<dyn Error>> {
+pub fn select_revision(db_pool: &DbPool, revision_id: UUID) -> Result<Option<RevisionEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = RevisionDsl::Revision
@@ -183,10 +177,7 @@ pub fn select_revision(
     })
 }
 
-pub fn insert_revision(
-    db_pool: &DbPool,
-    revision: &RevisionEntity,
-) -> Result<RevisionEntity, Box<dyn Error>> {
+pub fn insert_revision(db_pool: &DbPool, revision: &RevisionEntity) -> Result<RevisionEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision: RevisionEntity = diesel::insert_into(RevisionDsl::Revision)
@@ -197,10 +188,7 @@ pub fn insert_revision(
     })
 }
 
-pub fn update_revision(
-    db_pool: &DbPool,
-    revision: &RevisionEntity,
-) -> Result<RevisionEntity, Box<dyn Error>> {
+pub fn update_revision(db_pool: &DbPool, revision: &RevisionEntity) -> Result<RevisionEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = diesel::update(RevisionDsl::Revision)
@@ -212,10 +200,7 @@ pub fn update_revision(
     })
 }
 
-pub fn delete_revision(
-    db_pool: &DbPool,
-    revision_id: UUID,
-) -> Result<RevisionEntity, Box<dyn Error>> {
+pub fn delete_revision(db_pool: &DbPool, revision_id: UUID) -> Result<RevisionEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision: RevisionEntity = diesel::delete(RevisionDsl::Revision)
@@ -224,5 +209,15 @@ pub fn delete_revision(
             .get_result(conn)?;
 
         Ok(revision)
+    })
+}
+
+pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: UUID) -> Result<Vec<RevisionEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let revisions = RevisionDsl::Revision
+            .filter(RevisionDsl::file_id.eq(node_id))
+            .load::<RevisionEntity>(conn)?;
+        Ok(revisions)
     })
 }

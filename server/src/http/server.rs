@@ -2,6 +2,7 @@ use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 
 use crabdrive_common::uuid::UUID;
@@ -30,9 +31,17 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let mut storage_dir = std::path::PathBuf::new();
     storage_dir.push(&config.storage.dir);
     let vfs = Sfs::new(storage_dir);
-    let node_repository = NodeState::new(Arc::new(pool.clone()));
 
-    let state = AppState::new(config.clone(), pool, vfs, node_repository);
+    let node_repository = NodeState::new(Arc::new(pool.clone()));
+    let revision_repository = RevisionService::new(Arc::new(pool.clone()));
+
+    let state = AppState::new(
+        config.clone(),
+        pool,
+        vfs,
+        node_repository,
+        revision_repository,
+    );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
     let mut conn = state.db_pool.get().unwrap();
