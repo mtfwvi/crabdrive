@@ -1,8 +1,12 @@
+use crate::db::connection::DbPool;
+use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use anyhow::Result;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use anyhow::{Context, Result};
 use crabdrive_common::storage::NodeId;
+use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
+use std::sync::Arc;
 
 pub(crate) trait NodeRepository {
     fn create_node(
@@ -34,4 +38,166 @@ pub(crate) trait NodeRepository {
     ) -> Result<()>;
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>>;
+}
+
+pub struct NodeState {
+    db_pool: Arc<DbPool>,
+}
+
+impl NodeState {
+    pub fn new(db_pool: Arc<DbPool>) -> Self {
+        Self { db_pool }
+    }
+}
+
+impl NodeRepository for NodeState {
+    fn create_node(
+        &self,
+        parent: Option<NodeId>,
+        encrypted_metadata: EncryptedMetadata,
+        owner: UUID,
+        node_type: NodeType,
+    ) -> Result<NodeEntity> {
+        let node_id = UUID::random();
+
+        let node = NodeEntity {
+            id: node_id,
+            parent_id: parent,
+            owner_id: owner,
+            metadata: encrypted_metadata.clone(),
+            deleted_on: None,
+            metadata_change_counter: 0,
+            current_revision: None,
+            node_type,
+        };
+
+        if let Some(parent_id) = parent {
+            let parent_node = select_node(&self.db_pool, parent_id)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to select parent node")?
+                .context("Parent node not found")?;
+
+            insert_node(&self.db_pool, &node, &parent_node.metadata)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to insert node")?;
+        } else {
+            insert_node(&self.db_pool, &node, &encrypted_metadata)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to insert root node")?;
+        }
+
+        Ok(node)
+    }
+
+    fn get_node(&self, id: NodeId) -> Result<NodeEntity> {
+        select_node(&self.db_pool, id)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to select node")?
+            .context("Node not found")
+    }
+
+    fn update_node(&self, node: NodeEntity) -> Result<()> {
+        update_node(&self.db_pool, &node, None)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to update node")
+    }
+
+    fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>> {
+        let mut deleted_nodes = Vec::new();
+
+        fn delete_recursively(
+            db_pool: &DbPool,
+            node_id: NodeId,
+            deleted_nodes: &mut Vec<NodeEntity>,
+        ) -> Result<()> {
+            let children = get_all_children(db_pool, node_id)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to get children")?;
+
+            for child in children {
+                delete_recursively(db_pool, child.id, deleted_nodes)?;
+            }
+
+            let node = select_node(db_pool, node_id)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to select node")?
+                .context("Node not found")?;
+
+            if let Some(parent_id) = node.parent_id {
+                let parent_node = select_node(db_pool, parent_id)
+                    .map_err(|e| anyhow::anyhow!("{}", e))
+                    .context("Failed to select parent")?
+                    .context("Parent not found")?;
+
+                let deleted_node = delete_node(db_pool, node_id, &parent_node.metadata)
+                    .map_err(|e| anyhow::anyhow!("{}", e))
+                    .context("Failed to delete node")?;
+                deleted_nodes.push(deleted_node);
+            } else {
+                let empty_metadata = node.metadata.clone();
+                let deleted_node = delete_node(db_pool, node_id, &empty_metadata)
+                    .map_err(|e| anyhow::anyhow!("{}", e))
+                    .context("Failed to delete root node")?;
+                deleted_nodes.push(deleted_node);
+            }
+
+            Ok(())
+        }
+
+        delete_recursively(&self.db_pool, id, &mut deleted_nodes)?;
+
+        Ok(deleted_nodes)
+    }
+
+    fn move_node(
+        &self,
+        id: NodeId,
+        from: NodeId,
+        from_metadata: EncryptedMetadata,
+        to: NodeId,
+        to_metadata: EncryptedMetadata,
+    ) -> Result<()> {
+        let mut node = select_node(&self.db_pool, id)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to select node to move")?
+            .context("Node to move not found")?;
+
+        node.parent_id = Some(to);
+
+        let from_parent = NodeEntity {
+            id: from,
+            metadata: from_metadata,
+            ..select_node(&self.db_pool, from)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to select from parent")?
+                .context("From parent not found")?
+        };
+        update_node(&self.db_pool, &from_parent, None)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to update from parent")?;
+
+        let to_parent = NodeEntity {
+            id: to,
+            metadata: to_metadata.clone(),
+            ..select_node(&self.db_pool, to)
+                .map_err(|e| anyhow::anyhow!("{}", e))
+                .context("Failed to select to parent")?
+                .context("To parent not found")?
+        };
+        update_node(&self.db_pool, &to_parent, None)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to update to parent")?;
+
+        update_node(&self.db_pool, &node, Some(&to_metadata))
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to move node")?;
+
+        Ok(())
+    }
+
+    fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
+        get_all_children(&self.db_pool, parent_id)
+            .map_err(|e| anyhow::anyhow!("{}", e))
+            .context("Failed to get children")
+    }
 }
