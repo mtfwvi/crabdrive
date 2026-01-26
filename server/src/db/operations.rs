@@ -1,9 +1,3 @@
-// [ ] Einfügen für Node, User, Revision
-// [ ] Löschen für Node, User, Revision
-// [ ] Updaten für Node, User, Revision
-// [ ] Selektieren für Node, User, Revision
-// [ ] Kinder von Node selektieren
-
 use crabdrive_common::uuid::UUID;
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
@@ -14,6 +8,7 @@ use crate::{
     db::{
         NodeDsl, RevisionDsl,
         UserDsl::{self},
+        connection::DbPool,
     },
     http::AppState,
     storage::{
@@ -26,6 +21,7 @@ use crate::{
 };
 
 // User Ops
+// TODO: Change from AppState -> DbPool
 
 pub fn select_user(state: &AppState, user_id: UUID) -> Result<Option<UserEntity>, Box<dyn Error>> {
     let mut conn = state.db_pool.get()?;
@@ -73,10 +69,10 @@ pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity, Box<dy
 // Node Ops
 
 pub fn get_all_children(
-    state: &AppState,
+    db_pool: &DbPool,
     node_id: UUID,
 ) -> Result<Vec<NodeEntity>, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let nodes = NodeDsl::Node
             .filter(NodeDsl::parent_id.eq(node_id))
@@ -85,8 +81,8 @@ pub fn get_all_children(
     })
 }
 
-pub fn select_node(state: &AppState, node_id: UUID) -> Result<Option<NodeEntity>, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+pub fn select_node(db_pool: &DbPool, node_id: UUID) -> Result<Option<NodeEntity>, Box<dyn Error>> {
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = NodeDsl::Node
             .filter(NodeDsl::id.eq(node_id))
@@ -97,12 +93,12 @@ pub fn select_node(state: &AppState, node_id: UUID) -> Result<Option<NodeEntity>
 }
 
 pub fn insert_node(
-    state: &AppState,
+    db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: &EncryptedMetadata,
 ) -> Result<(), Box<dyn Error>> {
     // Insert Node
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::insert_into(NodeDsl::Node)
             .values(node)
@@ -121,11 +117,11 @@ pub fn insert_node(
 }
 
 pub fn update_node(
-    state: &AppState,
+    db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: Option<&EncryptedMetadata>,
 ) -> Result<(), Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::update(NodeDsl::Node)
             .filter(NodeDsl::id.eq(node.id))
@@ -149,12 +145,12 @@ pub fn update_node(
 // TODO: Cascade on Delete? If not, delete associated revisions and children nodes manually.
 // TODO: Prevent deletion if parent_id is NULL (This node is either a root node or a trash node)
 pub fn delete_node(
-    state: &AppState,
+    db_pool: &DbPool,
     node_id: UUID,
     parent_mdata: &EncryptedMetadata,
 ) -> Result<NodeEntity, Box<dyn Error>> {
     // Delete node
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node: NodeEntity = diesel::delete(NodeDsl::Node)
             .filter(NodeDsl::id.eq(node_id))
@@ -175,10 +171,10 @@ pub fn delete_node(
 // Revision Ops
 
 pub fn select_revision(
-    state: &AppState,
+    db_pool: &DbPool,
     revision_id: UUID,
 ) -> Result<Option<RevisionEntity>, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = RevisionDsl::Revision
             .filter(RevisionDsl::id.eq(revision_id))
@@ -189,10 +185,10 @@ pub fn select_revision(
 }
 
 pub fn insert_revision(
-    state: &AppState,
+    db_pool: &DbPool,
     revision: &RevisionEntity,
 ) -> Result<RevisionEntity, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision: RevisionEntity = diesel::insert_into(RevisionDsl::Revision)
             .values(revision)
@@ -203,10 +199,10 @@ pub fn insert_revision(
 }
 
 pub fn update_revision(
-    state: &AppState,
+    db_pool: &DbPool,
     revision: &RevisionEntity,
 ) -> Result<RevisionEntity, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = diesel::update(RevisionDsl::Revision)
             .filter(RevisionDsl::id.eq(revision.id))
@@ -218,10 +214,10 @@ pub fn update_revision(
 }
 
 pub fn delete_revision(
-    state: &AppState,
+    db_pool: &DbPool,
     revision_id: UUID,
 ) -> Result<RevisionEntity, Box<dyn Error>> {
-    let mut conn = state.db_pool.get()?;
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision: RevisionEntity = diesel::delete(RevisionDsl::Revision)
             .filter(RevisionDsl::id.eq(revision_id))
