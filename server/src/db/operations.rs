@@ -2,6 +2,7 @@ use anyhow::Result;
 use crabdrive_common::{
     storage::{NodeId, RevisionId},
     user::UserId,
+    uuid::UUID,
 };
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
@@ -13,7 +14,6 @@ use crate::{
         UserDsl::{self},
         connection::DbPool,
     },
-    http::AppState,
     storage::{
         node::persistence::model::node_entity::NodeEntity,
         revision::persistence::model::revision_entity::RevisionEntity,
@@ -23,10 +23,9 @@ use crate::{
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 
 // User Ops
-// TODO: Change from AppState -> DbPool
 
-pub fn select_user(state: &AppState, user_id: UserId) -> Result<Option<UserEntity>> {
-    let mut conn = state.db_pool.get()?;
+pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntity>> {
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let user = UserDsl::User
             .filter(UserDsl::id.eq(user_id))
@@ -36,8 +35,8 @@ pub fn select_user(state: &AppState, user_id: UserId) -> Result<Option<UserEntit
     })
 }
 
-pub fn insert_user(state: &AppState, user: &UserEntity) -> Result<()> {
-    let mut conn = state.db_pool.get()?;
+pub fn insert_user(db_pool: &DbPool, user: &UserEntity) -> Result<()> {
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         diesel::insert_into(UserDsl::User)
             .values(user)
@@ -46,8 +45,8 @@ pub fn insert_user(state: &AppState, user: &UserEntity) -> Result<()> {
     })
 }
 
-pub fn update_user(state: &AppState, user: &UserEntity) -> Result<()> {
-    let mut conn = state.db_pool.get()?;
+pub fn update_user(db_pool: &DbPool, user: &UserEntity) -> Result<()> {
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         diesel::update(UserDsl::User)
             .filter(UserDsl::id.eq(user.id))
@@ -57,8 +56,8 @@ pub fn update_user(state: &AppState, user: &UserEntity) -> Result<()> {
     })
 }
 
-pub fn delete_user(state: &AppState, user_id: UserId) -> Result<UserEntity> {
-    let mut conn = state.db_pool.get()?;
+pub fn delete_user(db_pool: &DbPool, user_id: UserId) -> Result<UserEntity> {
+    let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let user: UserEntity = diesel::delete(UserDsl::User)
             .filter(UserDsl::id.eq(user_id))
@@ -104,13 +103,17 @@ pub fn insert_node(
             .returning(NodeEntity::as_select())
             .get_result(conn)?;
         // In Parent-Node: Update metadata and increase Metadata-Counter by 1
-        diesel::update(NodeDsl::Node)
-            .filter(NodeDsl::id.eq(node.parent_id.unwrap()))
-            .set((
-                NodeDsl::metadata.eq(parent_mdata),
-                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-            ))
-            .execute(conn)?;
+        // Skip this, if ID is nil, since it is the global root node
+        // TODO: Remove when adding auth
+        if node.id != UUID::nil() {
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(node.parent_id.unwrap()))
+                .set((
+                    NodeDsl::metadata.eq(parent_mdata),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)?;
+        }
         Ok(())
     })
 }
