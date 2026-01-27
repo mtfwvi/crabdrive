@@ -179,11 +179,18 @@ impl AppConfig {
     pub fn load(configfile: &std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
 
-        let config = AppConfig::builder()
+        let mut config = AppConfig::builder()
             .env()
             .file(configfile)
             .preloaded(AppConfig::default_values())
             .load()?;
+
+        if config.db.path == ":memory:" {
+            // By default, `:memory:` opens one in-memory database per connection. To prevent issues
+            // with connection pooling (which opens ~ 15 connections simultaneously), we use a shared
+            // cache here.
+            config.db.path = "file::memory:?cache=shared".to_string();
+        }
 
         Ok(config)
     }
