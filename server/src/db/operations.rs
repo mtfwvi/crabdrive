@@ -1,5 +1,8 @@
 use anyhow::Result;
-use crabdrive_common::{storage::{NodeId, RevisionId}, user::UserId };
+use crabdrive_common::{
+    storage::{NodeId, RevisionId},
+    user::UserId,
+};
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
 };
@@ -166,7 +169,10 @@ pub fn delete_node(
 
 // Revision Ops
 
-pub fn select_revision(db_pool: &DbPool, revision_id: RevisionId) -> Result<Option<RevisionEntity>> {
+pub fn select_revision(
+    db_pool: &DbPool,
+    revision_id: RevisionId,
+) -> Result<Option<RevisionEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = RevisionDsl::Revision
