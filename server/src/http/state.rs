@@ -11,7 +11,7 @@ pub struct AppState {
     pub db_pool: Arc<DbPool>,
     pub vfs: Arc<dyn FileRepository + Send + Sync>,
     pub node_repository: Arc<dyn NodeRepository + Send + Sync>,
-    revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
+    pub revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
 }
 
 impl AppState {
