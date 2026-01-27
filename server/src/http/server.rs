@@ -68,8 +68,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     }
 
     let app = Router::<AppState>::new()
-        .with_state(state.clone())
         .merge(routes::routes())
+        .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware));
 
     let addr = config.addr();
