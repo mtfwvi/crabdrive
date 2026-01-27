@@ -4,7 +4,7 @@ use tracing_subscriber::{Layer, Registry};
 
 use crate::http::config::confique_database_config_layer::DatabaseConfigLayer;
 use crate::http::config::confique_log_config_layer::LogConfigLayer;
-use crate::http::config::confique_sever_config_layer::SeverConfigLayer;
+use crate::http::config::confique_server_config_layer::ServerConfigLayer;
 use crate::http::config::confique_storage_config_layer::StorageConfigLayer;
 
 fn is_valid_log_level(level: &String) -> Result<(), String> {
@@ -40,7 +40,7 @@ pub struct AppConfig {
     #[config(env = "CRABDRIVE_ENV")]
     pub env: Environment,
     #[config(nested)]
-    pub server: SeverConfig,
+    pub server: ServerConfig,
     #[config(nested)]
     pub db: DatabaseConfig,
     #[config(nested)]
@@ -50,7 +50,7 @@ pub struct AppConfig {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Config)]
-pub struct SeverConfig {
+pub struct ServerConfig {
     /// The address the TCP listener binds to. Can be a IPv4 or IPv6.
     ///
     /// **Default**: `127.0.0.1`
@@ -116,18 +116,15 @@ pub struct LogConfig {
 pub struct StorageConfig {
     /// The path to the storage directory. Can be of the following formats:
     /// - `/path/to/directory/`
-    /// - `:memory:`
+    /// - `:temp:` (*automatically created and deleted*)
     ///
     /// **Notes**: The directory is not automatically created.
     ///
-    /// **Default**: `:memory:`
+    /// **Default**: `:temp:`
     #[config(env = "CRABDRIVE_STORAGE_DIR")]
     pub dir: String,
 
     /// The storage limit for ALL files, in Bytes.
-    ///
-    /// **Notes**: When [`AppConfig::storage_dir`] is set to `:memory:`, this will limit the memory
-    ///            used by the application for storage.
     ///
     /// **Default**: `500_000_000` (500MB)
     #[config(env = "CRABDRIVE_STORAGE_LIMIT")]
@@ -149,7 +146,7 @@ impl AppConfig {
             } else {
                 Some(Environment::Prod)
             },
-            server: SeverConfigLayer {
+            server: ServerConfigLayer {
                 address: Some("127.0.0.1".parse().unwrap()),
                 port: Some(2722),
             },
@@ -158,7 +155,7 @@ impl AppConfig {
                 pool_size: Some(15),
             },
             storage: StorageConfigLayer {
-                dir: Some(":memory:".into()),
+                dir: Some(":temp:".into()),
                 limit: Some(500_000_000),
             },
             log: LogConfigLayer {

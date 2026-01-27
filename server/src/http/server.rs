@@ -31,9 +31,7 @@ async fn shutdown(state: AppState) {
 pub async fn start(config: AppConfig) -> Result<(), ()> {
     let pool = create_pool(&config.db.path, config.db.pool_size);
 
-    let mut storage_dir = std::path::PathBuf::new();
-    storage_dir.push(&config.storage.dir);
-    let vfs = Sfs::new(storage_dir);
+    let vfs = Sfs::new(&config.storage.dir);
 
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
