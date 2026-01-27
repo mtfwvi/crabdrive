@@ -204,11 +204,13 @@ impl AppConfig {
                     // `:stdout:` writes to the standard output
                     ":stdout:" => Ok(tracing_subscriber::fmt::layer()
                         .with_ansi(true)
+                        .with_target(false)
                         .with_writer(std::io::stdout)
                         .boxed()),
                     // `:stderr:` writes to the standard error output
                     ":stderr:" => Ok(tracing_subscriber::fmt::layer()
                         .with_ansi(true)
+                        .with_target(false)
                         .with_writer(std::io::stderr)
                         .boxed()),
                     // If the target ends with a path seperator, it's expected to be a folder.
