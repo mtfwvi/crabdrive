@@ -5,11 +5,17 @@ use crabdrive_common::payloads::admin::request::user::{PatchUserRequest, PostUse
 use crabdrive_common::payloads::admin::response::user::{
     DeleteUserResponse, GetUserResponse, PatchUserResponse, PostUserResponse, UserInfo,
 };
-use crabdrive_common::user::UserId;
+use crabdrive_common::user::{UserId, UserType};
 
 //TODO remove this
 pub fn get_example_user_info() -> UserInfo {
-    todo!()
+    UserInfo {
+        username: "admin".to_string(),
+        user_type: UserType::User,
+        storage_limit: None,
+        created_on: Default::default(),
+        updated_on: Default::default(),
+    }
 }
 
 pub async fn get_user(Path(_user_id): Path<UserId>) -> (StatusCode, Json<GetUserResponse>) {

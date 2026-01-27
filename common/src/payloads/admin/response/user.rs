@@ -29,9 +29,9 @@ pub enum PatchUserResponse {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UserInfo {
-    username: String,
-    user_type: UserType,
-    storage_limit: Option<DataAmount>,
-    created_on: NaiveDateTime,
-    updated_on: NaiveDateTime,
+    pub username: String,
+    pub user_type: UserType,
+    pub storage_limit: Option<DataAmount>,
+    pub created_on: NaiveDateTime,
+    pub updated_on: NaiveDateTime,
 }

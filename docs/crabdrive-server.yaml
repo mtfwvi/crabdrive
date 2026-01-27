@@ -411,7 +411,7 @@ paths: #
           description: Permission denied/ node does not exist
         "409":
           description: The update was not accepted. This could be because the version is outdated
-  /path_between_nodes/:
+  /path_between_nodes:
     get:
       parameters:
         - in: query

@@ -2,10 +2,7 @@ use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::node_repository::NodeState;
-use crate::storage::{
-    node::persistence::model::{encrypted_metadata::EncryptedMetadata, node_entity::NodeEntity},
-    vfs::backend::Sfs,
-};
+use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 
 use crabdrive_common::uuid::UUID;
 
@@ -13,6 +10,7 @@ use std::io::ErrorKind;
 use std::sync::Arc;
 
 use axum::{Router, middleware};
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use tracing::{error, info};
 

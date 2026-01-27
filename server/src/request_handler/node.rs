@@ -7,16 +7,16 @@ use crabdrive_common::payloads::node::request::node::{
 };
 use crabdrive_common::payloads::node::response::node::{
     DeleteNodeResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse,
-    NodeInfo, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
+    PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
     PostMoveNodeToTrashResponse,
 };
 
 use crabdrive_common::iv::IV;
-use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
+use crabdrive_common::storage::{EncryptedNode, NodeId};
 
-pub fn get_example_node_info() -> NodeInfo {
-    NodeInfo {
+pub fn get_example_node_info() -> EncryptedNode {
+    EncryptedNode {
         id: NodeId::random(),
         change_count: 0,
         parent_id: NodeId::random(),
