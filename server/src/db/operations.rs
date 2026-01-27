@@ -1,5 +1,5 @@
 use anyhow::Result;
-use crabdrive_common::uuid::UUID;
+use crabdrive_common::{storage::{NodeId, RevisionId}, user::UserId };
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
 };
@@ -22,7 +22,7 @@ use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 // User Ops
 // TODO: Change from AppState -> DbPool
 
-pub fn select_user(state: &AppState, user_id: UUID) -> Result<Option<UserEntity>> {
+pub fn select_user(state: &AppState, user_id: UserId) -> Result<Option<UserEntity>> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         let user = UserDsl::User
@@ -54,7 +54,7 @@ pub fn update_user(state: &AppState, user: &UserEntity) -> Result<()> {
     })
 }
 
-pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity> {
+pub fn delete_user(state: &AppState, user_id: UserId) -> Result<UserEntity> {
     let mut conn = state.db_pool.get()?;
     conn.transaction(|conn| {
         let user: UserEntity = diesel::delete(UserDsl::User)
@@ -67,7 +67,7 @@ pub fn delete_user(state: &AppState, user_id: UUID) -> Result<UserEntity> {
 
 // Node Ops
 
-pub fn get_all_children(db_pool: &DbPool, node_id: UUID) -> Result<Vec<NodeEntity>> {
+pub fn get_all_children(db_pool: &DbPool, node_id: UserId) -> Result<Vec<NodeEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let nodes = NodeDsl::Node
@@ -77,7 +77,7 @@ pub fn get_all_children(db_pool: &DbPool, node_id: UUID) -> Result<Vec<NodeEntit
     })
 }
 
-pub fn select_node(db_pool: &DbPool, node_id: UUID) -> Result<Option<NodeEntity>> {
+pub fn select_node(db_pool: &DbPool, node_id: NodeId) -> Result<Option<NodeEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = NodeDsl::Node
@@ -142,7 +142,7 @@ pub fn update_node(
 // TODO: Prevent deletion if parent_id is NULL (This node is either a root node or a trash node)
 pub fn delete_node(
     db_pool: &DbPool,
-    node_id: UUID,
+    node_id: NodeId,
     parent_mdata: &EncryptedMetadata,
 ) -> Result<NodeEntity> {
     // Delete node
@@ -166,7 +166,7 @@ pub fn delete_node(
 
 // Revision Ops
 
-pub fn select_revision(db_pool: &DbPool, revision_id: UUID) -> Result<Option<RevisionEntity>> {
+pub fn select_revision(db_pool: &DbPool, revision_id: RevisionId) -> Result<Option<RevisionEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision = RevisionDsl::Revision
@@ -200,7 +200,7 @@ pub fn update_revision(db_pool: &DbPool, revision: &RevisionEntity) -> Result<Re
     })
 }
 
-pub fn delete_revision(db_pool: &DbPool, revision_id: UUID) -> Result<RevisionEntity> {
+pub fn delete_revision(db_pool: &DbPool, revision_id: RevisionId) -> Result<RevisionEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revision: RevisionEntity = diesel::delete(RevisionDsl::Revision)
@@ -212,7 +212,7 @@ pub fn delete_revision(db_pool: &DbPool, revision_id: UUID) -> Result<RevisionEn
     })
 }
 
-pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: UUID) -> Result<Vec<RevisionEntity>> {
+pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<RevisionEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let revisions = RevisionDsl::Revision
