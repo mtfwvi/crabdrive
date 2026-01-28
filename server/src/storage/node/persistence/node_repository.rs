@@ -73,16 +73,13 @@ impl NodeRepository for NodeState {
 
         if let Some(parent_id) = parent {
             let parent_node = select_node(&self.db_pool, parent_id)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to select parent node")?
                 .context("Parent node not found")?;
 
             insert_node(&self.db_pool, &node, &parent_node.metadata)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to insert node")?;
         } else {
             insert_node(&self.db_pool, &node, &encrypted_metadata)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to insert root node")?;
         }
 
@@ -91,7 +88,6 @@ impl NodeRepository for NodeState {
 
     fn get_node(&self, id: NodeId) -> Result<NodeEntity> {
         select_node(&self.db_pool, id)
-            .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to select node")?
             .context("Node not found")
     }
@@ -110,33 +106,27 @@ impl NodeRepository for NodeState {
             node_id: NodeId,
             deleted_nodes: &mut Vec<NodeEntity>,
         ) -> Result<()> {
-            let children = get_all_children(db_pool, node_id)
-                .map_err(|e| anyhow::anyhow!("{}", e))
-                .context("Failed to get children")?;
+            let children = get_all_children(db_pool, node_id).context("Failed to get children")?;
 
             for child in children {
                 delete_recursively(db_pool, child.id, deleted_nodes)?;
             }
 
             let node = select_node(db_pool, node_id)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to select node")?
                 .context("Node not found")?;
 
             if let Some(parent_id) = node.parent_id {
                 let parent_node = select_node(db_pool, parent_id)
-                    .map_err(|e| anyhow::anyhow!("{}", e))
                     .context("Failed to select parent")?
                     .context("Parent not found")?;
 
                 let deleted_node = delete_node(db_pool, node_id, &parent_node.metadata)
-                    .map_err(|e| anyhow::anyhow!("{}", e))
                     .context("Failed to delete node")?;
                 deleted_nodes.push(deleted_node);
             } else {
                 let empty_metadata = node.metadata.clone();
                 let deleted_node = delete_node(db_pool, node_id, &empty_metadata)
-                    .map_err(|e| anyhow::anyhow!("{}", e))
                     .context("Failed to delete root node")?;
                 deleted_nodes.push(deleted_node);
             }
@@ -158,7 +148,6 @@ impl NodeRepository for NodeState {
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
         let mut node = select_node(&self.db_pool, id)
-            .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to select node to move")?
             .context("Node to move not found")?;
 
@@ -168,36 +157,26 @@ impl NodeRepository for NodeState {
             id: from,
             metadata: from_metadata,
             ..select_node(&self.db_pool, from)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to select from parent")?
                 .context("From parent not found")?
         };
-        update_node(&self.db_pool, &from_parent, None)
-            .map_err(|e| anyhow::anyhow!("{}", e))
-            .context("Failed to update from parent")?;
+        update_node(&self.db_pool, &from_parent, None).context("Failed to update from parent")?;
 
         let to_parent = NodeEntity {
             id: to,
             metadata: to_metadata.clone(),
             ..select_node(&self.db_pool, to)
-                .map_err(|e| anyhow::anyhow!("{}", e))
                 .context("Failed to select to parent")?
                 .context("To parent not found")?
         };
-        update_node(&self.db_pool, &to_parent, None)
-            .map_err(|e| anyhow::anyhow!("{}", e))
-            .context("Failed to update to parent")?;
+        update_node(&self.db_pool, &to_parent, None).context("Failed to update to parent")?;
 
-        update_node(&self.db_pool, &node, Some(&to_metadata))
-            .map_err(|e| anyhow::anyhow!("{}", e))
-            .context("Failed to move node")?;
+        update_node(&self.db_pool, &node, Some(&to_metadata)).context("Failed to move node")?;
 
         Ok(())
     }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
-        get_all_children(&self.db_pool, parent_id)
-            .map_err(|e| anyhow::anyhow!("{}", e))
-            .context("Failed to get children")
+        get_all_children(&self.db_pool, parent_id).context("Failed to get children")
     }
 }

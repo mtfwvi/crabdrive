@@ -7,7 +7,6 @@ mod tests {
     use crabdrive_common::da;
     use crabdrive_common::data::DataAmount;
     use crabdrive_common::uuid::UUID;
-    use tempfile::tempdir;
 
     use rand::{Rng, rng};
 
@@ -16,10 +15,7 @@ mod tests {
     #[test]
     fn test_sfs_write_read_cycle() {
         // This test writes all files into a temporary directory, which are then deleted directly after.
-        let tempdir = tempdir().unwrap();
-        let storage_path = tempdir.path();
-
-        let mut sfs = Sfs::new(storage_path.into());
+        let mut sfs = Sfs::new(&":temp:".to_string());
 
         // Test with 16 files, containing 16 chunks à 100KB of garbage data each.
         // For testing, 100KB should be enough..
@@ -71,7 +67,5 @@ mod tests {
                 );
             }
         }
-
-        tempdir.close().unwrap();
     }
 }

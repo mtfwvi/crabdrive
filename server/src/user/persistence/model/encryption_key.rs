@@ -12,6 +12,18 @@ pub(crate) struct EncryptionKey {
     key: Vec<u8>,
     iv: IV,
 }
+impl EncryptionKey {
+    pub(crate) fn new(key: Vec<u8>, iv: IV) -> Self {
+        Self { key, iv }
+    }
+
+    pub(crate) fn nil() -> Self {
+        Self {
+            key: Vec::new(),
+            iv: IV::new([0u8; 12]),
+        }
+    }
+}
 
 impl ToSql<Binary, Sqlite> for EncryptionKey {
     fn to_sql<'b>(

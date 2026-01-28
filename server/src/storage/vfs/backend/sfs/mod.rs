@@ -9,22 +9,54 @@ use std::{
     fs::OpenOptions,
     io::{Read, Write},
 };
-use tracing::{debug, debug_span, error};
+use tempfile::TempDir;
+use tracing::{debug, debug_span, error, info};
 
 use std::{collections::HashMap, path::PathBuf};
 
 /// S(tupid)imple File System
 pub struct Sfs {
+    // Internal guard object, which drops the directory
+    _temp_dir: Option<TempDir>,
     storage_dir: PathBuf,
     sessions: HashMap<UUID, PathBuf>,
 }
 
 impl Sfs {
-    pub fn new(storage_dir: PathBuf) -> Self {
-        if !storage_dir.exists() || !storage_dir.is_dir() {
-            panic!("Invalid storage directory!");
-        }
+    pub fn new(storage_dir: &String) -> Self {
+        let _span = debug_span!("Sfs::new").entered();
+        let temp_dir = if storage_dir == ":temp:" {
+            debug!("Configuration requests temporary directory");
+            let directory = tempfile::tempdir().expect("Unable to create temporary directory!");
+            info!(
+                "Temporary Directory: {} (auto-deleted upon server stop)",
+                &directory.path().display()
+            );
+            // Altough it seems tempting, the method `.keep()` (which returns a `PathBuf`), actually
+            // disables automatic deletion of the directoy.
+            Some(directory)
+        } else {
+            None
+        };
+
+        let storage_dir = if let Some(temp_dir) = &temp_dir {
+            temp_dir.path().to_path_buf()
+        } else {
+            let mut directory = std::path::PathBuf::new();
+
+            directory.push(storage_dir);
+            if !directory.exists() || !directory.is_dir() {
+                error!(
+                    "Storage directory {} either does not exist, or is no directory",
+                    &storage_dir
+                );
+                panic!("Invalid storage directory!");
+            }
+            directory
+        };
+
         Self {
+            _temp_dir: temp_dir,
             storage_dir,
             sessions: HashMap::new(),
         }
