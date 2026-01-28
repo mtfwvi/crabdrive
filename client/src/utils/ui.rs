@@ -6,7 +6,7 @@ pub(crate) fn format_date_time(naive_date_time: NaiveDateTime) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::display_utils::format_date_time;
+    use crate::utils::ui::format_date_time;
     use chrono::NaiveDate;
     use pretty_assertions::assert_eq;
     use test_case::test_case;

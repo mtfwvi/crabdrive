@@ -115,5 +115,8 @@ pub async fn get_node_children(
     //(StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound))
 
     //TODO implement
-    (StatusCode::OK, Json(GetNodeChildrenResponse::Ok(vec![])))
+    (
+        StatusCode::OK,
+        Json(GetNodeChildrenResponse::Ok(vec![get_example_node_info()])),
+    )
 }

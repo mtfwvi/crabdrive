@@ -9,9 +9,10 @@ use crabdrive_common::uuid::UUID;
 use std::io::ErrorKind;
 use std::sync::Arc;
 
-use axum::{Router, middleware};
+use axum::middleware;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -58,10 +59,15 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             .unwrap();
     }
 
-    let app = Router::<AppState>::new()
+    let cors = CorsLayer::new() // TODO: Make more specific before submission
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
+    let app = routes::routes()
         .with_state(state.clone())
-        .merge(routes::routes())
-        .layer(middleware::from_fn(logging_middleware));
+        .layer(middleware::from_fn(logging_middleware))
+        .layer(cors);
 
     let addr = config.addr();
 

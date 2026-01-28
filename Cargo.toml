@@ -21,12 +21,14 @@ chrono = { version = "0.4.42", features = ["serde"]}
 clap = "4.5.54"
 confique = { version = "0.4.0", git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options" }
 console_error_panic_hook = "0.1.7"
+console_log = "1.0.0"
 diesel = { version = "=2.2.12", default-features = false }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"
 formatx = "0.2.4"
 icondata = "0.7.0"
 leptos = "=0.8.3"
+leptos_router = "0.8.3"
 libsqlite3-sys = { version = "=0.28.0", features = ["bundled"] }
 nanoid = "0.4.0"
 pretty_assertions = "1.4.1"
@@ -36,7 +38,7 @@ test-case = "3.3.1"
 tempfile = "3"
 thaw = "0.5.0-beta"
 tokio = "1.48.0"
-tower-http = { version = "0.6.8", features = ["fs"] }
+tower-http = { version = "0.6.8", features = ["fs", "cors"] }
 tracing = "0.1.44"
 tracing-appender = "0.2.4"
 tracing-subscriber = "0.3.22"
