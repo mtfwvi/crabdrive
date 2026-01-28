@@ -2,8 +2,12 @@ use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
+use crate::user::persistence::model::encryption_key::EncryptionKey;
+use crate::user::persistence::model::user_entity::UserEntity;
 
+use chrono::Local;
 use crabdrive_common::uuid::UUID;
 
 use std::io::ErrorKind;
@@ -27,12 +31,18 @@ async fn shutdown(state: AppState) {
 pub async fn start(config: AppConfig) -> Result<(), ()> {
     let pool = create_pool(&config.db.path, config.db.pool_size);
 
-    let mut storage_dir = std::path::PathBuf::new();
-    storage_dir.push(&config.storage.dir);
-    let vfs = Sfs::new(storage_dir);
-    let node_repository = NodeState::new(Arc::new(pool.clone()));
+    let vfs = Sfs::new(&config.storage.dir);
 
-    let state = AppState::new(config.clone(), pool, vfs, node_repository);
+    let node_repository = NodeState::new(Arc::new(pool.clone()));
+    let revision_repository = RevisionService::new(Arc::new(pool.clone()));
+
+    let state = AppState::new(
+        config.clone(),
+        pool,
+        vfs,
+        node_repository,
+        revision_repository,
+    );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
     let mut conn = state.db_pool.get().unwrap();
@@ -40,6 +50,31 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 
     // HACK: Create a root node with a zeroed UUID, if it's not already existing.
     // TODO: Remove when adding auth!
+
+    if crate::db::operations::select_user(&state.db_pool, UUID::nil())
+        .unwrap()
+        .is_none()
+    {
+        let system_user = UserEntity {
+            id: UUID::nil(),
+            username: "system".to_string(),
+            user_type: crabdrive_common::user::UserType::Admin,
+            created_at: Local::now().naive_local(),
+            password_hash: "".to_string(),
+            storage_limit: crabdrive_common::da!(500 MB),
+            encryption_uninitialized: false,
+            master_key: EncryptionKey::nil(),
+            private_key: EncryptionKey::nil(),
+            public_key: vec![],
+            root_key: EncryptionKey::nil(),
+            root_node: None,
+            trash_key: EncryptionKey::nil(),
+            trash_node: None,
+        };
+
+        crate::db::operations::insert_user(&state.db_pool, &system_user).unwrap();
+    }
+
     if crate::db::operations::select_node(&state.db_pool, UUID::nil())
         .unwrap()
         .is_none()
@@ -54,13 +89,14 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             metadata_change_counter: 0,
             node_type: crabdrive_common::storage::NodeType::Folder,
         };
+
         crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
             .unwrap();
     }
 
     let app = Router::<AppState>::new()
-        .with_state(state.clone())
         .merge(routes::routes())
+        .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware));
 
     let addr = config.addr();
