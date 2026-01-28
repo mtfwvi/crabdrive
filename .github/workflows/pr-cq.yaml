@@ -101,8 +101,9 @@ jobs:
               run: |
                   cd ./client
                   trunk build --release --verbose
+
     test-wasm-bindgen:
-        name: Run wasm-bindgen-test
+        name: Run WASM tests
         permissions:
             contents: read
             pull-requests: read
@@ -124,23 +125,29 @@ jobs:
                       - 'Cargo.toml'
                       - 'Cargo.lock'
                       - 'Trunk.toml'
-            
+
             - name: Setup Rust
               uses: ./.github/actions/setup-rust
               if: steps.filter.outputs.client == 'true'
               with:
                   target: wasm32-unknown-unknown
+
             - name: Install wasm-pack
+              if: steps.filter.outputs.client == 'true'
               run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 
             - name: Setup Chrome
+              if: steps.filter.outputs.client == 'true'
               uses: browser-actions/setup-chrome@v2
-              
+
             - name: Test on Chrome
+              if: steps.filter.outputs.client == 'true'
               run: wasm-pack test --headless --chrome client
 
             - name: Setup Firefox
+              if: steps.filter.outputs.client == 'true'
               uses: browser-actions/setup-firefox@v1
-            
+
             - name: Test on Firefox
+              if: steps.filter.outputs.client == 'true'
               run: wasm-pack test --headless --firefox client
