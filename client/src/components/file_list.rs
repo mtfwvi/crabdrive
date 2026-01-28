@@ -7,30 +7,34 @@ pub(crate) fn FileList(
     #[prop(into)] files: Signal<Vec<DecryptedNode>>,
     selection: RwSignal<Option<DecryptedNode>>,
 ) -> impl IntoView {
+    let on_click = move |file: DecryptedNode| {
+        let selected = selection.get().clone();
+        let is_selected = selected.is_some() && selected.unwrap().id == file.id;
+
+        selection.set(if is_selected {
+            None
+        } else {
+            Some(file.clone())
+        });
+    };
+
     view! {
         <For
             each=move || files.get()
             key=|file| file.id
             children=move |file| {
-                let file_name = Signal::derive(move || {
-                    let NodeMetadata::V1(metadata) = selection.get().unwrap().metadata;
-                    metadata.name
-                });
-                // `selection.get()` cannot be None, because FileDetails is wrapped by Show
-
+                let (file, _) = signal(file);
                 view! {
                     <File
-                        name=file_name
-                        on:click=move |_| {
-                            if selection.get().unwrap() == file {
-                                selection.set(None)
-                            } else {
-                                selection.set(Some(file.clone()))
-                            }
-                        }
+                        name=Signal::derive(move || {
+                            let NodeMetadata::V1(metadata) = file.get().metadata;
+                            metadata.name
+                        })
+                        on:click=move |_| on_click(file.get())
                     />
                 }
             }
+
         />
     }
 }

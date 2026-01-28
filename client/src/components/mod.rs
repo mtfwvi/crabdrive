@@ -4,3 +4,4 @@ pub(crate) mod file_selection_dialog;
 pub(crate) mod folder_creation_dialog;
 pub(crate) mod folder_view;
 pub(crate) mod path_breadcrumb;
+pub(crate) mod resource_wrapper;

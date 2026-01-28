@@ -4,18 +4,24 @@ use crate::components::file_list::FileList;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::folder_creation_dialog::FolderCreationDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
+use crate::components::resource_wrapper::ResourceWrapper;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Spinner, Text, Toast, ToastBody,
-    ToastIntent, ToastOptions, ToasterInjection,
+    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastBody, ToastIntent,
+    ToastOptions, ToasterInjection,
 };
 
 #[component]
-pub(crate) fn FolderView(node_id: Signal<NodeId>) -> impl IntoView {
+pub(crate) fn FolderView(
+    node_id: Signal<NodeId>,
+    //root_node: Signal<DecryptedNode>,
+) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
     let files_res = LocalResource::new(move || get_children(node_id.get()));
+
+    //let path_res = LocalResource::new(move || path_between_nodes(root_node.get(), node_id.get()));
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
@@ -48,32 +54,12 @@ pub(crate) fn FolderView(node_id: Signal<NodeId>) -> impl IntoView {
 
                 <Divider class="mb-3" />
 
-                <Suspense fallback=move || {
-                    view! { <Spinner /> }
-                }>
-                    {move || {
-                        files_res
-                            .get()
-                            .map(|files| {
-                                match files {
-                                    Ok(files) => {
-                                        view! { <FileList files=files selection /> }.into_any()
-                                    }
-                                    Err(e) => {
-                                        view! {
-                                            <Text>
-                                                {format!(
-                                                    "The children could not be loaded from the server: {}",
-                                                    e,
-                                                )}
-                                            </Text>
-                                        }
-                                            .into_any()
-                                    }
-                                }
-                            })
-                    }}
-                </Suspense>
+                <ResourceWrapper
+                    resource=files_res
+                    error_text="The children could not be loaded from the server"
+                    render=move |files| view! { <FileList files selection /> }.into_any()
+                    fallback_spinner=false
+                />
 
                 <Divider class="my-3" />
 
