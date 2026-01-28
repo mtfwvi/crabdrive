@@ -3,9 +3,10 @@ use crate::constants::EMPTY_KEY;
 use crate::model::node::DecryptedNode;
 use crate::utils::encryption::node::decrypt_node;
 use crabdrive_common::payloads::node::response::node::GetNodeChildrenResponse;
+use crabdrive_common::storage::NodeId;
 
-pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>, String> {
-    let response_result = get_node_children(parent.id, &"".to_string()).await;
+pub async fn get_children(parent_id: NodeId) -> Result<Vec<DecryptedNode>, String> {
+    let response_result = get_node_children(parent_id, &"".to_string()).await;
 
     if let Err(err) = response_result {
         return Err(format!("Could not query children: {:?}", err));
@@ -22,7 +23,7 @@ pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>, S
                     decrypted_children.push(decrypted_child);
                 } else {
                     return Err(format!(
-                        "could not decrypt node: {:?}",
+                        "Failed to decrypt node: {:?}",
                         decrypted_child.err().unwrap()
                     ));
                 }

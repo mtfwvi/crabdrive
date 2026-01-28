@@ -6,15 +6,14 @@ use thaw::{
 use web_sys::FileList;
 
 #[component]
-pub(crate) fn FileSelectionDialog<F, S>(
+pub(crate) fn FileSelectionDialog<F>(
     #[prop(into)] open: RwSignal<bool>,
-    on_confirm: S,
-    title: F,
+    on_confirm: F,
+    #[prop(into)] title: Signal<String>,
     #[prop(optional, default = true)] allow_multiple: bool,
 ) -> impl IntoView
 where
-    F: Fn() -> String + Send + Sync + 'static,
-    S: Fn(FileList) + Send + Sync + 'static,
+    F: Fn(FileList) + Send + Sync + 'static,
 {
     let selection = RwSignal::new_local(None);
 

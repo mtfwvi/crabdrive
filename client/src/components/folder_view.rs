@@ -1,17 +1,21 @@
+use crate::api::get_children;
 use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::folder_creation_dialog::FolderCreationDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
+use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastBody, ToastIntent,
-    ToastOptions, ToasterInjection,
+    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Spinner, Text, Toast, ToastBody,
+    ToastIntent, ToastOptions, ToasterInjection,
 };
 
 #[component]
-pub(crate) fn FolderView() -> impl IntoView {
+pub(crate) fn FolderView(node_id: Signal<NodeId>) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
+
+    let files_res = LocalResource::new(move || get_children(node_id.get()));
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
@@ -26,18 +30,6 @@ pub(crate) fn FolderView() -> impl IntoView {
         )
     };
 
-    let (files, _set_files) = signal(
-        [
-            "README.md",
-            "audio.mp3",
-            "document.pdf",
-            "garbage.txt",
-            "FlameShot-v0.1.0-x86_64.deb",
-        ]
-        .iter()
-        .map(|str| str.to_string())
-        .collect(),
-    );
     let (path, _set_path) = signal(
         ["home", "jonathan", "Downloads"]
             .iter()
@@ -47,15 +39,44 @@ pub(crate) fn FolderView() -> impl IntoView {
 
     let file_selection_dialog_open = RwSignal::new(false);
     let folder_creation_dialog_open = RwSignal::new(false);
-    let selection = RwSignal::new(String::new());
+    let selection = RwSignal::new(None);
 
     view! {
         <Layout class="h-fit flex-1 rounded-sm outline outline-gray-300" has_sider=true>
             <Space vertical=true class="flex-1 flex-column gap-3 p-8">
                 <PathBreadcrumb node_names=path />
+
                 <Divider class="mb-3" />
-                <FileList files selection />
+
+                <Suspense fallback=move || {
+                    view! { <Spinner /> }
+                }>
+                    {move || {
+                        files_res
+                            .get()
+                            .map(|files| {
+                                match files {
+                                    Ok(files) => {
+                                        view! { <FileList files=files selection /> }.into_any()
+                                    }
+                                    Err(e) => {
+                                        view! {
+                                            <Text>
+                                                {format!(
+                                                    "The children could not be loaded from the server: {}",
+                                                    e,
+                                                )}
+                                            </Text>
+                                        }
+                                            .into_any()
+                                    }
+                                }
+                            })
+                    }}
+                </Suspense>
+
                 <Divider class="my-3" />
+
                 <Space>
                     <Button
                         on_click=move |_| file_selection_dialog_open.set(true)
@@ -73,7 +94,7 @@ pub(crate) fn FolderView() -> impl IntoView {
                 </Space>
             </Space>
 
-            <Show when=move || !selection.get().is_empty()>
+            <Show when=move || selection.get().is_some()>
                 <LayoutSider class="border-l-1 border-gray-200 p-5">
                     <FileDetails selection />
                 </LayoutSider>
@@ -85,9 +106,9 @@ pub(crate) fn FolderView() -> impl IntoView {
                     add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
                     file_selection_dialog_open.set(false)
                 }
-                title=move || {
+                title=Signal::derive(move || {
                     String::from("Upload files to ") + path.get_untracked().last().unwrap()
-                }
+                })
             />
 
             <FolderCreationDialog

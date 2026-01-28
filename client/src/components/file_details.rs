@@ -1,7 +1,7 @@
 use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::display_utils::format_date_time;
-use chrono::Utc;
-use crabdrive_common::da;
+use crate::model::node::DecryptedNode;
+use crate::model::node::NodeMetadata;
+use crate::utils::ui::format_date_time;
 use icondata::AiCloseOutlined;
 use leptos::prelude::*;
 use thaw::{
@@ -11,7 +11,7 @@ use thaw::{
 
 #[component]
 pub(crate) fn FileDetails(
-    #[prop(into)] selection: RwSignal<String>, // TODO: Switch String out for proper FileDetails once type exists
+    #[prop(into)] selection: RwSignal<Option<DecryptedNode>>,
 ) -> impl IntoView {
     let file_selection_dialog_open = RwSignal::new(false);
 
@@ -30,21 +30,36 @@ pub(crate) fn FileDetails(
         )
     };
 
+    let metadata = Signal::derive(move || {
+        // `selection.get()` cannot be None, because FileDetails is wrapped by Show
+        let NodeMetadata::V1(metadata) = selection.get().unwrap().metadata;
+        metadata
+    });
+
     view! {
         <Space vertical=true>
             <Space class="my-3 content-center justify-between">
-                <Text class="!text-2xl !font-bold">{selection}</Text>
+                <Text class="!text-2xl !font-bold">{move || metadata.get().name}</Text>
                 <Button
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
-                    on_click=move |_| selection.set(String::new())
+                    on_click=move |_| selection.set(None)
                     icon=AiCloseOutlined
                 />
             </Space>
 
-            <Text>{format!("Size: {}", da!(86 KB))}</Text>
-            <Text>{format!("Last modified: {}", format_date_time(Utc::now().naive_utc()))}</Text>
-            <Text>{format!("Created: {}", format_date_time(Utc::now().naive_utc()))}</Text>
+            <Show when=move || metadata.get().mime_type.is_some()>
+                <Text>{move || format!("Type: {}", metadata.get().mime_type.unwrap())}</Text>
+            </Show>
+            <Show when=move || metadata.get().size.is_some()>
+                <Text>{move || format!("Size: {}", metadata.get().size.unwrap())}</Text>
+            </Show>
+            <Text>
+                {move || {
+                    format!("Last modified: {}", format_date_time(metadata.get().last_modified))
+                }}
+            </Text>
+            <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
 
             // <Divider class="my-3" />
             // <Space class="content-center">
@@ -75,7 +90,9 @@ pub(crate) fn FileDetails(
                     add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
                     file_selection_dialog_open.set(false)
                 }
-                title=move || String::from("Upload new revision of ") + &selection.get()
+                title=Signal::derive(move || {
+                    format!("Upload new revision of {}", &metadata.get().name)
+                })
                 allow_multiple=false
             />
         </Space>

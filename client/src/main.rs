@@ -3,14 +3,15 @@
 pub(crate) mod api;
 pub(crate) mod components;
 pub(crate) mod constants;
-mod display_utils;
 pub(crate) mod model;
 pub(crate) mod pages;
-pub(crate) mod utils;
 mod theme;
+pub(crate) mod utils;
 
 use crate::theme::get_theme;
 use leptos::prelude::*;
+use leptos_router::components::{Route, Router, Routes};
+use leptos_router::path;
 use pages::home_page::HomePage;
 use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
 use tracing_subscriber::fmt::format::DefaultFields;
@@ -30,6 +31,7 @@ fn main() {
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
+        .with_line_number(true)
         .without_time()
         .with_writer(MakeWebConsoleWriter::new());
     let perf_layer = performance_layer().with_details_from_fields(DefaultFields::default());
@@ -45,7 +47,12 @@ fn main() {
         view! {
             <ConfigProvider theme>
                 <ToasterProvider position=ToastPosition::BottomStart>
-                    <HomePage />
+                    <Router>
+                        <Routes fallback=|| "Frontend route found">
+                            <Route path=path!("") view=HomePage />
+                            <Route path=path!("/:id") view=HomePage />
+                        </Routes>
+                    </Router>
                 </ToasterProvider>
             </ConfigProvider>
         }
