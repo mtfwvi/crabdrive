@@ -43,45 +43,58 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     view! {
         <ResourceWrapper
             resource=path_res
-            error_text=Signal::derive(move || format!("The node '{}' could not be loaded from the server", node_id.get()))
+            error_text=Signal::derive(move || {
+                format!("The node '{}' could not be loaded from the server", node_id.get())
+            })
             fallback_spinner=false
             let:path
         >
-            <Space vertical=true class="flex-1 flex-column gap-3">
-                <PathBreadcrumb path />
+            <Space vertical=true class="flex-1 flex-column gap-3 justify-between">
+                <Space vertical=true>
+                    <PathBreadcrumb path />
+                    <Divider class="mb-3" />
 
-                <Divider class="mb-3" />
-
-                <ResourceWrapper
-                    resource=files_res
-                    error_text=Signal::derive(move || format!("The children of '{}' could not be loaded from the server", node_id.get()))
-                    let:files
-                >
-                    <FileList files selection />
-                </ResourceWrapper>
-
-                <Divider class="my-3" />
-
-                <Space>
-                    <Button
-                        on_click=move |_| file_selection_dialog_open.set(true)
-                        appearance=ButtonAppearance::Primary
-                        icon=icondata::AiPlusOutlined
+                    <ResourceWrapper
+                        resource=files_res
+                        error_text=Signal::derive(move || {
+                            format!(
+                                "The children of '{}' could not be loaded from the server",
+                                node_id.get(),
+                            )
+                        })
+                        let:files
                     >
-                        "Upload file"
-                    </Button>
-                    <Button
-                        on_click=move |_| folder_creation_dialog_open.set(true)
-                        icon=icondata::AiFolderAddOutlined
-                    >
-                        "Create folder"
-                    </Button>
+                        <FileList files selection />
+                    </ResourceWrapper>
+                </Space>
+
+                <Space vertical=true>
+                    <Divider class="my-3" />
+
+                    <Space>
+                        <Button
+                            on_click=move |_| file_selection_dialog_open.set(true)
+                            appearance=ButtonAppearance::Primary
+                            icon=icondata::AiPlusOutlined
+                        >
+                            "Upload file"
+                        </Button>
+                        <Button
+                            on_click=move |_| folder_creation_dialog_open.set(true)
+                            icon=icondata::AiFolderAddOutlined
+                        >
+                            "Create folder"
+                        </Button>
+                    </Space>
                 </Space>
             </Space>
 
             <Show when=move || selection.get().is_some()>
-                <LayoutSider class="border-l-1 border-gray-200 p-5">
-                    <FileDetails selection />
+                <LayoutSider>
+                    <Space class="!gap-0">
+                        <Divider class="mx-5" vertical=true/>
+                        <FileDetails selection />
+                    </Space>
                 </LayoutSider>
             </Show>
 
@@ -96,7 +109,6 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                         let NodeMetadata::V1(metadata) = current_node_from(path.get()).metadata;
                         metadata.name
                     });
-
                     format!("Upload files to {}", name.get())
                 })
             />

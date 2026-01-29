@@ -14,12 +14,8 @@ where
     F: Fn(Signal<T>) -> V + Send + Sync + 'static,
     V: IntoView + 'static,
 {
-    let render_error = move |e| {
-        view! {
-            <Text>{format!("{}: {}", error_text.get(), e)}</Text>
-        }
-        .into_any()
-    };
+    let render_error =
+        move |e| view! { <Text>{format!("{}: {}", error_text.get(), e)}</Text> }.into_any();
 
     view! {
         <Suspense fallback=move || {
@@ -35,7 +31,7 @@ where
                     .map(|result| {
                         match result {
                             Ok(value) => children(Signal::derive(move || value.clone())).into_any(),
-                            Err(e) => render_error(e)
+                            Err(e) => render_error(e),
                         }
                     })
             }}

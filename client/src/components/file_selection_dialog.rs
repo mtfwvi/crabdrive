@@ -69,11 +69,7 @@ where
                                                 )
                                             }}
                                         </Text>
-                                        <For
-                                            each=file_names
-                                            key=|name| name.clone()
-                                            let:name
-                                        >
+                                        <For each=file_names key=|name| name.clone() let:name>
                                             <Text class="!block !text-center">{name}</Text>
                                         </For>
                                     </Space>
