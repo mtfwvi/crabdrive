@@ -1,3 +1,5 @@
+use std::vec;
+
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
 use axum::Json;
@@ -114,13 +116,38 @@ pub async fn get_path_between_nodes(
     State(state): State<AppState>,
     _path_constraints: Query<PathConstraints>,
 ) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
-    //(StatusCode::NO_CONTENT, Json(GetPathBetweenNodesResponse::NoContent))
+    //TODO maybe write recursive sql
 
-    //TODO implement
-    (
-        StatusCode::OK,
-        Json(GetPathBetweenNodesResponse::Ok(vec![])),
-    )
+    let to_node_id = _path_constraints.0.to_id;
+    let from_node_id = _path_constraints.0.from_id;
+    let to_node = state.node_repository.get_node(to_node_id).expect("db error");
+
+    if to_node.is_none() {
+        return (StatusCode::NOT_FOUND, Json(GetPathBetweenNodesResponse::NotFound));
+    }
+    let mut path = vec![to_node.unwrap()];
+
+    loop {
+        if path.last().unwrap().id == from_node_id {
+            break;
+        }
+
+        let new_parent_id = path.last().unwrap().parent_id;
+        if new_parent_id.is_none() {
+            // reached a node with no parent that is not the node we are looking for -> the path
+            // does not exist
+            return (StatusCode::NO_CONTENT, Json(GetPathBetweenNodesResponse::NoContent));
+        }
+
+        let parent = state.node_repository.get_node(new_parent_id.unwrap()).unwrap().unwrap();
+        path.push(parent); 
+    }
+
+    let path = path.into_iter().map(|node_entity| {
+        entity_to_encrypted_node(node_entity.clone(), State(&state)).unwrap()
+    }).rev().collect();
+
+    (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))
 }
 
 pub async fn get_node_children(
@@ -136,8 +163,7 @@ pub async fn get_node_children(
     let children = state.node_repository.get_children(parent_id).unwrap();
 
     let children = children.iter().map(|entity| {
-        let node = entity_to_encrypted_node(entity.clone(), State(&state)).unwrap();
-        node
+        entity_to_encrypted_node(entity.clone(), State(&state)).unwrap()
     });
 
     (StatusCode::OK, Json(GetNodeChildrenResponse::Ok(children.collect())))
@@ -148,7 +174,7 @@ fn entity_to_encrypted_node(node: NodeEntity, State(state): State<&AppState>) ->
     let current_revision = match node.current_revision {
         Some(id) => {
             let entity = state.revision_repository.get_revision(id)?.expect("data is not consistent");
-            Some(entity_to_file_revision(entity, State(state))?)
+            Some(entity_to_file_revision(entity)?)
         }
         None => None
     };
@@ -163,16 +189,13 @@ fn entity_to_encrypted_node(node: NodeEntity, State(state): State<&AppState>) ->
         encrypted_metadata: node.metadata,
     })
 }
-fn entity_to_file_revision(revision: RevisionEntity, State(state): State<&AppState>) -> anyhow::Result<FileRevision> {
-    //TODO there is no way to retrieve the chunk count
-
+fn entity_to_file_revision(revision: RevisionEntity) -> anyhow::Result<FileRevision> {
     Ok(FileRevision {
         id: revision.id,
         upload_ended_on: revision.upload_ended_on,
         upload_started_on: revision.upload_started_on,
         iv: revision.iv,
-        //TODO fix
-        chunk_count: 1,
+        chunk_count: revision.chunk_count,
     })
 }
 

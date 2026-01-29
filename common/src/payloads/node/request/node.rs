@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 // used to parse the query parameters in the get_path_between nodes handler
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PathConstraints {
-    from_id: NodeId,
-    to_id: NodeId,
+    pub from_id: NodeId,
+    pub to_id: NodeId,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
