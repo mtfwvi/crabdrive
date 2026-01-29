@@ -1,9 +1,9 @@
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface,
-    DialogTitle, Divider, Text, Upload, UploadDragger,
+    DialogTitle, Divider, Space, Text, Upload, UploadDragger,
 };
-use web_sys::FileList;
+use web_sys::{File, FileList};
 
 #[component]
 pub(crate) fn FileSelectionDialog<F>(
@@ -17,7 +17,26 @@ where
 {
     let selection = RwSignal::new_local(None);
 
-    let custom_request = move |file_list: FileList| selection.set(Some(file_list));
+    let set_file_list = move |file_list: FileList| selection.set(Some(file_list));
+
+    let selected_files = move || {
+        if selection.get().is_none() {
+            return vec![];
+        }
+        let current_selection = selection.get().unwrap();
+
+        let mut files: Vec<File> = vec![];
+        for i in 0..current_selection.length() {
+            let file = current_selection.item(i).unwrap();
+            files.push(file)
+        }
+        files
+    };
+
+    let file_names = move || {
+        let names: Vec<String> = selected_files().iter().map(File::name).collect();
+        names
+    };
 
     let handle_confirm = move || {
         on_confirm(selection.get().unwrap());
@@ -30,26 +49,34 @@ where
                 <DialogBody>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogContent>
-                        <Upload custom_request multiple=allow_multiple>
+                        <Upload custom_request=set_file_list multiple=allow_multiple>
                             // This inline style is necessary since this div that needs styling
                             // is inserted between Upload and UploadDragger in the DOM
                             <style>".thaw-upload__trigger { width: 100% } "</style>
 
                             <UploadDragger>
-                                // TODO: Display list of selected files
                                 "Click or drag a file to this area"
                                 <Show when=move || selection.get().is_some()>
-                                    <Divider class="py-4" />
-                                    <Text>
-                                        {move || {
-                                            let length = selection.get().unwrap().length();
-                                            format!(
-                                                "{} {} selected",
-                                                length,
-                                                if length == 1 { "file" } else { "files" },
-                                            )
-                                        }}
-                                    </Text>
+                                    <Space vertical=true>
+                                        <Divider class="py-4" />
+                                        <Text>
+                                            {move || {
+                                                let length = selection.get().unwrap().length();
+                                                format!(
+                                                    "{} {} selected:",
+                                                    length,
+                                                    if length == 1 { "file" } else { "files" },
+                                                )
+                                            }}
+                                        </Text>
+                                        <For
+                                            each=file_names
+                                            key=|name| name.clone()
+                                            let:name
+                                        >
+                                            <Text class="!block !text-center">{name}</Text>
+                                        </For>
+                                    </Space>
                                 </Show>
                             </UploadDragger>
                         </Upload>
