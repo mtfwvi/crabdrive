@@ -39,22 +39,24 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     let selection = RwSignal::new(None);
 
     view! {
-        <Layout class="h-fit flex-1 rounded-sm outline outline-gray-300" has_sider=true>
-            <Space vertical=true class="flex-1 flex-column gap-3 p-8">
-                <ResourceWrapper
-                    resource=node_res
-                    error_text=Signal::derive(move || format!("The node '{}' could not be loaded from the server", node_id.get()))
-                    render=move |node| view! { <PathBreadcrumb node /> }.into_any()
-                    fallback_spinner=false
-                />
+        <ResourceWrapper
+            resource=node_res
+            error_text=Signal::derive(move || format!("The node '{}' could not be loaded from the server", node_id.get()))
+            fallback_spinner=false
+            let:node
+        >
+            <Space vertical=true class="flex-1 flex-column gap-3">
+                <PathBreadcrumb node />
 
                 <Divider class="mb-3" />
 
                 <ResourceWrapper
                     resource=files_res
                     error_text=Signal::derive(move || format!("The children of '{}' could not be loaded from the server", node_id.get()))
-                    render=move |files| view! { <FileList files selection /> }.into_any()
-                />
+                    let:files
+                >
+                    <FileList files selection />
+                </ResourceWrapper>
 
                 <Divider class="my-3" />
 
@@ -104,6 +106,6 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     folder_creation_dialog_open.set(false)
                 }
             />
-        </Layout>
+        </ResourceWrapper>
     }
 }

@@ -3,15 +3,16 @@ use std::fmt::Debug;
 use thaw::{Spinner, Text};
 
 #[component]
-pub(crate) fn ResourceWrapper<T, F>(
+pub(crate) fn ResourceWrapper<T, F, V>(
     resource: LocalResource<Result<T, String>>,
-    render: F,
+    children: F,
     #[prop(into)] error_text: Signal<String>,
     #[prop(optional, default = true)] fallback_spinner: bool,
 ) -> impl IntoView
 where
-    T: Clone + Debug + 'static,
-    F: Fn(T) -> AnyView + Send + Sync + 'static,
+    T: Clone + Debug + Send + Sync + 'static,
+    F: Fn(Signal<T>) -> V + Send + Sync + 'static,
+    V: IntoView + 'static,
 {
     let render_error = move |e| {
         view! {
@@ -33,7 +34,7 @@ where
                     .get()
                     .map(|result| {
                         match result {
-                            Ok(value) => render(value),
+                            Ok(value) => children(Signal::derive(move || value.clone())).into_any(),
                             Err(e) => render_error(e)
                         }
                     })

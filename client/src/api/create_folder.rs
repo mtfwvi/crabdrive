@@ -7,7 +7,7 @@ use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse
 use crabdrive_common::storage::NodeId;
 
 pub async fn create_folder(
-    parent: &mut DecryptedNode,
+    parent: DecryptedNode,
     folder_name: String,
 ) -> Result<DecryptedNode, String> {
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
@@ -57,9 +57,6 @@ pub async fn create_folder(
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
-            parent.metadata = new_parent_metadata;
-            parent.change_count += 1;
-
             let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
                 .await
                 .unwrap();

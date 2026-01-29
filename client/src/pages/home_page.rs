@@ -19,12 +19,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                 <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
             </LayoutSider>
 
-            <Show
-                when=move || node_id.get().is_some()
-                fallback=|| view! {<Text>No node selected.</Text>}
-            >
-                <FolderView node_id=Signal::derive(move || node_id.get().unwrap())/>
-            </Show>
+            <Layout class="h-fit flex-1 p-8 rounded-sm outline outline-gray-300" has_sider=true>
+                <Show
+                    when=move || node_id.get().is_some()
+                    fallback=|| view! {<Text>No node selected.</Text>}
+                >
+                    <FolderView node_id=Signal::derive(move || node_id.get().unwrap())/>
+                </Show>
+            </Layout>
         </Layout>
     }
 }
