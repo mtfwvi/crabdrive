@@ -24,7 +24,7 @@ pub fn get_example_node_info() -> EncryptedNode {
         deleted_on: None,
         node_type: NodeType::Folder,
         current_revision: None,
-        encrypted_metadata: vec![],
+        encrypted_metadata: vec![0, 0, 0, 0],
         metadata_iv: IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
     }
 }

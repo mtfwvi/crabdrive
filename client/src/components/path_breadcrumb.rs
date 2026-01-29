@@ -4,9 +4,8 @@ use leptos_router::hooks::use_navigate;
 use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text};
 
 #[component]
-pub(crate) fn PathBreadcrumb(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
-    // TODO: Talk about making this path of node (i.e. to its root), since the server knows the root easily but I don't want to know it really
-    let path = Signal::derive(move || vec![node.get()]); // TODO: Get real path
+pub(crate) fn PathBreadcrumb(#[prop(into)] path: Signal<Vec<DecryptedNode>>) -> impl IntoView {
+    let current_node = move || path.get().last().expect("Path was empty").clone();
 
     view! {
         <Breadcrumb>
@@ -14,7 +13,7 @@ pub(crate) fn PathBreadcrumb(#[prop(into)] node: Signal<DecryptedNode>) -> impl 
                 each=move || path.get()
                 key=|path_node| path_node.id
                 children=move |path_node| {
-                    let is_not_last = move || path_node.id != node.get().id;
+                    let is_not_last = move || path_node.id != current_node().id;
 
                     view! {
                         <PathBreadcrumbItem node=path_node is_last=!is_not_last() />

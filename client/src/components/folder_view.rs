@@ -1,16 +1,15 @@
-use crate::api::get_children;
-use crate::api::get_single_node;
+use crate::api::{get_children, path_to_root};
 use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::folder_creation_dialog::FolderCreationDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
-use crate::model::node::NodeMetadata;
+use crate::model::node::{DecryptedNode, NodeMetadata};
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastBody, ToastIntent,
+    Button, ButtonAppearance, Divider, LayoutSider, Space, Toast, ToastBody, ToastIntent,
     ToastOptions, ToasterInjection,
 };
 
@@ -19,7 +18,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     let toaster = ToasterInjection::expect_context();
 
     let files_res = LocalResource::new(move || get_children(node_id.get()));
-    let node_res = LocalResource::new(move || get_single_node(node_id.get()));
+    let path_res = LocalResource::new(move || path_to_root(node_id.get()));
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
@@ -38,15 +37,18 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     let folder_creation_dialog_open = RwSignal::new(false);
     let selection = RwSignal::new(None);
 
+    let current_node_from =
+        move |path: Vec<DecryptedNode>| path.last().expect("Failed due to empty path").clone();
+
     view! {
         <ResourceWrapper
-            resource=node_res
+            resource=path_res
             error_text=Signal::derive(move || format!("The node '{}' could not be loaded from the server", node_id.get()))
             fallback_spinner=false
-            let:node
+            let:path
         >
             <Space vertical=true class="flex-1 flex-column gap-3">
-                <PathBreadcrumb node />
+                <PathBreadcrumb path />
 
                 <Divider class="mb-3" />
 
@@ -91,7 +93,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                 }
                 title=Signal::derive(move || {
                     let name = Signal::derive(move || {
-                        let NodeMetadata::V1(metadata) = node_res.get().unwrap().unwrap().metadata;
+                        let NodeMetadata::V1(metadata) = current_node_from(path.get()).metadata;
                         metadata.name
                     });
 
