@@ -1,15 +1,13 @@
 use crate::api::get_children;
+use crate::api::get_single_node;
 use crate::components::file_details::FileDetails;
 use crate::components::file_list::FileList;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::folder_creation_dialog::FolderCreationDialog;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
-use crate::constants::EMPTY_KEY;
-use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-use chrono::Utc;
-use crabdrive_common::storage::{NodeId, NodeType};
-use crabdrive_common::uuid::UUID;
+use crate::model::node::NodeMetadata;
+use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Divider, Layout, LayoutSider, Space, Toast, ToastBody, ToastIntent,
@@ -21,32 +19,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     let toaster = ToasterInjection::expect_context();
 
     let files_res = LocalResource::new(move || get_children(node_id.get()));
-
-    // TODO: Load real data
-    let node_res = LocalResource::new(move || async {
-        let root_node_metadata = NodeMetadata::V1(MetadataV1 {
-            name: "root".to_string(),
-            last_modified: Utc::now().naive_utc(),
-            created: Default::default(),
-            size: None,
-            mime_type: None,
-            file_key: None,
-            children_key: vec![],
-        });
-
-        let decrypted_node = DecryptedNode {
-            id: UUID::random(),
-            change_count: 0,
-            parent_id: UUID::random(),
-            owner_id: UUID::nil(),
-            deleted_on: None,
-            node_type: NodeType::Folder,
-            current_revision: None,
-            metadata: root_node_metadata,
-            encryption_key: EMPTY_KEY,
-        };
-        Ok(decrypted_node)
-    });
+    let node_res = LocalResource::new(move || get_single_node(node_id.get()));
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
@@ -70,7 +43,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             <Space vertical=true class="flex-1 flex-column gap-3 p-8">
                 <ResourceWrapper
                     resource=node_res
-                    error_text=String::from("The node info could not be loaded from the server")
+                    error_text=Signal::derive(move || format!("The node '{}' could not be loaded from the server", node_id.get()))
                     render=move |node| view! { <PathBreadcrumb node /> }.into_any()
                     fallback_spinner=false
                 />
@@ -79,7 +52,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
 
                 <ResourceWrapper
                     resource=files_res
-                    error_text=Signal::derive(move || format!("The children of {} could not be loaded from the server", node_id.get()))
+                    error_text=Signal::derive(move || format!("The children of '{}' could not be loaded from the server", node_id.get()))
                     render=move |files| view! { <FileList files selection /> }.into_any()
                 />
 
