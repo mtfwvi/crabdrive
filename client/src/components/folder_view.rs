@@ -88,7 +88,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             <FileSelectionDialog
                 open=file_selection_dialog_open
                 on_confirm=move |file_list| {
-                    add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
+                    add_toast(format!("Received {} file(s) to upload", file_list.length()));
                     file_selection_dialog_open.set(false)
                 }
                 title=Signal::derive(move || {

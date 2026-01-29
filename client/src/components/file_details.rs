@@ -1,3 +1,4 @@
+use crate::api::download_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
@@ -36,6 +37,29 @@ pub(crate) fn FileDetails(
         metadata
     });
 
+    let download_action = Action::new_local(|input: &DecryptedNode| {
+        let node = input.to_owned();
+        async move { download_file(node).await }
+    });
+    let handle_download = move |_| {
+        // `selection.get()` cannot be None, because FileDetails is wrapped by Show
+        download_action.dispatch(selection.get().unwrap().clone());
+    };
+
+    Effect::new(move || {
+        let status = download_action.value().get();
+        if status.is_some() {
+            let response = status.unwrap();
+            if response.is_err() {
+                add_toast(format!(
+                    "Failed to download {}: {}",
+                    metadata.get().name,
+                    response.err().unwrap()
+                ))
+            }
+        }
+    });
+
     view! {
         <Space vertical=true>
             <Space class="my-3 content-center justify-between">
@@ -70,7 +94,7 @@ pub(crate) fn FileDetails(
             <Divider class="my-3" />
             <Space class="flex-1">
                 <Button
-                    on_click=move |_| add_toast(String::from("TODO"))
+                    on_click=handle_download
                     appearance=ButtonAppearance::Primary
                     icon=icondata::AiCloudDownloadOutlined
                 >
@@ -87,7 +111,7 @@ pub(crate) fn FileDetails(
             <FileSelectionDialog
                 open=file_selection_dialog_open
                 on_confirm=move |file_list| {
-                    add_toast(format!("Received file_list to be uploaded: {:?}", file_list));
+                    add_toast(format!("Received file_list with file to be uploaded: {:?}", file_list));
                     file_selection_dialog_open.set(false)
                 }
                 title=Signal::derive(move || {
