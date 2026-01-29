@@ -7,6 +7,10 @@ use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
 use std::sync::Arc;
+use diesel::prelude::*;
+use diesel::Connection;
+use crate::db::NodeDsl;
+
 
 pub(crate) trait NodeRepository {
     fn create_node(
@@ -139,42 +143,58 @@ impl NodeRepository for NodeState {
         Ok(deleted_nodes)
     }
 
-    fn move_node(
-        &self,
-        id: NodeId,
-        from: NodeId,
-        from_metadata: EncryptedMetadata,
-        to: NodeId,
-        to_metadata: EncryptedMetadata,
-    ) -> Result<()> {
-        let mut node = select_node(&self.db_pool, id)
-            .context("Failed to select node to move")?
-            .context("Node to move not found")?;
-
+fn move_node(
+    &self,
+    id: NodeId,
+    from: NodeId,
+    from_metadata: EncryptedMetadata,
+    to: NodeId,
+    to_metadata: EncryptedMetadata,
+) -> Result<()> {
+    let mut conn = self.db_pool.get().context("Failed to get database connection")?;
+    
+    conn.transaction(|conn| {
+        let mut node = NodeDsl::Node
+            .filter(NodeDsl::id.eq(id))
+            .first::<NodeEntity>(conn)
+            .context("Failed to select node to move")?;
+        
         node.parent_id = Some(to);
+        
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(from))
+            .set((
+                NodeDsl::metadata.eq(&from_metadata),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to update from parent")?;
+        
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(to))
+            .set((
+                NodeDsl::metadata.eq(&to_metadata),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to update to parent")?;
+        
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(id))
+            .set((
+                NodeDsl::parent_id.eq(Some(to)),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to move node")?;
+        
+        Ok::<(), anyhow::Error>(())
+    })?;
+    
+    Ok(())
+}
 
-        let from_parent = NodeEntity {
-            id: from,
-            metadata: from_metadata,
-            ..select_node(&self.db_pool, from)
-                .context("Failed to select from parent")?
-                .context("From parent not found")?
-        };
-        update_node(&self.db_pool, &from_parent, None).context("Failed to update from parent")?;
 
-        let to_parent = NodeEntity {
-            id: to,
-            metadata: to_metadata.clone(),
-            ..select_node(&self.db_pool, to)
-                .context("Failed to select to parent")?
-                .context("To parent not found")?
-        };
-        update_node(&self.db_pool, &to_parent, None).context("Failed to update to parent")?;
-
-        update_node(&self.db_pool, &node, Some(&to_metadata)).context("Failed to move node")?;
-
-        Ok(())
-    }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
         get_all_children(&self.db_pool, parent_id).context("Failed to get children")
