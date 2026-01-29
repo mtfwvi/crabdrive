@@ -17,7 +17,7 @@ pub(crate) trait NodeRepository {
         node_type: crabdrive_common::storage::NodeType,
     ) -> Result<NodeEntity>;
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity>;
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>>;
 
     fn update_node(&self, node: NodeEntity) -> Result<()>;
 
@@ -86,10 +86,9 @@ impl NodeRepository for NodeState {
         Ok(node)
     }
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity> {
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>> {
         select_node(&self.db_pool, id)
-            .context("Failed to select node")?
-            .context("Node not found")
+            .context("Failed to select node")
     }
 
     fn update_node(&self, node: NodeEntity) -> Result<()> {

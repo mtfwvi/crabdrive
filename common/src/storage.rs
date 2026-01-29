@@ -69,8 +69,8 @@ pub type RevisionIv = IV;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EncryptedNode {
     pub id: NodeId,
-    pub change_count: u64,
-    pub parent_id: NodeId,
+    pub change_count: i64,
+    pub parent_id: Option<NodeId>,
     pub owner_id: UserId,
     pub deleted_on: Option<NaiveDateTime>,
     pub node_type: NodeType,

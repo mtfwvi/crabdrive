@@ -16,6 +16,7 @@ use std::sync::Arc;
 use axum::{Router, middleware};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -97,7 +98,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let app = Router::<AppState>::new()
         .merge(routes::routes())
         .with_state(state.clone())
-        .layer(middleware::from_fn(logging_middleware));
+        .layer(middleware::from_fn(logging_middleware))
+        .layer(CatchPanicLayer::new());
 
     let addr = config.addr();
 
