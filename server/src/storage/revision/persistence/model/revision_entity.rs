@@ -1,5 +1,6 @@
 use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;
+use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
 use diesel::prelude::*;
@@ -24,4 +25,6 @@ pub struct RevisionEntity {
     /// derived from this value + 4 Bytes describing the index to avoid reordering. This value
     /// MUST NOT be reused for encrypting a new file
     pub iv: IV,
+
+    pub chunk_count: ChunkIndex,
 }

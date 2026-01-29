@@ -39,5 +39,6 @@ CREATE TABLE Revision(
     upload_started_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     upload_ended_on TIMESTAMP,
     iv BLOB NOT NULL,
-    FOREIGN KEY (file_id) REFERENCES Node(id)
+    FOREIGN KEY (file_id) REFERENCES Node(id),
+    chunk_count INTEGER NOT NULL
 );

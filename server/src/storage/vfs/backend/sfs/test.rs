@@ -20,7 +20,7 @@ mod tests {
         // Test with 16 files, containing 16 chunks à 100KB of garbage data each.
         // For testing, 100KB should be enough..
         const NUM_FILES: u32 = 16;
-        const NUM_CHUNKS: u32 = 16;
+        const NUM_CHUNKS: i64 = 16;
         const SIZE_CHUNK: DataAmount = da!(100 KB);
 
         for _ in 0..NUM_FILES {
@@ -41,7 +41,7 @@ mod tests {
                 original_data.push(chunk_data.clone());
 
                 let chunk = FileChunk {
-                    index: i as u64,
+                    index: i as i64,
                     data: bytes::Bytes::from(chunk_data),
                 };
 
@@ -55,7 +55,7 @@ mod tests {
 
             for i in 0..NUM_CHUNKS {
                 let chunk = sfs
-                    .get_chunk(file_key.clone(), i as u64, SIZE_CHUNK)
+                    .get_chunk(file_key.clone(), i, SIZE_CHUNK)
                     .expect("Failed to read chunk back");
 
                 assert_eq!(

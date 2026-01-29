@@ -5,11 +5,11 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use crabdrive_common::data::DataAmount;
-use crabdrive_common::storage::{NodeId, RevisionId};
+use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 
 pub async fn post_chunk(
     State(state): State<AppState>,
-    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, u64)>,
+    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
     chunk: axum::body::Bytes,
 ) -> (StatusCode, Json<()>) {
     let file_chunk = FileChunk {
@@ -31,7 +31,7 @@ pub async fn post_chunk(
 
 pub async fn get_chunk(
     State(state): State<AppState>,
-    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, u64)>,
+    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
 ) -> (StatusCode, Vec<u8>) {
     let file_key = FileKey::new(); // TODO: Generate from _node_id and _revision_id
 

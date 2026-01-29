@@ -6,6 +6,7 @@ use crate::storage::revision::persistence::model::revision_entity::RevisionEntit
 use anyhow::Result;
 use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;
+use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
 use crabdrive_common::uuid::UUID;
@@ -23,6 +24,7 @@ pub(crate) trait RevisionRepository {
         node_id: NodeId,
         upload_started_on: NaiveDateTime,
         iv: IV,
+        chunk_count: ChunkIndex
     ) -> Result<RevisionEntity>;
 
     /// Patches an existing revision
@@ -48,6 +50,7 @@ impl RevisionRepository for RevisionService {
         file_id: NodeId,
         upload_started_on: NaiveDateTime,
         iv: IV,
+        chunk_count: ChunkIndex
     ) -> Result<RevisionEntity> {
         let revision = RevisionEntity {
             id: UUID::random(),
@@ -55,6 +58,7 @@ impl RevisionRepository for RevisionService {
             upload_started_on,
             upload_ended_on: None,
             iv,
+            chunk_count
         };
         db::operations::insert_revision(&self.db_pool, &revision)
     }
