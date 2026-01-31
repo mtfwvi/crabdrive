@@ -41,7 +41,7 @@ mod tests {
                 original_data.push(chunk_data.clone());
 
                 let chunk = FileChunk {
-                    index: i as i64,
+                    index: i,
                     data: bytes::Bytes::from(chunk_data),
                 };
 
