@@ -7,21 +7,30 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
+use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
+use bytes::Bytes;
 use chrono::Local;
+use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
-use crabdrive_common::payloads::node::response::file::PostCreateFileResponse;
+use crabdrive_common::payloads::node::response::file::{
+    PostCommitFileResponse, PostCreateFileResponse,
+};
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::routes::{CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE};
+use crabdrive_common::payloads::node::response::node::GetNodeResponse;
+use crabdrive_common::routes::{
+    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID,
+};
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use formatx::formatx;
-use rand::RngCore;
+use rand::rngs::SmallRng;
+use rand::{RngCore, SeedableRng};
 use std::path::PathBuf;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
@@ -38,7 +47,7 @@ pub fn random_metadata() -> EncryptedMetadata {
 }
 
 #[tokio::test]
-pub async fn test_create_folder() {
+pub async fn test_folder() {
     let server = get_server();
 
     let parent_metadata = random_metadata();
@@ -74,7 +83,7 @@ pub async fn test_create_folder() {
 }
 
 #[tokio::test]
-pub async fn test_create_file() {
+pub async fn test_file() {
     let server = get_server();
 
     let parent_metadata = random_metadata();
@@ -90,28 +99,86 @@ pub async fn test_create_file() {
         node_id,
     };
 
-    let url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, UUID::nil()).unwrap();
+    let create_file_url =
+        API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, UUID::nil()).unwrap();
 
-    let test_request = server.post(&url).json(&create_node_request).await;
+    let test_request = server
+        .post(&create_file_url)
+        .json(&create_node_request)
+        .await;
 
-    let create_folder_response: PostCreateFileResponse = test_request.json();
+    let create_file_response: PostCreateFileResponse = test_request.json();
 
-    match create_folder_response {
-        PostCreateFileResponse::Created(ref node) => {
+    let revision;
+    match create_file_response {
+        PostCreateFileResponse::Created(node) => {
             assert_eq!(node.encrypted_metadata, node_metadata);
             assert_eq!(node.id, node_id);
             assert_eq!(node.node_type, NodeType::File);
             assert!(node.current_revision.is_some());
+            revision = node.current_revision.unwrap();
         }
         _ => {
-            panic!()
+            panic!("failed to create file")
         }
     }
 
-    //TODO upload chunks
-    //TODO commit file
-    //TODO query node
-    //TODO download chunks
+    let mut chunk1 = vec![0; da!(16 MB).as_bytes() as usize];
+    let mut chunk2 = vec![0; da!(16 MB).as_bytes() as usize];
+
+    let chunk_url1 = API_BASE_PATH.to_owned()
+        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 1).unwrap();
+    let chunk_url2 = API_BASE_PATH.to_owned()
+        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
+
+    let mut rng = SmallRng::from_rng(&mut rand::rng());
+
+    rng.fill_bytes(&mut chunk1);
+    rng.fill_bytes(&mut chunk2);
+
+    let chunk1 = Bytes::from(chunk1);
+    let chunk2 = Bytes::from(chunk2);
+
+    let chunk1_response = server.post(&chunk_url1).bytes(chunk1.clone()).await;
+    assert_eq!(chunk1_response.status_code(), StatusCode::CREATED);
+
+    let chunk2_response = server.post(&chunk_url2).bytes(chunk2.clone()).await;
+    assert_eq!(chunk2_response.status_code(), StatusCode::CREATED);
+
+    let commit_file_url = API_BASE_PATH.to_owned()
+        + &formatx!(COMMIT_FILE_ROUTE, create_node_request.node_id, revision.id).unwrap();
+
+    let commit_file_response: PostCommitFileResponse = server.post(&commit_file_url).await.json();
+
+    let node;
+    match commit_file_response {
+        PostCommitFileResponse::Ok(_node) => node = _node,
+        _ => {
+            panic!("failed to commit file")
+        }
+    }
+
+    assert_eq!(node.current_revision.as_ref().unwrap().id, revision.id);
+
+    let get_node_url = API_BASE_PATH.to_owned()
+        + &formatx!(NODE_ROUTE_NODEID, create_node_request.node_id).unwrap();
+
+    let node_response: GetNodeResponse = server.get(&get_node_url).await.json();
+
+    match node_response {
+        GetNodeResponse::Ok(same_node_as_before) => {
+            assert_eq!(same_node_as_before, node)
+        }
+        _ => {
+            panic!("failed to get node")
+        }
+    }
+
+    let get_chunk_response1 = server.get(&chunk_url1).await.into_bytes();
+    let get_chunk_response2 = server.get(&chunk_url2).await.into_bytes();
+
+    assert_eq!(get_chunk_response1, chunk1);
+    assert_eq!(get_chunk_response2, chunk2);
 }
 
 pub fn get_server() -> TestServer {

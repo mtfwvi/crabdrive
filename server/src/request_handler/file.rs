@@ -174,7 +174,7 @@ pub async fn post_commit_file(
 
     let mut missing_chunks = vec![];
     for i in 1..revision.chunk_count {
-        if !state.vfs.exists(&file_key) {
+        if !state.vfs.read().unwrap().exists(&file_key) {
             missing_chunks.push(i);
         }
     }

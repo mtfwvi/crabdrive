@@ -1,6 +1,6 @@
 use crate::http::AppState;
-use crate::storage::vfs::model::FileError;
-use crate::storage::vfs::{FileChunk, FileKey, TransferSessionId};
+use crate::storage::vfs::FileChunk;
+use crate::storage::vfs::model::{FileError, new_filekey};
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
@@ -9,16 +9,40 @@ use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 
 pub async fn post_chunk(
     State(state): State<AppState>,
-    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
+    Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
     chunk: axum::body::Bytes,
 ) -> (StatusCode, Json<()>) {
     let file_chunk = FileChunk {
         index: chunk_index,
         data: chunk,
     };
-    let transfer_session_id = TransferSessionId::nil(); // TODO: Generate from _node_id and _revision_id
 
-    let result = state.vfs.write_chunk(&transfer_session_id, file_chunk);
+    let file_key = new_filekey(node_id, revision_id);
+
+    //TODO reuse sessions
+
+    let transfer_session_id;
+    {
+        let mut vfs = state
+            .vfs
+            .write()
+            .expect("someone panicked while holding vfs?");
+        transfer_session_id = vfs.start_transfer(file_key).expect("how does that happen?");
+    }
+
+    let result = state
+        .vfs
+        .read()
+        .unwrap()
+        .write_chunk(&transfer_session_id, file_chunk);
+
+    {
+        let mut vfs = state
+            .vfs
+            .write()
+            .expect("someone panicked while holding vfs?");
+        vfs.end_transfer(transfer_session_id).unwrap()
+    }
 
     match result {
         Ok(_) => (StatusCode::CREATED, Json(())),
@@ -31,13 +55,17 @@ pub async fn post_chunk(
 
 pub async fn get_chunk(
     State(state): State<AppState>,
-    Path((_node_id, _revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
+    Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
 ) -> (StatusCode, Vec<u8>) {
-    let file_key = FileKey::new(); // TODO: Generate from _node_id and _revision_id
+    let file_key = new_filekey(node_id, revision_id);
 
     let chunk_size = DataAmount::zero(); // Inferred from actual file for now, may be set manually later
 
-    let result = state.vfs.get_chunk(file_key, chunk_index, chunk_size);
+    let result = state
+        .vfs
+        .read()
+        .expect("someone panicked while holding vfs?")
+        .get_chunk(file_key, chunk_index, chunk_size);
 
     if let Ok(data) = result {
         return (StatusCode::CREATED, data.data.to_vec());

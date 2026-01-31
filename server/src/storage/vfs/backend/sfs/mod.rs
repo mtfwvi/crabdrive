@@ -90,7 +90,7 @@ impl FileRepository for Sfs {
 
         let mut pathbuf = self.storage_dir.clone();
         pathbuf.push(&key);
-        std::fs::create_dir(&pathbuf)?;
+        std::fs::create_dir_all(&pathbuf)?;
         debug!("Chunks will be stored in {}", pathbuf.display());
         self.sessions.insert(session, pathbuf);
         Ok(session)
