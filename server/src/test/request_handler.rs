@@ -1,13 +1,15 @@
-use std::path::PathBuf;
-use std::sync::Arc;
-use axum::{middleware, Router};
-use crate::http::{routes, AppConfig, AppState};
+use crate::db::connection::create_pool;
+use crate::http::middleware::logging_middleware;
+use crate::http::{AppConfig, AppState, routes};
+use crate::storage::node::persistence::model::node_entity::NodeEntity;
+use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::revision::persistence::revision_repository::RevisionService;
+use crate::storage::vfs::backend::Sfs;
+use crate::user::persistence::model::encryption_key::EncryptionKey;
+use crate::user::persistence::model::user_entity::UserEntity;
+use axum::{Router, middleware};
 use axum_test::TestServer;
 use chrono::Local;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use formatx::formatx;
-use rand::RngCore;
-use tower_http::catch_panic::CatchPanicLayer;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
@@ -17,14 +19,12 @@ use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse
 use crabdrive_common::routes::{CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE};
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
-use crate::db::connection::create_pool;
-use crate::http::middleware::logging_middleware;
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::node::persistence::node_repository::NodeState;
-use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::vfs::backend::Sfs;
-use crate::user::persistence::model::encryption_key::EncryptionKey;
-use crate::user::persistence::model::user_entity::UserEntity;
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use formatx::formatx;
+use rand::RngCore;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 
@@ -85,7 +85,7 @@ pub async fn test_create_file() {
         parent_metadata_version: 0,
         parent_metadata,
         node_metadata: node_metadata.clone(),
-        file_iv: IV::new([1,2,3,4,5,6,7,8,9,10,11,12]),
+        file_iv: IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
         chunk_count: 2,
         node_id,
     };
@@ -101,6 +101,7 @@ pub async fn test_create_file() {
             assert_eq!(node.encrypted_metadata, node_metadata);
             assert_eq!(node.id, node_id);
             assert_eq!(node.node_type, NodeType::File);
+            assert!(node.current_revision.is_some());
         }
         _ => {
             panic!()

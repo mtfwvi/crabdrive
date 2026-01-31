@@ -6,7 +6,9 @@ use crabdrive_common::storage::RevisionId;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset)]
+#[derive(
+    Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone, Copy,
+)]
 #[diesel(table_name = crate::db::schema::Revision)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct RevisionEntity {

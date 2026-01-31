@@ -1,5 +1,5 @@
 use bytes::Bytes;
-use crabdrive_common::storage::ChunkIndex;
+use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use crabdrive_common::uuid::UUID;
 
 #[derive(Debug)]
@@ -32,6 +32,10 @@ impl std::error::Error for FileError {}
 
 /// Internal storage key for a file
 pub(crate) type FileKey = String;
+
+pub fn new_filekey(node_id: NodeId, revision_id: RevisionId) -> FileKey {
+    format!("{}_{}", node_id, revision_id)
+}
 
 /// Crated when starting a transfer, this acts as a handle and is needed for all subsequent operations
 /// (upload, end, abort).

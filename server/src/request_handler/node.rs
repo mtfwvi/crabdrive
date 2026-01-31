@@ -1,8 +1,8 @@
 use std::vec;
 
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
@@ -94,7 +94,7 @@ pub async fn patch_node(
     let update_node_from_db = entity_to_encrypted_node(
         state
             .node_repository
-            .update_node(updated_node)
+            .update_node(&updated_node)
             .expect("db error"),
         &state,
     )
@@ -132,7 +132,16 @@ pub async fn post_move_node(
 
     //TODO check version (in one transaction)
 
-    state.node_repository.move_node(node_id, from_node.id, _payload.from_node_metadata, to_node.id, _payload.to_node_metadata).expect("db error");
+    state
+        .node_repository
+        .move_node(
+            node_id,
+            from_node.id,
+            _payload.from_node_metadata,
+            to_node.id,
+            _payload.to_node_metadata,
+        )
+        .expect("db error");
     (StatusCode::OK, Json(PostMoveNodeResponse::Ok))
 }
 
@@ -248,7 +257,7 @@ pub fn entity_to_encrypted_node(
                 .revision_repository
                 .get_revision(id)?
                 .expect("data is not consistent");
-            Some(entity_to_file_revision(entity)?)
+            Some(entity_to_file_revision(entity))
         }
         None => None,
     };
@@ -263,12 +272,12 @@ pub fn entity_to_encrypted_node(
         encrypted_metadata: node.metadata,
     })
 }
-fn entity_to_file_revision(revision: RevisionEntity) -> anyhow::Result<FileRevision> {
-    Ok(FileRevision {
+pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {
+    FileRevision {
         id: revision.id,
         upload_ended_on: revision.upload_ended_on,
         upload_started_on: revision.upload_started_on,
         iv: revision.iv,
         chunk_count: revision.chunk_count,
-    })
+    }
 }

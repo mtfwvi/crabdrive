@@ -1,4 +1,3 @@
-use std::any::Any;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
@@ -7,19 +6,20 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
-use http_body_util::Full;
 use chrono::Local;
 use crabdrive_common::uuid::UUID;
+use http_body_util::Full;
+use std::any::Any;
 
-use std::io::ErrorKind;
-use std::sync::Arc;
-use axum::{Router, middleware};
 use axum::http::StatusCode;
 use axum::http::header::{self};
 use axum::response::Response;
+use axum::{Router, middleware};
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use std::io::ErrorKind;
+use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{error, info};
 
@@ -134,7 +134,6 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 
     Ok(())
 }
-
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
 pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {

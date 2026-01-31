@@ -24,7 +24,7 @@ pub(crate) trait RevisionRepository {
         node_id: NodeId,
         upload_started_on: NaiveDateTime,
         iv: IV,
-        chunk_count: ChunkIndex
+        chunk_count: ChunkIndex,
     ) -> Result<RevisionEntity>;
 
     /// Patches an existing revision
@@ -50,7 +50,7 @@ impl RevisionRepository for RevisionService {
         file_id: NodeId,
         upload_started_on: NaiveDateTime,
         iv: IV,
-        chunk_count: ChunkIndex
+        chunk_count: ChunkIndex,
     ) -> Result<RevisionEntity> {
         let revision = RevisionEntity {
             id: UUID::random(),
@@ -58,7 +58,7 @@ impl RevisionRepository for RevisionService {
             upload_started_on,
             upload_ended_on: None,
             iv,
-            chunk_count
+            chunk_count,
         };
         db::operations::insert_revision(&self.db_pool, &revision)
     }
