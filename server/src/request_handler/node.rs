@@ -38,7 +38,7 @@ pub fn get_example_node_info() -> EncryptedNode {
 }
 
 pub async fn delete_node(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(_node_id): Path<NodeId>,
     Json(_payload): Json<DeleteNodeRequest>,
 ) -> (StatusCode, Json<DeleteNodeResponse>) {
@@ -59,7 +59,7 @@ pub async fn get_node(
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
 
-    let node = entity_to_encrypted_node(node_entity.unwrap().unwrap(), State(&state)).unwrap();
+    let node = entity_to_encrypted_node(node_entity.unwrap().unwrap(), &state).unwrap();
 
     (StatusCode::OK, Json(GetNodeResponse::Ok(node)))
 }
@@ -96,7 +96,7 @@ pub async fn patch_node(
             .node_repository
             .update_node(updated_node)
             .expect("db error"),
-        State(&state),
+        &state,
     )
     .expect("db error");
     (
@@ -137,7 +137,7 @@ pub async fn post_move_node(
 }
 
 pub async fn post_move_node_to_trash(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PostMoveNodeToTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeToTrashResponse>) {
@@ -149,7 +149,7 @@ pub async fn post_move_node_to_trash(
 }
 
 pub async fn post_move_node_out_of_trash(
-    State(state): State<AppState>,
+    State(_state): State<AppState>,
     Path(_node_id): Path<NodeId>,
     Json(_payload): Json<PostMoveNodeOutOfTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeOutOfTrashResponse>) {
@@ -206,7 +206,7 @@ pub async fn get_path_between_nodes(
 
     let path = path
         .into_iter()
-        .map(|node_entity| entity_to_encrypted_node(node_entity.clone(), State(&state)).unwrap())
+        .map(|node_entity| entity_to_encrypted_node(node_entity.clone(), &state).unwrap())
         .rev()
         .collect();
 
@@ -230,7 +230,7 @@ pub async fn get_node_children(
 
     let children = children
         .iter()
-        .map(|entity| entity_to_encrypted_node(entity.clone(), State(&state)).unwrap());
+        .map(|entity| entity_to_encrypted_node(entity.clone(), &state).unwrap());
 
     (
         StatusCode::OK,
@@ -238,9 +238,9 @@ pub async fn get_node_children(
     )
 }
 
-fn entity_to_encrypted_node(
+pub fn entity_to_encrypted_node(
     node: NodeEntity,
-    State(state): State<&AppState>,
+    state: &AppState,
 ) -> anyhow::Result<EncryptedNode> {
     let current_revision = match node.current_revision {
         Some(id) => {

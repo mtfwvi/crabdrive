@@ -5,6 +5,9 @@ mod request_handler;
 mod storage;
 mod user;
 
+#[cfg(test)]
+mod test;
+
 use clap::{Arg, Command, crate_version, value_parser};
 use tracing::trace;
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};

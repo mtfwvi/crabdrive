@@ -15,6 +15,7 @@ pub(crate) trait NodeRepository {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: crabdrive_common::storage::NodeType,
+        node_id: NodeId,
     ) -> Result<NodeEntity>;
 
     fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>>;
@@ -57,8 +58,8 @@ impl NodeRepository for NodeState {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: NodeType,
+        node_id: NodeId
     ) -> Result<NodeEntity> {
-        let node_id = UUID::random();
 
         let node = NodeEntity {
             id: node_id,
