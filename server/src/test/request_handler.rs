@@ -21,8 +21,13 @@ use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::payloads::node::response::node::{GetNodeResponse, GetPathBetweenNodesResponse};
-use crabdrive_common::routes::{CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID, PATH_BETWEEN_NODES_ROUTE};
+use crabdrive_common::payloads::node::response::node::{
+    GetNodeResponse, GetPathBetweenNodesResponse,
+};
+use crabdrive_common::routes::{
+    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID,
+    PATH_BETWEEN_NODES_ROUTE,
+};
 use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -82,7 +87,6 @@ pub async fn test_folder() {
 pub async fn test_path_between_nodes() {
     let server = get_server();
 
-
     let create_node_request1 = PostCreateFolderRequest {
         parent_metadata_version: 0,
         parent_metadata: random_metadata(),
@@ -104,18 +108,43 @@ pub async fn test_path_between_nodes() {
         node_id: NodeId::random(),
     };
 
-    let create_folder_in_root_url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
-    let _create_node_request1_response = server.post(&create_folder_in_root_url).json(&create_node_request1).await;
+    let create_folder_in_root_url =
+        API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
+    let _create_node_request1_response = server
+        .post(&create_folder_in_root_url)
+        .json(&create_node_request1)
+        .await;
 
-    let create_folder_url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, create_node_request1.node_id).unwrap();
-    let _create_node_request2_response = server.post(&create_folder_url).json(&create_node_request2).await;
+    let create_folder_url = API_BASE_PATH.to_owned()
+        + &formatx!(CREATE_FOLDER_ROUTE, create_node_request1.node_id).unwrap();
+    let _create_node_request2_response = server
+        .post(&create_folder_url)
+        .json(&create_node_request2)
+        .await;
 
-    let _create_node_request3_response = server.post(&create_folder_in_root_url).json(&create_node_request3).await;
+    let _create_node_request3_response = server
+        .post(&create_folder_in_root_url)
+        .json(&create_node_request3)
+        .await;
 
-    let path_between_nodes_url1 = API_BASE_PATH.to_owned() + &formatx!("{}?from_id={}&to_id={}", PATH_BETWEEN_NODES_ROUTE, UUID::nil(), create_node_request2.node_id).unwrap();
+    let path_between_nodes_url1 = API_BASE_PATH.to_owned()
+        + &formatx!(
+            "{}?from_id={}&to_id={}",
+            PATH_BETWEEN_NODES_ROUTE,
+            UUID::nil(),
+            create_node_request2.node_id
+        )
+        .unwrap();
     let path_between_nodes_response1 = server.get(&path_between_nodes_url1).await;
 
-    let path_between_nodes_url2 = API_BASE_PATH.to_owned() + &formatx!("{}?from_id={}&to_id={}", PATH_BETWEEN_NODES_ROUTE, create_node_request3.node_id, create_node_request2.node_id).unwrap();
+    let path_between_nodes_url2 = API_BASE_PATH.to_owned()
+        + &formatx!(
+            "{}?from_id={}&to_id={}",
+            PATH_BETWEEN_NODES_ROUTE,
+            create_node_request3.node_id,
+            create_node_request2.node_id
+        )
+        .unwrap();
     let path_between_nodes_response2 = server.get(&path_between_nodes_url2).await;
 
     match path_between_nodes_response1.json::<GetPathBetweenNodesResponse>() {
@@ -129,11 +158,8 @@ pub async fn test_path_between_nodes() {
         }
     }
 
-
     match path_between_nodes_response2.json::<GetPathBetweenNodesResponse>() {
-        GetPathBetweenNodesResponse::NoContent => {
-
-        }
+        GetPathBetweenNodesResponse::NoContent => {}
         _ => {
             panic!("unexpected response");
         }

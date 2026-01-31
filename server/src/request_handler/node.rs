@@ -3,7 +3,6 @@ use std::vec;
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -17,25 +16,8 @@ use crabdrive_common::payloads::node::response::node::{
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
-use crabdrive_common::iv::IV;
+use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
-use crabdrive_common::storage::{FileRevision, NodeType};
-
-pub fn get_example_node_info() -> EncryptedNode {
-    EncryptedNode {
-        id: NodeId::random(),
-        change_count: 0,
-        parent_id: Some(NodeId::random()),
-        owner_id: NodeId::random(),
-        deleted_on: None,
-        node_type: NodeType::Folder,
-        current_revision: None,
-        encrypted_metadata: EncryptedMetadata::new(
-            vec![],
-            IV::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-        ),
-    }
-}
 
 pub async fn delete_node(
     State(_state): State<AppState>,
