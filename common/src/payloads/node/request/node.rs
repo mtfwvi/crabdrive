@@ -11,23 +11,23 @@ pub struct PathConstraints {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct DeleteNodeRequest {
-    parent_change_count: u64,
-    parent_node_metadata: EncryptedMetadata,
+    pub parent_change_count: i64,
+    pub parent_node_metadata: EncryptedMetadata,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PatchNodeRequest {
-    node_change_count: u64,
-    node_metadata: EncryptedMetadata,
+    pub node_change_count: i64,
+    pub node_metadata: EncryptedMetadata,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MoveNodeData {
-    from_node_change_counter: u64,
-    from_node_metadata: EncryptedMetadata,
-    to_node_change_counter: u64,
-    to_node_metadata: EncryptedMetadata,
-    to_node_id: NodeId,
+    pub from_node_change_counter: i64,
+    pub from_node_metadata: EncryptedMetadata,
+    pub to_node_change_counter: i64,
+    pub to_node_metadata: EncryptedMetadata,
+    pub to_node_id: NodeId,
 }
 
 pub type PostMoveNodeRequest = MoveNodeData;

@@ -1,3 +1,4 @@
+use std::any::Any;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
@@ -6,14 +7,17 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
-
+use http_body_util::Full;
 use chrono::Local;
 use crabdrive_common::uuid::UUID;
 
 use std::io::ErrorKind;
 use std::sync::Arc;
-
 use axum::{Router, middleware};
+use axum::http::StatusCode;
+use axum::http::header::{self};
+use axum::response::Response;
+use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use tower_http::catch_panic::CatchPanicLayer;
@@ -99,7 +103,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         .merge(routes::routes())
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
-        .layer(CatchPanicLayer::new());
+        .layer(CatchPanicLayer::custom(handle_panic));
 
     let addr = config.addr();
 
@@ -129,4 +133,32 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         .unwrap();
 
     Ok(())
+}
+
+
+// copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
+fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
+    let details = if let Some(s) = err.downcast_ref::<String>() {
+        s.clone()
+    } else if let Some(s) = err.downcast_ref::<&str>() {
+        s.to_string()
+    } else {
+        "Unknown panic message".to_string()
+    };
+
+    error!("panic: {:?}", details);
+
+    let body = serde_json::json!({
+        "error": {
+            "kind": "panic",
+            "details": details,
+        }
+    });
+    let body = serde_json::to_string(&body).unwrap();
+
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Full::from(body))
+        .unwrap()
 }

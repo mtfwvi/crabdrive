@@ -19,7 +19,7 @@ pub(crate) trait NodeRepository {
 
     fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>>;
 
-    fn update_node(&self, node: NodeEntity) -> Result<()>;
+    fn update_node(&self, node: NodeEntity) -> Result<NodeEntity>;
 
     /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
     fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
@@ -91,7 +91,7 @@ impl NodeRepository for NodeState {
             .context("Failed to select node")
     }
 
-    fn update_node(&self, node: NodeEntity) -> Result<()> {
+    fn update_node(&self, node: NodeEntity) -> Result<NodeEntity> {
         update_node(&self.db_pool, &node, None)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
