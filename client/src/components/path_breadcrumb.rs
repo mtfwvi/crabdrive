@@ -1,10 +1,13 @@
 use crate::model::node::{DecryptedNode, NodeMetadata};
+use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
-use leptos_router::hooks::use_navigate;
 use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text};
 
 #[component]
-pub(crate) fn PathBreadcrumb(#[prop(into)] path: Signal<Vec<DecryptedNode>>) -> impl IntoView {
+pub(crate) fn PathBreadcrumb(
+    #[prop(into)] path: Signal<Vec<DecryptedNode>>,
+    on_select: Callback<NodeId>,
+) -> impl IntoView {
     let current_node = move || path.get().last().expect("Path was empty").clone();
 
     view! {
@@ -16,7 +19,7 @@ pub(crate) fn PathBreadcrumb(#[prop(into)] path: Signal<Vec<DecryptedNode>>) -> 
                     let is_not_last = move || path_node.id != current_node().id;
 
                     view! {
-                        <PathBreadcrumbItem node=path_node is_last=!is_not_last() />
+                        <PathBreadcrumbItem node=path_node is_last=!is_not_last() on_click=on_select />
                         <Show when=is_not_last>
                             <BreadcrumbDivider class="!text-xl" />
                         </Show>
@@ -31,10 +34,9 @@ pub(crate) fn PathBreadcrumb(#[prop(into)] path: Signal<Vec<DecryptedNode>>) -> 
 fn PathBreadcrumbItem(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(optional, into)] is_last: Signal<bool>,
+    on_click: Callback<NodeId>,
 ) -> impl IntoView {
-    let navigate = use_navigate();
-
-    let on_click = move |_| navigate(&format!("/{}", node.get().id), Default::default());
+    let on_click = move |_| on_click.run(node.get().id);
 
     let name = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = node.get().metadata;
