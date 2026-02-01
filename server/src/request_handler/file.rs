@@ -93,7 +93,7 @@ pub async fn post_create_file(
             .vfs
             .write()
             .expect("someone panicked while holding vfs?");
-        let _ =vfs.start_transfer(file_key).expect("how does that happen?");
+        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
     }
 
     let response_node =
@@ -146,7 +146,7 @@ pub async fn post_update_file(
             .vfs
             .write()
             .expect("someone panicked while holding vfs?");
-        let _ =vfs.start_transfer(file_key).expect("how does that happen?");
+        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
     }
 
     (
