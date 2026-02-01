@@ -70,6 +70,14 @@ impl FileRepository for Sfs {
         pathbuf.exists()
     }
 
+    fn chunk_exists(&self, key: &FileKey, chunk_index: ChunkIndex) -> bool {
+        let mut pathbuf = self.storage_dir.clone();
+        pathbuf.push(&key);
+        pathbuf.push(chunk_index.to_string());
+        pathbuf.set_extension("bin");
+        pathbuf.exists()
+    }
+
     fn session_exists(&self, session: &TransferSessionId) -> bool {
         self.sessions.contains_key(session)
     }
@@ -124,10 +132,10 @@ impl FileRepository for Sfs {
         Ok(())
     }
 
-    fn end_transfer(&mut self, session: TransferSessionId) -> Result<(), FileError> {
+    fn end_transfer(&mut self, session: &TransferSessionId) -> Result<(), FileError> {
         let _s = debug_span!("EndTransfer", session = session.to_string()).entered();
-        if self.session_exists(&session) {
-            self.sessions.remove(&session);
+        if self.session_exists(session) {
+            self.sessions.remove(session);
             debug!("Session {} removed", session);
             Ok(())
         } else {

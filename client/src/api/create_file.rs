@@ -151,8 +151,8 @@ async fn upload_file(
             let decrypted_node = decrypt_node(encrypted_node, key).await.unwrap();
             Ok(decrypted_node)
         }
-        PostCommitFileResponse::BadRequest(missing_chunks) => {
-            Err(format!("missing chunks: {:?}", missing_chunks))
+        PostCommitFileResponse::BadRequest(err) => {
+            Err(format!("Server returned bad request: {:?}", err))
         }
         PostCommitFileResponse::NotFound => Err(format!("no such node: {}", node_id)),
     }

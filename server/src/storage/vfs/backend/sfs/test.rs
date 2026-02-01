@@ -45,12 +45,16 @@ mod tests {
                     data: bytes::Bytes::from(chunk_data),
                 };
 
+                assert!(!sfs.chunk_exists(&session_id, i));
+
                 // Write chunk in file system
                 sfs.write_chunk(&session_id, chunk)
                     .expect("Failed to write chunk");
+
+                assert!(sfs.chunk_exists(&session_id, i));
             }
 
-            sfs.end_transfer(session_id)
+            sfs.end_transfer(&session_id)
                 .expect("Failed to end transfer");
 
             for i in 0..NUM_CHUNKS {

@@ -12,6 +12,7 @@ use crabdrive_common::payloads::node::request::file::{
 use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
+use crabdrive_common::payloads::node::response::file::CommitFileError::{AlreadyCommitted, MissingChunks};
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
 use crabdrive_common::uuid::UUID;
@@ -50,7 +51,7 @@ pub async fn post_create_file(
         .node_repository
         .update_node(&NodeEntity {
             metadata: payload.parent_metadata,
-            metadata_change_counter: 0,
+            metadata_change_counter: parent_node.metadata_change_counter + 1,
             ..parent_node
         })
         .expect("db error");
@@ -109,9 +110,6 @@ pub async fn post_update_file(
     Path(file_id): Path<NodeId>,
     Json(payload): Json<PostUpdateFileRequest>,
 ) -> (StatusCode, Json<PostUpdateFileResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostUpdateFileResponse::NotFound))
-    //(StatusCode::BAD_REQUEST, Json(PostUpdateFileResponse::BadRequest))
-
     let node_entity = state.node_repository.get_node(file_id).expect("db error");
 
     if node_entity.is_none() {
@@ -123,7 +121,7 @@ pub async fn post_update_file(
 
     let node_entity = node_entity.unwrap();
 
-    if node_entity.node_type != NodeType::Folder {
+    if node_entity.node_type != NodeType::File {
         return (
             StatusCode::BAD_REQUEST,
             Json(PostUpdateFileResponse::BadRequest),
@@ -176,18 +174,25 @@ pub async fn post_commit_file(
 
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
 
+    if revision.upload_ended_on.is_some() {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostCommitFileResponse::BadRequest(AlreadyCommitted)),
+        );
+    }
+
     let file_key = new_filekey(file_id, revision.id);
 
     let mut missing_chunks = vec![];
     for i in 1..revision.chunk_count {
-        if !state.vfs.read().unwrap().exists(&file_key) {
+        if !state.vfs.read().unwrap().chunk_exists(&file_key, i) {
             missing_chunks.push(i);
         }
     }
     if !missing_chunks.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(missing_chunks)),
+            Json(PostCommitFileResponse::BadRequest(MissingChunks(missing_chunks))),
         );
     }
 
@@ -213,7 +218,7 @@ pub async fn post_commit_file(
             .vfs
             .write()
             .expect("someone panicked while holding vfs?");
-        vfs.end_transfer(file_key).unwrap()
+        vfs.end_transfer(&file_key).unwrap()
     }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))
