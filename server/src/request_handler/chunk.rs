@@ -17,7 +17,32 @@ pub async fn post_chunk(
         data: chunk,
     };
 
+    let revision = state
+        .revision_repository
+        .get_revision(revision_id)
+        .expect("db error");
+
+    if revision.is_none() {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    let revision = revision.unwrap();
+
+    if revision.chunk_count < chunk_index || chunk_index <= 0 {
+        return (StatusCode::BAD_REQUEST, Json(()));
+    }
+
     let file_key = new_filekey(node_id, revision_id);
+
+    if state
+        .vfs
+        .read()
+        .unwrap()
+        .chunk_exists(&file_key, chunk_index)
+    {
+        return (StatusCode::BAD_REQUEST, Json(()));
+    }
+
     let result = state.vfs.read().unwrap().write_chunk(&file_key, file_chunk);
 
     match result {

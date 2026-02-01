@@ -72,7 +72,7 @@ impl FileRepository for Sfs {
 
     fn chunk_exists(&self, key: &FileKey, chunk_index: ChunkIndex) -> bool {
         let mut pathbuf = self.storage_dir.clone();
-        pathbuf.push(&key);
+        pathbuf.push(key);
         pathbuf.push(chunk_index.to_string());
         pathbuf.set_extension("bin");
         pathbuf.exists()

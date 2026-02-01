@@ -9,10 +9,12 @@ use chrono::Utc;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
 };
+use crabdrive_common::payloads::node::response::file::CommitFileError::{
+    AlreadyCommitted, MissingChunks,
+};
 use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
-use crabdrive_common::payloads::node::response::file::CommitFileError::{AlreadyCommitted, MissingChunks};
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
 use crabdrive_common::uuid::UUID;
@@ -192,7 +194,9 @@ pub async fn post_commit_file(
     if !missing_chunks.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(MissingChunks(missing_chunks))),
+            Json(PostCommitFileResponse::BadRequest(MissingChunks(
+                missing_chunks,
+            ))),
         );
     }
 

@@ -1,6 +1,6 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{routes, AppConfig, AppState};
+use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
@@ -8,7 +8,7 @@ use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::http::StatusCode;
-use axum::{middleware, Router};
+use axum::{Router, middleware};
 use axum_test::TestServer;
 use bytes::Bytes;
 use chrono::Local;
@@ -17,6 +17,7 @@ use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
+use crabdrive_common::payloads::node::response::file::CommitFileError::AlreadyCommitted;
 use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
@@ -30,7 +31,7 @@ use crabdrive_common::routes::{
 };
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use formatx::formatx;
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
@@ -277,6 +278,11 @@ pub async fn test_file() {
 
     assert_eq!(get_chunk_response1, chunk1);
     assert_eq!(get_chunk_response2, chunk2);
+
+    // try to commit the file a second time
+    let commit_file_response2: PostCommitFileResponse = server.post(&commit_file_url).await.json();
+    let expected_commit_file_response2 = PostCommitFileResponse::BadRequest(AlreadyCommitted);
+    assert_eq!(commit_file_response2, expected_commit_file_response2);
 }
 
 pub fn get_server() -> TestServer {
