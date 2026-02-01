@@ -3,7 +3,6 @@ use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::format_date_time;
-use icondata::AiCloseOutlined;
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Divider, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
@@ -68,7 +67,7 @@ pub(crate) fn FileDetails(
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
                     on_click=move |_| selection.set(None)
-                    icon=AiCloseOutlined
+                    icon=icondata::MdiClose
                 />
             </Space>
 
@@ -96,13 +95,13 @@ pub(crate) fn FileDetails(
                 <Button
                     on_click=handle_download
                     appearance=ButtonAppearance::Primary
-                    icon=icondata::AiCloudDownloadOutlined
+                    icon=icondata::MdiDownload
                 >
                     "Download"
                 </Button>
                 <Button
                     on_click=move |_| file_selection_dialog_open.set(true)
-                    icon=icondata::AiDiffOutlined
+                    icon=icondata::MdiFileReplaceOutline
                 >
                     "Modify"
                 </Button>

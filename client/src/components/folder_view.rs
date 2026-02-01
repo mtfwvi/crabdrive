@@ -99,13 +99,13 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                         <Button
                             on_click=move |_| file_selection_dialog_open.set(true)
                             appearance=ButtonAppearance::Primary
-                            icon=icondata::AiPlusOutlined
+                            icon=icondata::MdiPlus
                         >
                             "Upload file"
                         </Button>
                         <Button
                             on_click=move |_| folder_creation_dialog_open.set(true)
-                            icon=icondata::AiFolderAddOutlined
+                            icon=icondata::MdiFolderPlusOutline
                         >
                             "Create folder"
                         </Button>
