@@ -79,7 +79,7 @@ impl FileRepository for Sfs {
     }
 
     fn start_transfer(&mut self, key: FileKey) -> Result<TransferSessionId, FileError> {
-        let session = UUID::random();
+        let session = UUID::from_string(&key);
 
         let _s = debug_span!(
             "StartTransfer",

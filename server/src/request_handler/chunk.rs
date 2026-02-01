@@ -1,11 +1,12 @@
 use crate::http::AppState;
+use crate::storage::vfs::model::{new_filekey, FileError};
 use crate::storage::vfs::FileChunk;
-use crate::storage::vfs::model::{FileError, new_filekey};
-use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use axum::Json;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
+use crabdrive_common::uuid::UUID;
 
 pub async fn post_chunk(
     State(state): State<AppState>,
@@ -18,31 +19,12 @@ pub async fn post_chunk(
     };
 
     let file_key = new_filekey(node_id, revision_id);
-
-    //TODO reuse sessions
-
-    let transfer_session_id;
-    {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        transfer_session_id = vfs.start_transfer(file_key).expect("how does that happen?");
-    }
-
+    let transfer_session_id = UUID::from_string(&file_key);
     let result = state
         .vfs
         .read()
         .unwrap()
         .write_chunk(&transfer_session_id, file_chunk);
-
-    {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        vfs.end_transfer(transfer_session_id).unwrap()
-    }
 
     match result {
         Ok(_) => (StatusCode::CREATED, Json(())),

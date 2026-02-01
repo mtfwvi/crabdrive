@@ -87,6 +87,15 @@ pub async fn post_create_file(
         .update_node(&node_with_revision)
         .expect("db error");
 
+    let file_key = new_filekey(node.id, revision.id);
+    {
+        let mut vfs = state
+            .vfs
+            .write()
+            .expect("someone panicked while holding vfs?");
+        let _ =vfs.start_transfer(file_key).expect("how does that happen?");
+    }
+
     let response_node =
         entity_to_encrypted_node(node_with_revision.clone(), &state).expect("db error");
     (
@@ -130,6 +139,15 @@ pub async fn post_update_file(
             payload.chunk_count,
         )
         .expect("db error");
+
+    let file_key = new_filekey(node_entity.id, revision.id);
+    {
+        let mut vfs = state
+            .vfs
+            .write()
+            .expect("someone panicked while holding vfs?");
+        let _ =vfs.start_transfer(file_key).expect("how does that happen?");
+    }
 
     (
         StatusCode::OK,
@@ -188,6 +206,16 @@ pub async fn post_commit_file(
         .expect("db error");
 
     let node = entity_to_encrypted_node(node_entity, &state).expect("db error");
+
+    let file_key = new_filekey(node.id, revision_id);
+    let transfer_session_id = UUID::from_string(&file_key);
+    {
+        let mut vfs = state
+            .vfs
+            .write()
+            .expect("someone panicked while holding vfs?");
+        vfs.end_transfer(transfer_session_id).unwrap()
+    }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))
 }
