@@ -268,7 +268,10 @@ pub async fn test_file() {
 pub fn get_server() -> TestServer {
     let config = AppConfig::load(&PathBuf::from("./crabdrive.toml")).unwrap();
 
-    let pool = create_pool(&config.db.path, config.db.pool_size);
+    // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
+    let db_path = format!("file:{}?mode=memory&cache=shared", UUID::random());
+
+    let pool = create_pool(&db_path, config.db.pool_size);
 
     let vfs = Sfs::new(&config.storage.dir);
 
