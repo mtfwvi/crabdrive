@@ -6,7 +6,6 @@ use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use crabdrive_common::uuid::UUID;
 
 pub async fn post_chunk(
     State(state): State<AppState>,
@@ -19,12 +18,7 @@ pub async fn post_chunk(
     };
 
     let file_key = new_filekey(node_id, revision_id);
-    let transfer_session_id = UUID::from_string(&file_key);
-    let result = state
-        .vfs
-        .read()
-        .unwrap()
-        .write_chunk(&transfer_session_id, file_chunk);
+    let result = state.vfs.read().unwrap().write_chunk(&file_key, file_chunk);
 
     match result {
         Ok(_) => (StatusCode::CREATED, Json(())),

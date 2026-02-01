@@ -4,7 +4,7 @@ use crate::storage::vfs::{
     FileChunk, FileKey, FileRepository, TransferSessionId, model::FileError,
 };
 use bytes::BytesMut;
-use crabdrive_common::{da, storage::ChunkIndex, uuid::UUID};
+use crabdrive_common::{da, storage::ChunkIndex};
 use std::{
     fs::OpenOptions,
     io::{Read, Write},
@@ -19,7 +19,7 @@ pub struct Sfs {
     // Internal guard object, which drops the directory
     _temp_dir: Option<TempDir>,
     storage_dir: PathBuf,
-    sessions: HashMap<UUID, PathBuf>,
+    sessions: HashMap<TransferSessionId, PathBuf>,
 }
 
 impl Sfs {
@@ -79,7 +79,7 @@ impl FileRepository for Sfs {
     }
 
     fn start_transfer(&mut self, key: FileKey) -> Result<TransferSessionId, FileError> {
-        let session = UUID::from_string(&key);
+        let session = key.clone();
 
         let _s = debug_span!(
             "StartTransfer",
@@ -92,7 +92,7 @@ impl FileRepository for Sfs {
         pathbuf.push(&key);
         std::fs::create_dir_all(&pathbuf)?;
         debug!("Chunks will be stored in {}", pathbuf.display());
-        self.sessions.insert(session, pathbuf);
+        self.sessions.insert(session.clone(), pathbuf);
         Ok(session)
     }
 

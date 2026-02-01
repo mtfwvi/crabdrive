@@ -1,6 +1,5 @@
 use bytes::Bytes;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use crabdrive_common::uuid::UUID;
 
 #[derive(Debug)]
 pub(crate) enum FileError {
@@ -39,7 +38,7 @@ pub fn new_filekey(node_id: NodeId, revision_id: RevisionId) -> FileKey {
 
 /// Crated when starting a transfer, this acts as a handle and is needed for all subsequent operations
 /// (upload, end, abort).
-pub(crate) type TransferSessionId = UUID;
+pub(crate) type TransferSessionId = String;
 
 pub(crate) struct FileChunk {
     pub index: ChunkIndex,

@@ -208,13 +208,12 @@ pub async fn post_commit_file(
     let node = entity_to_encrypted_node(node_entity, &state).expect("db error");
 
     let file_key = new_filekey(node.id, revision_id);
-    let transfer_session_id = UUID::from_string(&file_key);
     {
         let mut vfs = state
             .vfs
             .write()
             .expect("someone panicked while holding vfs?");
-        vfs.end_transfer(transfer_session_id).unwrap()
+        vfs.end_transfer(file_key).unwrap()
     }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))
