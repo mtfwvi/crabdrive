@@ -1,6 +1,6 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{AppConfig, AppState, routes};
+use crate::http::{routes, AppConfig, AppState};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
@@ -8,7 +8,7 @@ use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::http::StatusCode;
-use axum::{Router, middleware};
+use axum::{middleware, Router};
 use axum_test::TestServer;
 use bytes::Bytes;
 use chrono::Local;
@@ -28,10 +28,11 @@ use crabdrive_common::routes::{
     CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID,
     PATH_BETWEEN_NODES_ROUTE,
 };
-use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use formatx::formatx;
+use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
 use std::path::PathBuf;
@@ -70,17 +71,18 @@ pub async fn test_folder() {
 
     let create_folder_response: PostCreateFolderResponse = test_request.json();
 
-    match create_folder_response {
-        PostCreateFolderResponse::Created(ref node) => {
-            assert_eq!(node.encrypted_metadata, node_metadata);
-            assert_eq!(node.id, node_id);
-            assert_eq!(node.current_revision, None);
-            assert_eq!(node.node_type, NodeType::Folder);
-        }
-        _ => {
-            panic!()
-        }
-    }
+    let expected_response = PostCreateFolderResponse::Created(EncryptedNode {
+        id: node_id,
+        change_count: 0,
+        parent_id: Some(UUID::nil()),
+        owner_id: UUID::nil(),
+        deleted_on: None,
+        node_type: NodeType::Folder,
+        current_revision: None,
+        encrypted_metadata: node_metadata,
+    });
+
+    assert_eq!(expected_response, create_folder_response);
 }
 
 #[tokio::test]
@@ -102,7 +104,7 @@ pub async fn test_path_between_nodes() {
     };
 
     let create_node_request3 = PostCreateFolderRequest {
-        parent_metadata_version: 0,
+        parent_metadata_version: 1,
         parent_metadata: random_metadata(),
         node_metadata: random_metadata(),
         node_id: NodeId::random(),
@@ -110,22 +112,36 @@ pub async fn test_path_between_nodes() {
 
     let create_folder_in_root_url =
         API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
-    let _create_node_request1_response = server
+    let create_node_request1_response = server
         .post(&create_folder_in_root_url)
         .json(&create_node_request1)
         .await;
 
+    assert_eq!(
+        create_node_request1_response.status_code(),
+        StatusCode::CREATED
+    );
+
     let create_folder_url = API_BASE_PATH.to_owned()
         + &formatx!(CREATE_FOLDER_ROUTE, create_node_request1.node_id).unwrap();
-    let _create_node_request2_response = server
+
+    let create_node_request2_response = server
         .post(&create_folder_url)
         .json(&create_node_request2)
         .await;
+    assert_eq!(
+        create_node_request2_response.status_code(),
+        StatusCode::CREATED
+    );
 
-    let _create_node_request3_response = server
+    let create_node_request3_response = server
         .post(&create_folder_in_root_url)
         .json(&create_node_request3)
         .await;
+    assert_eq!(
+        create_node_request3_response.status_code(),
+        StatusCode::CREATED
+    );
 
     let path_between_nodes_url1 = API_BASE_PATH.to_owned()
         + &formatx!(
@@ -158,12 +174,10 @@ pub async fn test_path_between_nodes() {
         }
     }
 
-    match path_between_nodes_response2.json::<GetPathBetweenNodesResponse>() {
-        GetPathBetweenNodesResponse::NoContent => {}
-        _ => {
-            panic!("unexpected response");
-        }
-    }
+    assert_eq!(
+        path_between_nodes_response2.json::<GetPathBetweenNodesResponse>(),
+        GetPathBetweenNodesResponse::NoContent
+    );
 }
 
 #[tokio::test]
@@ -210,11 +224,6 @@ pub async fn test_file() {
     let mut chunk1 = vec![0; da!(16 MB).as_bytes() as usize];
     let mut chunk2 = vec![0; da!(16 MB).as_bytes() as usize];
 
-    let chunk_url1 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 1).unwrap();
-    let chunk_url2 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
-
     let mut rng = SmallRng::from_rng(&mut rand::rng());
 
     rng.fill_bytes(&mut chunk1);
@@ -222,6 +231,11 @@ pub async fn test_file() {
 
     let chunk1 = Bytes::from(chunk1);
     let chunk2 = Bytes::from(chunk2);
+
+    let chunk_url1 = API_BASE_PATH.to_owned()
+        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 1).unwrap();
+    let chunk_url2 = API_BASE_PATH.to_owned()
+        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
 
     let chunk1_response = server.post(&chunk_url1).bytes(chunk1.clone()).await;
     assert_eq!(chunk1_response.status_code(), StatusCode::CREATED);
@@ -316,7 +330,7 @@ fn prepare_db(state: &AppState) {
             user_type: crabdrive_common::user::UserType::Admin,
             created_at: Local::now().naive_local(),
             password_hash: "".to_string(),
-            storage_limit: crabdrive_common::da!(500 MB),
+            storage_limit: da!(500 MB),
             encryption_uninitialized: false,
             master_key: EncryptionKey::nil(),
             private_key: EncryptionKey::nil(),
@@ -342,7 +356,7 @@ fn prepare_db(state: &AppState) {
             deleted_on: None,
             current_revision: None,
             metadata_change_counter: 0,
-            node_type: crabdrive_common::storage::NodeType::Folder,
+            node_type: NodeType::Folder,
         };
 
         crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
