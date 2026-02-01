@@ -1,8 +1,8 @@
 use std::vec;
 
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -73,24 +73,19 @@ pub async fn patch_node(
         ..node
     };
 
-    let update_node_from_db = entity_to_encrypted_node(
-        state
-            .node_repository
-            .update_node(&updated_node)
-            .expect("db error"),
-        &state,
-    )
-    .expect("db error");
-    (
-        StatusCode::OK,
-        Json(PatchNodeResponse::Ok(update_node_from_db)),
-    )
+    let updated_node_entity = state
+        .node_repository
+        .update_node(&updated_node)
+        .expect("db error");
+
+    let updated_node = entity_to_encrypted_node(updated_node_entity, &state).expect("db error");
+    (StatusCode::OK, Json(PatchNodeResponse::Ok(updated_node)))
 }
 
 pub async fn post_move_node(
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
-    Json(_payload): Json<PostMoveNodeRequest>,
+    Json(payload): Json<PostMoveNodeRequest>,
 ) -> (StatusCode, Json<PostMoveNodeResponse>) {
     let node = state.node_repository.get_node(node_id).expect("db error");
     if node.is_none() {
@@ -100,7 +95,7 @@ pub async fn post_move_node(
 
     let to_node = state
         .node_repository
-        .get_node(_payload.to_node_id)
+        .get_node(payload.to_node_id)
         .expect("db error");
     let from_node = state
         .node_repository
@@ -119,9 +114,9 @@ pub async fn post_move_node(
         .move_node(
             node_id,
             from_node.id,
-            _payload.from_node_metadata,
+            payload.from_node_metadata,
             to_node.id,
-            _payload.to_node_metadata,
+            payload.to_node_metadata,
         )
         .expect("db error");
     (StatusCode::OK, Json(PostMoveNodeResponse::Ok))
@@ -153,12 +148,12 @@ pub async fn post_move_node_out_of_trash(
 
 pub async fn get_path_between_nodes(
     State(state): State<AppState>,
-    _path_constraints: Query<PathConstraints>,
+    path_constraints: Query<PathConstraints>,
 ) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
     //TODO maybe write recursive sql
 
-    let to_node_id = _path_constraints.0.to_id;
-    let from_node_id = _path_constraints.0.from_id;
+    let to_node_id = path_constraints.0.to_id;
+    let from_node_id = path_constraints.0.from_id;
     let to_node = state
         .node_repository
         .get_node(to_node_id)
