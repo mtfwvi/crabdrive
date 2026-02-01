@@ -139,9 +139,10 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
 
             <FolderCreationDialog
                 open=folder_creation_dialog_open
-                on_confirm=move |name| {
-                    add_toast(format!("Received folder name '{}'", name));
-                    folder_creation_dialog_open.set(false)
+                parent=Signal::derive(move || current_node_from(path.get()))
+                on_complete=move || {
+                    folder_creation_dialog_open.set(false);
+                    children_res.refetch();
                 }
             />
         </ResourceWrapper>

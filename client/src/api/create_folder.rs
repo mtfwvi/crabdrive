@@ -57,11 +57,12 @@ pub async fn create_folder(
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
-            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
-                .await
-                .unwrap();
+            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key).await;
 
-            Ok(decrypted_node)
+            match decrypted_node {
+                Ok(decrypted_node) => Ok(decrypted_node),
+                Err(e) => Err(format!("failed to decrypt node: {:?}", e)),
+            }
         }
         PostCreateFolderResponse::NotFound => Err(format!(
             "no such node: {}. Check if you have permission to access it",
