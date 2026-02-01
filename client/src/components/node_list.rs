@@ -26,34 +26,39 @@ pub(crate) fn NodeList(
     };
 
     view! {
-        <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::SpaceBetween>
-            <For
-                each=move || vec![NodeType::Folder, NodeType::File, NodeType::Link]
-                key=|node_type| *node_type
-                let:node_type
-            >
-                // For grouping each node type's nodes together
-                <div class=if sorted_nodes(node_type).is_empty() {"hidden"} else {""}>
-                    <For
-                        each=move || sorted_nodes(node_type)
-                        key=|node| node.id
-                        children=move |node| {
-                            let node = Signal::derive(move || node.clone());
-                            view! {
-                                <NodeListItem
-                                    name=Signal::derive(move || {
-                                        let NodeMetadata::V1(metadata) = node.get().metadata;
-                                        metadata.name
-                                    })
-                                    node_type=Signal::derive(move || node.get().node_type)
-                                    on:click=move |_| on_click(node.get())
-                                />
+        <Show
+            when=move || !nodes.get().is_empty()
+            fallback=|| view! { <Text>"Folder is empty"</Text> }
+        >
+            <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::SpaceBetween>
+                <For
+                    each=move || vec![NodeType::Folder, NodeType::File, NodeType::Link]
+                    key=|node_type| *node_type
+                    let:node_type
+                >
+                    // For grouping each node type's nodes together
+                    <div class=if sorted_nodes(node_type).is_empty() {"hidden"} else {""}>
+                        <For
+                            each=move || sorted_nodes(node_type)
+                            key=|node| node.id
+                            children=move |node| {
+                                let node = Signal::derive(move || node.clone());
+                                view! {
+                                    <NodeListItem
+                                        name=Signal::derive(move || {
+                                            let NodeMetadata::V1(metadata) = node.get().metadata;
+                                            metadata.name
+                                        })
+                                        node_type=Signal::derive(move || node.get().node_type)
+                                        on:click=move |_| on_click(node.get())
+                                    />
+                                }
                             }
-                        }
-                    />
-                </div>
-            </For>
-        </Flex>
+                        />
+                    </div>
+                </For>
+            </Flex>
+        </Show>
     }
 }
 
