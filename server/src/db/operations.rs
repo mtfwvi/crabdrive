@@ -178,15 +178,15 @@ pub fn move_node(
     to: NodeId,
     to_metadata: EncryptedMetadata,
 ) -> Result<()> {
-    let mut __conn__ = db_pool.get().context("Failed to get database connection")?;
-    __conn__.transaction(|__conn__| {
+    let mut _conn_ = db_pool.get().context("Failed to get database connection")?;
+    _conn_.transaction(|_conn_| {
         diesel::update(NodeDsl::Node)
             .filter(NodeDsl::id.eq(from))
             .set((
                 NodeDsl::metadata.eq(&from_metadata),
                 NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
             ))
-            .execute(__conn__)
+            .execute(_conn_)
             .context("Failed to update from parent")?;
         diesel::update(NodeDsl::Node)
             .filter(NodeDsl::id.eq(to))
@@ -194,7 +194,7 @@ pub fn move_node(
                 NodeDsl::metadata.eq(&to_metadata),
                 NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
             ))
-            .execute(__conn__)
+            .execute(_conn_)
             .context("Failed to update to parent")?;
         diesel::update(NodeDsl::Node)
             .filter(NodeDsl::id.eq(id))
@@ -202,7 +202,7 @@ pub fn move_node(
                 NodeDsl::parent_id.eq(Some(to)),
                 NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
             ))
-            .execute(__conn__)
+            .execute(_conn_)
             .context("Failed to move node")?;
         Ok::<(), anyhow::Error>(())
     })?;
