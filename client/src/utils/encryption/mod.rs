@@ -1,22 +1,16 @@
 use crate::model::encryption::EncryptionKey;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
+use crate::utils::browser::get_subtle_crypto;
+use crate::utils::error::{future_from_js_promise, wrap_js_err};
+use anyhow::Result;
+use wasm_bindgen::JsValue;
+use web_sys::CryptoKey;
 use web_sys::js_sys::{Array, Uint8Array};
-use web_sys::{CryptoKey, SubtleCrypto};
 
 pub mod chunk;
 pub mod node;
 pub mod random;
 
-fn get_subtle_crypto() -> SubtleCrypto {
-    web_sys::window()
-        .expect("window property does not exist")
-        .crypto()
-        .expect("browser does not support crypto api")
-        .subtle()
-}
-
-async fn get_key_from_bytes(key: &EncryptionKey) -> CryptoKey {
+async fn get_key_from_bytes(key: &EncryptionKey) -> Result<CryptoKey> {
     let format = "raw";
     let key_data = Uint8Array::new_from_slice(key);
     let algorithm = "AES-GCM";
@@ -25,15 +19,15 @@ async fn get_key_from_bytes(key: &EncryptionKey) -> CryptoKey {
     key_usage.push(&JsValue::from("encrypt"));
     key_usage.push(&JsValue::from("decrypt"));
 
-    JsFuture::from(
-        get_subtle_crypto()
-            .import_key_with_str(format, &key_data, algorithm, extractable, &key_usage)
-            .unwrap(),
-    )
-    .await
-    .unwrap()
-    .dyn_into()
-    .unwrap()
+    let key_promise = wrap_js_err(get_subtle_crypto()?.import_key_with_str(
+        format,
+        &key_data,
+        algorithm,
+        extractable,
+        &key_usage,
+    ))?;
+
+    future_from_js_promise(key_promise).await
 }
 
 #[cfg(test)]
@@ -45,6 +39,6 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_get_key_from_bytes() {
-        get_key_from_bytes(&EncryptionKey::default()).await;
+        get_key_from_bytes(&EncryptionKey::default()).await.unwrap();
     }
 }

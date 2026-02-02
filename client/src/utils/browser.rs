@@ -1,5 +1,6 @@
+use crate::utils::error::wrap_js_err;
 use anyhow::{Result, anyhow};
-use web_sys::Window;
+use web_sys::{Crypto, SubtleCrypto, Window};
 
 pub fn get_window() -> Result<Window> {
     if let Some(window) = web_sys::window() {
@@ -7,4 +8,12 @@ pub fn get_window() -> Result<Window> {
     } else {
         Err(anyhow!("window property does not exist"))
     }
+}
+
+pub fn get_crypto() -> Result<Crypto> {
+    wrap_js_err(get_window()?.crypto())
+}
+
+pub fn get_subtle_crypto() -> Result<SubtleCrypto> {
+    Ok(get_crypto()?.subtle())
 }

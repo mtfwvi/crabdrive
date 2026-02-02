@@ -1,8 +1,8 @@
 use crate::constants::AES_GCM;
 use crate::model::encryption::EncryptionKey;
 use crate::model::node::{DecryptedNode, NodeMetadata};
-use crate::utils::encryption;
-use crate::utils::encryption::random;
+use crate::utils::browser::get_subtle_crypto;
+use crate::utils::encryption::{get_key_from_bytes, random};
 use crate::utils::error::wrap_js_err;
 use anyhow::{Error, anyhow};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
@@ -37,8 +37,8 @@ pub async fn decrypt_metadata(
 ) -> Result<NodeMetadata, Error> {
     let encrypted_metadata = Uint8Array::new_from_slice(metadata.metadata());
 
-    let subtle_crypto = encryption::get_subtle_crypto();
-    let crypto_key = encryption::get_key_from_bytes(key).await;
+    let subtle_crypto = get_subtle_crypto()?;
+    let crypto_key = get_key_from_bytes(key).await?;
 
     let iv_bytes = metadata.iv();
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
@@ -69,10 +69,10 @@ pub async fn encrypt_metadata(
     let decrypted_metadata = serde_json::to_vec(metadata)?;
     let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
 
-    let iv: IV = random::get_random_iv();
+    let iv: IV = random::get_random_iv()?;
 
-    let subtle_crypto = encryption::get_subtle_crypto();
-    let key = encryption::get_key_from_bytes(key).await;
+    let subtle_crypto = get_subtle_crypto()?;
+    let key = get_key_from_bytes(key).await?;
 
     let iv_bytes_array = Uint8Array::new_from_slice(&iv.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);

@@ -63,7 +63,7 @@ pub async fn create_file(
 
     let chunk_count = (file.size() / CHUNK_SIZE).ceil() as i64;
 
-    let file_iv = get_random_iv();
+    let file_iv = get_random_iv()?;
     let request_body = PostCreateFileRequest {
         parent_metadata_version: parent.change_count,
         parent_metadata: encrypted_parent_metadata.clone(),
