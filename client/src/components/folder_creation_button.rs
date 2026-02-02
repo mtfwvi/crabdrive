@@ -2,6 +2,7 @@ use crate::api::create_folder;
 use crate::components::input_dialog::InputDialog;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
+use std::time::Duration;
 use thaw::{Button, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection};
 
 #[component]
@@ -20,7 +21,9 @@ pub(crate) fn FolderCreationButton(
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Info),
+            ToastOptions::default()
+                .with_intent(ToastIntent::Info)
+                .with_timeout(Duration::from_millis(30_000)),
         )
     };
 

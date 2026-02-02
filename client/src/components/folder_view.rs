@@ -9,6 +9,7 @@ use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
+use std::time::Duration;
 use thaw::{
     Divider, LayoutSider, Space, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
 };
@@ -30,7 +31,9 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Info),
+            ToastOptions::default()
+                .with_intent(ToastIntent::Info)
+                .with_timeout(Duration::from_millis(30_000)),
         )
     };
 

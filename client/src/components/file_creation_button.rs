@@ -2,6 +2,7 @@ use crate::api::create_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use leptos::prelude::*;
+use std::time::Duration;
 use thaw::{
     Button, ButtonAppearance, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
 };
@@ -22,7 +23,9 @@ pub(crate) fn FileCreationButton(
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Info),
+            ToastOptions::default()
+                .with_intent(ToastIntent::Info)
+                .with_timeout(Duration::from_millis(30_000)),
         )
     };
 

@@ -20,7 +20,7 @@ pub async fn download_file(node: DecryptedNode) -> Result<(), String> {
 
     let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
 
-    for i in 1..(current_revision.chunk_count) {
+    for i in 1..=current_revision.chunk_count {
         let decrypted_chunk_result =
             download_chunk_and_decrypt(node.id, &current_revision, i, &"".to_string()).await;
         if let Err(js_error) = decrypted_chunk_result {

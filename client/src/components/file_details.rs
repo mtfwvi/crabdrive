@@ -4,6 +4,7 @@ use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::format_date_time;
 use leptos::prelude::*;
+use std::time::Duration;
 use thaw::{
     Button, ButtonAppearance, Divider, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
     ToasterInjection,
@@ -28,13 +29,27 @@ pub(crate) fn FileDetails(
                     </Toast>
                 }
             },
-            ToastOptions::default().with_intent(ToastIntent::Info),
+            ToastOptions::default()
+                .with_intent(ToastIntent::Info)
+                .with_timeout(Duration::from_millis(30_000)),
         )
     };
 
     let metadata = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = selection.get().metadata;
         metadata
+    });
+
+    let name = Memo::new(move |_| {
+        let name = metadata.get().name;
+        let length = name.len();
+        if length > 30 {
+            let start = name[..20].to_string();
+            let end = name[length - 8..].to_string();
+            format!("{}…{}", start, end)
+        } else {
+            name
+        }
     });
 
     let download_action = Action::new_local(|input: &DecryptedNode| {
@@ -62,7 +77,7 @@ pub(crate) fn FileDetails(
     view! {
         <Space vertical=true>
             <Space class="my-3 content-center justify-between">
-                <Text class="!text-2xl !font-bold">{move || metadata.get().name}</Text>
+                <Text class="!text-2xl !font-bold">{name}</Text>
                 <Button
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
