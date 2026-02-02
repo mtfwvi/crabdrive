@@ -30,11 +30,6 @@ impl UUID {
     pub fn nil() -> Self {
         Self(uuid::Uuid::nil())
     }
-
-    pub fn from_string(value: &String) -> Self {
-        // TODO check if this is safe
-        Self(uuid::Uuid::new_v5(&uuid::Uuid::nil(), value.as_bytes()))
-    }
 }
 
 // Allow easy conversion from UUID to the wanted uuid::Uuid
