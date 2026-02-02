@@ -6,15 +6,12 @@ use thaw::{
 use web_sys::{File, FileList};
 
 #[component]
-pub(crate) fn FileSelectionDialog<F>(
+pub(crate) fn FileSelectionDialog(
     #[prop(into)] open: RwSignal<bool>,
-    on_confirm: F,
+    on_confirm: Callback<FileList>,
     #[prop(into)] title: Signal<String>,
     #[prop(optional, default = true)] allow_multiple: bool,
-) -> impl IntoView
-where
-    F: Fn(FileList) + Send + Sync + 'static,
-{
+) -> impl IntoView {
     let selection = RwSignal::new_local(None);
 
     let set_file_list = move |file_list: FileList| selection.set(Some(file_list));
@@ -39,7 +36,7 @@ where
     };
 
     let handle_confirm = move || {
-        on_confirm(selection.get().unwrap());
+        on_confirm.run(selection.get().unwrap());
         selection.set(None)
     };
 

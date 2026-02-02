@@ -8,6 +8,7 @@ use thaw::{
     Button, ButtonAppearance, Divider, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
     ToasterInjection,
 };
+use web_sys::FileList;
 
 #[component]
 pub(crate) fn FileDetails(
@@ -83,12 +84,6 @@ pub(crate) fn FileDetails(
             </Text>
             <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
 
-            // <Divider class="my-3" />
-            // <Space class="content-center">
-            // <Avatar name="dercodeling" size=25 />
-            // <Text class="!text-lg !font-medium">"dercodeling (owner)"</Text>
-            // </Space>
-
             <Divider class="my-3" />
             <Space class="flex-1">
                 <Button
@@ -108,10 +103,10 @@ pub(crate) fn FileDetails(
         </Space>
         <FileSelectionDialog
             open=file_selection_dialog_open
-            on_confirm=move |file_list| {
+            on_confirm=Callback::new(move |file_list: FileList| {
                 add_toast(format!("Received file_list with file to be uploaded: {:?}", file_list));
                 file_selection_dialog_open.set(false)
-            }
+            })
             title=Signal::derive(move || {
                 format!("Upload new revision of {}", &metadata.get().name)
             })

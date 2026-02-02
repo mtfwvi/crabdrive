@@ -35,9 +35,7 @@ pub(crate) fn FolderCreationButton(
         let status = creation_action.value().get();
         if status.is_some() {
             match status.unwrap() {
-                Ok(folder) => {
-                    add_toast(format!("Created folder successfully with id {}", folder.id))
-                }
+                Ok(_) => on_created.run(()),
                 Err(e) => add_toast(format!("Failed to create folder: {}", e)),
             }
         }
@@ -46,7 +44,6 @@ pub(crate) fn FolderCreationButton(
     let on_name_confirmed = Callback::new(move |name: String| {
         creation_action.dispatch(name);
         folder_creation_dialog_open.set(false);
-        on_created.run(());
     });
 
     view! {
