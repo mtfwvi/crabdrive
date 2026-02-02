@@ -70,9 +70,9 @@ impl UserRepository for UserState {
         let user = select_user(&self.db_pool, id)
             .context("Failed to select user before deletion")?
             .context("User not found for deletion")?;
-        
+
         delete_user(&self.db_pool, id).context("Failed to delete user")?;
-        
+
         Ok(user)
     }
 }
