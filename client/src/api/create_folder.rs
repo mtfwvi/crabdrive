@@ -43,11 +43,9 @@ pub async fn create_folder(
         .unwrap();
 
     let request_body = PostCreateFolderRequest {
-        parent_metadata_iv: *encrypted_parent_metadata.iv(),
         parent_metadata_version: parent.change_count,
-        parent_metadata: encrypted_parent_metadata.metadata().clone(),
-        node_metadata_iv: *encrypted_metadata.iv(),
-        node_metadata: encrypted_metadata.metadata().clone(),
+        parent_metadata: encrypted_parent_metadata.clone(),
+        node_metadata: encrypted_metadata.clone(),
         node_id: new_node_id,
     };
 

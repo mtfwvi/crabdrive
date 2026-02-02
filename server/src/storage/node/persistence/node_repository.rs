@@ -1,7 +1,8 @@
 use crate::db::connection::DbPool;
+use crate::db::operations;
 use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
@@ -15,11 +16,12 @@ pub(crate) trait NodeRepository {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: crabdrive_common::storage::NodeType,
+        node_id: NodeId,
     ) -> Result<NodeEntity>;
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity>;
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>>;
 
-    fn update_node(&self, node: NodeEntity) -> Result<()>;
+    fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity>;
 
     /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
     fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
@@ -57,9 +59,8 @@ impl NodeRepository for NodeState {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: NodeType,
+        node_id: NodeId,
     ) -> Result<NodeEntity> {
-        let node_id = UUID::random();
-
         let node = NodeEntity {
             id: node_id,
             parent_id: parent,
@@ -86,14 +87,12 @@ impl NodeRepository for NodeState {
         Ok(node)
     }
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity> {
-        select_node(&self.db_pool, id)
-            .context("Failed to select node")?
-            .context("Node not found")
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>> {
+        select_node(&self.db_pool, id).context("Failed to select node")
     }
 
-    fn update_node(&self, node: NodeEntity) -> Result<()> {
-        update_node(&self.db_pool, &node, None)
+    fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity> {
+        update_node(&self.db_pool, node, None)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
     }
@@ -147,33 +146,7 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        let mut node = select_node(&self.db_pool, id)
-            .context("Failed to select node to move")?
-            .context("Node to move not found")?;
-
-        node.parent_id = Some(to);
-
-        let from_parent = NodeEntity {
-            id: from,
-            metadata: from_metadata,
-            ..select_node(&self.db_pool, from)
-                .context("Failed to select from parent")?
-                .context("From parent not found")?
-        };
-        update_node(&self.db_pool, &from_parent, None).context("Failed to update from parent")?;
-
-        let to_parent = NodeEntity {
-            id: to,
-            metadata: to_metadata.clone(),
-            ..select_node(&self.db_pool, to)
-                .context("Failed to select to parent")?
-                .context("To parent not found")?
-        };
-        update_node(&self.db_pool, &to_parent, None).context("Failed to update to parent")?;
-
-        update_node(&self.db_pool, &node, Some(&to_metadata)).context("Failed to move node")?;
-
-        Ok(())
+        operations::move_node(&self.db_pool, id, from, from_metadata, to, to_metadata)
     }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {

@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use crabdrive_common::{
     storage::{NodeId, RevisionId},
     user::UserId,
@@ -122,7 +122,7 @@ pub fn update_node(
     db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: Option<&EncryptedMetadata>,
-) -> Result<()> {
+) -> Result<NodeEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::update(NodeDsl::Node)
@@ -140,7 +140,7 @@ pub fn update_node(
                 ))
                 .execute(conn)?;
         }
-        Ok(())
+        Ok(node)
     })
 }
 
@@ -168,6 +168,45 @@ pub fn delete_node(
             .execute(conn)?;
         Ok(node)
     })
+}
+
+pub fn move_node(
+    db_pool: &DbPool,
+    id: NodeId,
+    from: NodeId,
+    from_metadata: EncryptedMetadata,
+    to: NodeId,
+    to_metadata: EncryptedMetadata,
+) -> Result<()> {
+    let mut conn = db_pool.get().context("Failed to get database connection")?;
+    conn.transaction(|conn| {
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(from))
+            .set((
+                NodeDsl::metadata.eq(&from_metadata),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to update from parent")?;
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(to))
+            .set((
+                NodeDsl::metadata.eq(&to_metadata),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to update to parent")?;
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(id))
+            .set((
+                NodeDsl::parent_id.eq(Some(to)),
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
+            .execute(conn)
+            .context("Failed to move node")?;
+        Ok::<(), anyhow::Error>(())
+    })?;
+    Ok(())
 }
 
 // Revision Ops

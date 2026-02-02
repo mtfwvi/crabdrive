@@ -16,11 +16,17 @@ pub enum PostUpdateFileResponse {
     BadRequest,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum PostCommitFileResponse {
     Ok(EncryptedNode),
-    BadRequest(Vec<ChunkIndex>), // the missing parts
+    BadRequest(CommitFileError),
     NotFound,
+}
+
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub enum CommitFileError {
+    MissingChunks(Vec<ChunkIndex>),
+    AlreadyCommitted,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

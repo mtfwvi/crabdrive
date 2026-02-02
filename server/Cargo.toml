@@ -11,22 +11,25 @@ bytes = { workspace = true }
 chrono = { workspace = true }
 clap = { workspace = true, features = ["cargo"] }
 confique = { workspace = true, features = ["toml"] }
+crabdrive-common = { workspace = true, features = ["server"] }
 diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { workspace = true }
 dotenvy = { workspace = true }
 formatx = { workspace = true }
+http-body-util = { workspace = true }
 libsqlite3-sys = { workspace = true } # Needed implicitly by Diesel
 nanoid = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = {  workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-tower-http = {workspace = true, features = ["fs", "cors"]}
+tower-http = {workspace = true, features = ["fs", "cors", "catch-panic"]}
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"] }
 tracing-appender = { workspace = true }
 
-crabdrive-common = { workspace = true, features = ["server"] }
 
 [dev-dependencies]
-pretty_assertions = { workspace = true }
+axum-test = { workspace = true }
 rand = { workspace = true }
+pretty_assertions = { workspace = true }

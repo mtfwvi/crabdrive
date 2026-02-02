@@ -9,3 +9,19 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+      semver-minor-days: 7
+      semver-patch-days: 3
+    groups:
+      # Updates with no breaking changes can be grouped. Updates with breaking changes or security-related
+      # updates should not be grouped, as they require more time to review (and maybe even some patches).
+      no-breaking-changes:
+        applies-to: version-updates
+        update-types:
+          - "minor"
+          - "patch"
+        patterns:
+          - "*"
+

@@ -5,6 +5,7 @@ use chrono::NaiveDateTime;
 
 use serde::{Deserialize, Serialize};
 
+use crate::encrypted_metadata::EncryptedMetadata;
 #[cfg(feature = "server")]
 use diesel::{
     deserialize::{self, FromSql, FromSqlRow},
@@ -60,7 +61,7 @@ impl FromSql<Text, Sqlite> for NodeType {
 pub type RevisionId = UUID;
 
 /// The index of a chunk within a file
-pub type ChunkIndex = u64;
+pub type ChunkIndex = i64;
 
 pub type MetadataIv = IV;
 pub type RevisionIv = IV;
@@ -68,14 +69,13 @@ pub type RevisionIv = IV;
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 pub struct EncryptedNode {
     pub id: NodeId,
-    pub change_count: u64,
-    pub parent_id: NodeId,
+    pub change_count: i64,
+    pub parent_id: Option<NodeId>,
     pub owner_id: UserId,
     pub deleted_on: Option<NaiveDateTime>,
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
-    pub encrypted_metadata: Vec<u8>,
-    pub metadata_iv: MetadataIv,
+    pub encrypted_metadata: EncryptedMetadata,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
@@ -84,5 +84,5 @@ pub struct FileRevision {
     pub upload_ended_on: Option<NaiveDateTime>,
     pub upload_started_on: NaiveDateTime,
     pub iv: RevisionIv,
-    pub chunk_count: u64,
+    pub chunk_count: ChunkIndex,
 }

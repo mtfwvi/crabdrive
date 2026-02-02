@@ -9,14 +9,19 @@ use crate::user::persistence::model::user_entity::UserEntity;
 
 use chrono::Local;
 use crabdrive_common::uuid::UUID;
+use http_body_util::Full;
 
-use std::io::ErrorKind;
-use std::sync::Arc;
-
+use axum::http::StatusCode;
+use axum::http::header::{self};
+use axum::response::Response;
 use axum::middleware;
+use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use tower_http::cors::{Any, CorsLayer};
+use std::io::ErrorKind;
+use std::sync::Arc;
+use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -103,6 +108,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let app = routes::routes()
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
+        .layer(CatchPanicLayer::custom(handle_panic))
         .layer(cors);
 
     let addr = config.addr();
@@ -133,4 +139,31 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         .unwrap();
 
     Ok(())
+}
+
+// copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
+pub(crate) fn handle_panic(err: Box<dyn std::any::Any + Send + 'static>) -> Response<Full<Bytes>> {
+    let details = if let Some(s) = err.downcast_ref::<String>() {
+        s.clone()
+    } else if let Some(s) = err.downcast_ref::<&str>() {
+        s.to_string()
+    } else {
+        "Unknown panic message".to_string()
+    };
+
+    error!("panic: {:?}", details);
+
+    let body = serde_json::json!({
+        "error": {
+            "kind": "panic",
+            "details": details,
+        }
+    });
+    let body = serde_json::to_string(&body).unwrap();
+
+    Response::builder()
+        .status(StatusCode::INTERNAL_SERVER_ERROR)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Full::from(body))
+        .unwrap()
 }

@@ -20,7 +20,7 @@ mod tests {
         // Test with 16 files, containing 16 chunks à 100KB of garbage data each.
         // For testing, 100KB should be enough..
         const NUM_FILES: u32 = 16;
-        const NUM_CHUNKS: u32 = 16;
+        const NUM_CHUNKS: i64 = 16;
         const SIZE_CHUNK: DataAmount = da!(100 KB);
 
         for _ in 0..NUM_FILES {
@@ -41,21 +41,25 @@ mod tests {
                 original_data.push(chunk_data.clone());
 
                 let chunk = FileChunk {
-                    id: i as u64,
+                    index: i,
                     data: bytes::Bytes::from(chunk_data),
                 };
+
+                assert!(!sfs.chunk_exists(&session_id, i));
 
                 // Write chunk in file system
                 sfs.write_chunk(&session_id, chunk)
                     .expect("Failed to write chunk");
+
+                assert!(sfs.chunk_exists(&session_id, i));
             }
 
-            sfs.end_transfer(session_id)
+            sfs.end_transfer(&session_id)
                 .expect("Failed to end transfer");
 
             for i in 0..NUM_CHUNKS {
                 let chunk = sfs
-                    .get_chunk(file_key.clone(), i as u64, SIZE_CHUNK)
+                    .get_chunk(file_key.clone(), i, SIZE_CHUNK)
                     .expect("Failed to read chunk back");
 
                 assert_eq!(

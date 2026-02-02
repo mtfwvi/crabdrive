@@ -7,6 +7,7 @@ pub(crate) trait FileRepository {
     // Meta-operations
     /// Checks if the key exists
     fn exists(&self, key: &FileKey) -> bool;
+    fn chunk_exists(&self, key: &FileKey, index: ChunkIndex) -> bool;
     /// Check if the session exists
     fn session_exists(&self, session: &TransferSessionId) -> bool;
     /// Estimates the number of chunks. Ultimately, however, this is managed by the client.
@@ -26,7 +27,7 @@ pub(crate) trait FileRepository {
     fn write_chunk(&self, session: &TransferSessionId, chunk: FileChunk) -> Result<(), FileError>;
     /// Finalizes ("commit") the transfer and persists it.
     /// **This will invalidate the `TransferSessionId`**.
-    fn end_transfer(&mut self, session: TransferSessionId) -> Result<(), FileError>;
+    fn end_transfer(&mut self, session: &TransferSessionId) -> Result<(), FileError>;
     /// Cancels the transfer and cleans up temporary resources.
     /// **This will invalidate the `TransferSessionId`**.
     fn abort_transfer(&mut self, session: TransferSessionId) -> Result<(), FileError>;

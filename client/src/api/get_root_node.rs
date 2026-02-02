@@ -14,7 +14,11 @@ pub async fn get_root_node() -> Result<DecryptedNode, String> {
 
     match get_node_response {
         GetNodeResponse::Ok(encrypted_node) => {
-            if encrypted_node.encrypted_metadata.eq(&[0, 0, 0, 0]) {
+            if encrypted_node
+                .encrypted_metadata
+                .metadata()
+                .eq(&[0, 0, 0, 0])
+            {
                 // TODO remove when actually implementing users, as each user should have a root
 
                 // this is the empty node the server created on start => cannot be decrypted
