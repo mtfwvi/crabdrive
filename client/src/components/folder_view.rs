@@ -1,17 +1,16 @@
 use crate::api::{get_children, path_to_root};
+use crate::components::file_creation_button::FileCreationButton;
 use crate::components::file_details::FileDetails;
-use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::components::folder_creation_dialog::FolderCreationDialog;
+use crate::components::folder_creation_button::FolderCreationButton;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
-use crate::model::node::{DecryptedNode, NodeMetadata};
+use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{
-    Button, ButtonAppearance, Divider, LayoutSider, Space, Toast, ToastBody, ToastIntent,
-    ToastOptions, ToasterInjection,
+    Divider, LayoutSider, Space, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
 };
 
 #[component]
@@ -35,8 +34,6 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         )
     };
 
-    let file_selection_dialog_open = RwSignal::new(false);
-    let folder_creation_dialog_open = RwSignal::new(false);
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let current_node_from =
@@ -96,19 +93,14 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     <Divider class="my-3" />
 
                     <Space>
-                        <Button
-                            on_click=move |_| file_selection_dialog_open.set(true)
-                            appearance=ButtonAppearance::Primary
-                            icon=icondata::MdiPlus
-                        >
-                            "Upload file"
-                        </Button>
-                        <Button
-                            on_click=move |_| folder_creation_dialog_open.set(true)
-                            icon=icondata::MdiFolderPlusOutline
-                        >
-                            "Create folder"
-                        </Button>
+                        <FileCreationButton
+                            parent_node=Signal::derive(move || current_node_from(path.get()))
+                            on_created=Callback::new(move |_| children_res.refetch())
+                        />
+                        <FolderCreationButton
+                            parent_node=Signal::derive(move || current_node_from(path.get()))
+                            on_created=Callback::new(move |_| children_res.refetch())
+                        />
                     </Space>
                 </Space>
             </Space>
@@ -124,30 +116,6 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     </Space>
                 </LayoutSider>
             </Show>
-
-            <FileSelectionDialog
-                open=file_selection_dialog_open
-                on_confirm=move |file_list| {
-                    add_toast(format!("Received {} file(s) to upload", file_list.length()));
-                    file_selection_dialog_open.set(false)
-                }
-                title=Signal::derive(move || {
-                    let name = Signal::derive(move || {
-                        let NodeMetadata::V1(metadata) = current_node_from(path.get()).metadata;
-                        metadata.name
-                    });
-                    format!("Upload files to {}", name.get())
-                })
-            />
-
-            <FolderCreationDialog
-                open=folder_creation_dialog_open
-                parent=Signal::derive(move || current_node_from(path.get()))
-                on_complete=move || {
-                    folder_creation_dialog_open.set(false);
-                    children_res.refetch();
-                }
-            />
         </ResourceWrapper>
     }
 }
