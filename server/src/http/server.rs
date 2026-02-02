@@ -12,16 +12,16 @@ use crabdrive_common::uuid::UUID;
 use http_body_util::Full;
 
 use axum::http::StatusCode;
-use axum::http::header::{self};
-use axum::response::Response;
+use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;
+use axum::response::Response;
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-use tower_http::cors::{Any, CorsLayer};
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::cors::{Any, CorsLayer};
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -103,7 +103,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let cors = CorsLayer::new() // TODO: Make more specific before submission
         .allow_origin(Any)
         .allow_methods(Any)
-        .allow_headers(Any);
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
     let app = routes::routes()
         .with_state(state.clone())

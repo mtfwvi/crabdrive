@@ -4,6 +4,15 @@ pub(crate) fn format_date_time(naive_date_time: NaiveDateTime) -> String {
     naive_date_time.format("%d/%m/%Y, %H:%M:%S").to_string()
 }
 
+pub(crate) fn format_number_as_ordinal(number: u32) -> String {
+    match number {
+        1 => "first".to_string(),
+        2 => "second".to_string(),
+        3 => "third".to_string(),
+        x => format!("{}th", x),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::utils::ui::format_date_time;

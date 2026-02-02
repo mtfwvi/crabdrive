@@ -33,7 +33,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             },
             ToastOptions::default()
                 .with_intent(ToastIntent::Info)
-                .with_timeout(Duration::from_millis(30_000)),
+                .with_timeout(Duration::from_millis(10_000)),
         )
     };
 
@@ -108,7 +108,8 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                             on_created=Callback::new(move |_| {
                                 children_res.refetch();
                                 path_res.refetch()
-                            })                        />
+                            })
+                        />
                     </Space>
                 </Space>
             </Space>

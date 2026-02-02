@@ -22,7 +22,7 @@ use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::File;
 
 pub async fn create_file(
-    parent: DecryptedNode,
+    parent: &mut DecryptedNode,
     file_name: String,
     file: File,
 ) -> Result<DecryptedNode, String> {
@@ -92,6 +92,9 @@ pub async fn create_file(
 
     match response {
         PostCreateFileResponse::Created(new_file) => {
+            parent.metadata = new_parent_metadata;
+            parent.change_count += 2; // First update the parent metadata, then insert the new node
+
             let file_revision = new_file
                 .current_revision
                 .expect("The server did not create a file revision when creating the file");

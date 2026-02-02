@@ -1,6 +1,7 @@
 use crate::api::create_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::model::node::{DecryptedNode, NodeMetadata};
+use crate::utils::ui::format_number_as_ordinal;
 use leptos::prelude::*;
 use std::time::Duration;
 use thaw::{
@@ -14,7 +15,7 @@ pub(crate) fn FileCreationButton(
     on_created: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
-    let add_toast = move |text: String| {
+    let add_toast = move |text: String, intent: ToastIntent| {
         toaster.dispatch_toast(
             move || {
                 view! {
@@ -24,8 +25,8 @@ pub(crate) fn FileCreationButton(
                 }
             },
             ToastOptions::default()
-                .with_intent(ToastIntent::Info)
-                .with_timeout(Duration::from_millis(30_000)),
+                .with_intent(intent)
+                .with_timeout(Duration::from_millis(10_000)),
         )
     };
 
@@ -33,13 +34,27 @@ pub(crate) fn FileCreationButton(
 
     let creation_action = Action::new_local(move |input: &FileList| {
         let file_list = input.to_owned();
-        if file_list.length() == 0 {
-            add_toast(String::from("No file selected"));
-        }
+        let file_count = file_list.length();
+
+        add_toast(
+            format!("Uploading {} files...", file_count),
+            ToastIntent::Info,
+        );
 
         async move {
-            let file = file_list.get(0).unwrap();
-            create_file(parent_node.get(), file.name(), file).await
+            let mut parent = parent_node.get();
+            for i in 0..file_count {
+                let file = file_list.get(i).unwrap();
+                let result = create_file(&mut parent, file.name(), file).await;
+                if result.is_err() {
+                    return Err(format!(
+                        "Error on the {} file: {}; aborted upload.",
+                        format_number_as_ordinal(i + 1),
+                        result.unwrap_err()
+                    ));
+                }
+            }
+            Ok(())
         }
     });
 
@@ -47,8 +62,14 @@ pub(crate) fn FileCreationButton(
         let status = creation_action.value().get();
         if status.is_some() {
             match status.unwrap() {
-                Ok(_) => on_created.run(()),
-                Err(e) => add_toast(format!("Failed to create file: {}", e)),
+                Ok(_) => {
+                    add_toast("Upload complete".to_string(), ToastIntent::Success);
+                    on_created.run(())
+                }
+                Err(e) => {
+                    add_toast(format!("Failed to create file: {}", e), ToastIntent::Error);
+                    on_created.run(())
+                }
             }
         }
     });
@@ -77,7 +98,6 @@ pub(crate) fn FileCreationButton(
                 });
                 format!("Upload files to {}", name.get())
             })
-            allow_multiple=false
         />
     }
 }

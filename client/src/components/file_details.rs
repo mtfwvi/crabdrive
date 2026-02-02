@@ -22,10 +22,16 @@ pub(crate) fn FileDetails(
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
-            move || view! {<Toast><ToastTitle>{text}</ToastTitle></Toast>},
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>{text}</ToastTitle>
+                    </Toast>
+                }
+            },
             ToastOptions::default()
-                .with_intent(ToastIntent::Info)
-                .with_timeout(Duration::from_millis(30_000)),
+                .with_intent(ToastIntent::Error)
+                .with_timeout(Duration::from_millis(10_000)),
         )
     };
 

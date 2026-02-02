@@ -22,8 +22,8 @@ pub(crate) fn FolderCreationButton(
                 }
             },
             ToastOptions::default()
-                .with_intent(ToastIntent::Info)
-                .with_timeout(Duration::from_millis(30_000)),
+                .with_intent(ToastIntent::Error)
+                .with_timeout(Duration::from_millis(10_000)),
         )
     };
 
