@@ -67,12 +67,6 @@ impl UserRepository for UserState {
     }
 
     fn delete_user(&self, id: UUID) -> Result<UserEntity> {
-        let user = select_user(&self.db_pool, id)
-            .context("Failed to select user before deletion")?
-            .context("User not found for deletion")?;
-
-        delete_user(&self.db_pool, id).context("Failed to delete user")?;
-
-        Ok(user)
+    delete_user(&self.db_pool, id).context("Failed to delete user")
     }
 }
