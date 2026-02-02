@@ -19,8 +19,9 @@ use formatx::formatx;
 use tower_http::services::{ServeDir, ServeFile};
 
 pub fn routes() -> Router<AppState> {
-    let frontend_build =
-        ServeDir::new("./client/dist").fallback(ServeFile::new("./client/dist/index.html"));
+    let frontend_build = ServeDir::new("./client/dist")
+        .fallback(ServeFile::new("./client/dist/index.html"))
+        .fallback(ServeFile::new("./server/res/not_found.html"));
 
     Router::new()
         .fallback_service(frontend_build)

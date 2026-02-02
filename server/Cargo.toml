@@ -31,5 +31,5 @@ tracing-appender = { workspace = true }
 
 [dev-dependencies]
 axum-test = { workspace = true }
-rand = { workspace = true }
 pretty_assertions = { workspace = true }
+rand = { workspace = true }

@@ -18,10 +18,11 @@ use axum::response::Response;
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use std::any::Any;
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -101,8 +102,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     }
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission
-        .allow_origin(Any)
-        .allow_methods(Any)
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods(tower_http::cors::Any)
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
     let app = routes::routes()
@@ -142,7 +143,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
-pub(crate) fn handle_panic(err: Box<dyn std::any::Any + Send + 'static>) -> Response<Full<Bytes>> {
+pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
     let details = if let Some(s) = err.downcast_ref::<String>() {
         s.clone()
     } else if let Some(s) = err.downcast_ref::<&str>() {
