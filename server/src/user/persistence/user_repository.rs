@@ -48,7 +48,7 @@ impl UserRepository for UserState {
             username,
             password_hash,
             storage_limit,
-            encryption_uninitialized: false,
+            encryption_uninitialized: true,
             master_key: EncryptionKey::nil(),
             private_key: EncryptionKey::nil(),
             public_key: Vec::new(),
