@@ -1,10 +1,10 @@
-use crate::api::requests::chunk::{get_chunk, GetChunkResponse};
+use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
 use crate::constants::EMPTY_KEY;
 use crate::model::chunk::EncryptedChunk;
 use crate::model::node::DecryptedNode;
 use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::file::combine_chunks;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use crabdrive_common::storage::{ChunkIndex, FileRevision, NodeId};
 use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::Blob;

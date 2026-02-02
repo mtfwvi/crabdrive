@@ -1,4 +1,4 @@
-use crate::api::requests::chunk::{post_chunk, PostChunkResponse};
+use crate::api::requests::chunk::{PostChunkResponse, post_chunk};
 use crate::api::requests::file::{post_commit_file, post_create_file};
 use crate::constants::{CHUNK_SIZE, EMPTY_KEY};
 use crate::model::chunk::DecryptedChunk;
@@ -8,7 +8,7 @@ use crate::utils::encryption::chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
 use crate::utils::file::load_file_by_chunk;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::response::file::{
@@ -58,7 +58,8 @@ pub async fn create_file(
     let encrypted_parent_metadata_result =
         encrypt_metadata(&new_parent_metadata, &parent.encryption_key).await;
 
-    let encrypted_parent_metadata = encrypted_parent_metadata_result.context("could not encrypt metadata")?;
+    let encrypted_parent_metadata =
+        encrypted_parent_metadata_result.context("could not encrypt metadata")?;
 
     let chunk_count = (file.size() / CHUNK_SIZE).ceil() as i64;
 
@@ -130,7 +131,7 @@ async fn upload_file(
     .await?;
 
     let response = post_commit_file(node_id, revision.id, token).await?;
-    
+
     match response {
         PostCommitFileResponse::Ok(encrypted_node) => {
             let decrypted_node = decrypt_node(encrypted_node, key).await?;
@@ -162,6 +163,6 @@ async fn encrypt_and_upload_chunk(
     //TODO error handling
     match response {
         PostChunkResponse::Created => Ok(()),
-        _ => Err(anyhow!("unexpected response on post chunk: {:?}",response))
+        _ => Err(anyhow!("unexpected response on post chunk: {:?}", response)),
     }
 }

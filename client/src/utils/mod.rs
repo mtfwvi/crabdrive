@@ -1,4 +1,4 @@
-pub mod encryption;
-pub mod file;
-pub mod error;
 pub mod browser;
+pub mod encryption;
+pub mod error;
+pub mod file;

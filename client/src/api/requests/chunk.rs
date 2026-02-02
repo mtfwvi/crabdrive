@@ -1,9 +1,9 @@
-use crate::api::requests::{request, uint8array_from_response, RequestBody, RequestMethod};
-use anyhow::{anyhow, Result};
+use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
+use anyhow::{Result, anyhow};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use formatx::formatx;
-use web_sys::js_sys::Uint8Array;
 use web_sys::Response;
+use web_sys::js_sys::Uint8Array;
 
 #[derive(Debug)]
 pub enum GetChunkResponse {
@@ -51,8 +51,11 @@ pub async fn get_chunk(
         200 => GetChunkResponse::Ok(uint8array_from_response(response).await?),
         404 => GetChunkResponse::NotFound,
         _ => {
-            return Err(anyhow!("unexpected status code on get chunk: {}", response.status()));
-        },
+            return Err(anyhow!(
+                "unexpected status code on get chunk: {}",
+                response.status()
+            ));
+        }
     };
 
     Ok(parsed_response)
@@ -93,8 +96,11 @@ pub async fn post_chunk(
         409 => PostChunkResponse::Conflict,
         413 => PostChunkResponse::OutOfStorage,
         _ => {
-            return Err(anyhow!("unexpected status code on post chunk: {}", response.status()));
-        },
+            return Err(anyhow!(
+                "unexpected status code on post chunk: {}",
+                response.status()
+            ));
+        }
     };
 
     Ok(parsed_response)

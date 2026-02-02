@@ -6,7 +6,7 @@ pub mod node;
 use crate::constants::API_BASE_PATH;
 use crate::utils::browser::get_window;
 use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use leptos::wasm_bindgen::JsValue;
 use std::fmt::Display;
 use web_sys::js_sys::{JsString, Uint8Array};
@@ -67,7 +67,10 @@ async fn request(
         url.search_params().append(&key, &value);
     }
 
-    let request = wrap_js_err(Request::new_with_str_and_init(&url.to_string().as_string().unwrap(), &opts))?;
+    let request = wrap_js_err(Request::new_with_str_and_init(
+        &url.to_string().as_string().unwrap(),
+        &opts,
+    ))?;
 
     match &body {
         RequestBody::Empty => {}
@@ -99,7 +102,8 @@ async fn request(
     let window = get_window()?;
 
     // the actual request
-    let response_value: JsValue = future_from_js_promise(window.fetch_with_request(&request)).await?;
+    let response_value: JsValue =
+        future_from_js_promise(window.fetch_with_request(&request)).await?;
     let response: Response = dyn_into(response_value)?;
 
     //TODO maybe here we should redirect to the login page in case of a 403
@@ -110,7 +114,9 @@ async fn request(
 async fn string_from_response(response: Response) -> Result<String> {
     let text_promise = wrap_js_err(response.text())?;
 
-    let string = future_from_js_promise::<JsString>(text_promise).await?.as_string();
+    let string = future_from_js_promise::<JsString>(text_promise)
+        .await?
+        .as_string();
 
     if string.is_none() {
         return Err(anyhow!("response.text() is not a string? impossible"));
@@ -129,7 +135,7 @@ async fn uint8array_from_response(response: Response) -> Result<Uint8Array> {
 
 #[cfg(test)]
 mod test {
-    use crate::api::requests::{request, string_from_response, RequestBody, RequestMethod};
+    use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
     use serde::{Deserialize, Serialize};
     use wasm_bindgen_test::wasm_bindgen_test;
 

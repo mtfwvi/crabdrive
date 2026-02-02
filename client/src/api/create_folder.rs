@@ -2,10 +2,10 @@ use crate::api::requests::folder::post_create_folder;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
+use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
-use anyhow::{anyhow, Result};
 
 pub async fn create_folder(
     parent: &mut DecryptedNode,
@@ -27,8 +27,7 @@ pub async fn create_folder(
     let new_node_encryption_key = EMPTY_KEY;
     let new_node_id = NodeId::random();
 
-    let encrypted_metadata = encrypt_metadata(&folder_metadata, &new_node_encryption_key)
-        .await?;
+    let encrypted_metadata = encrypt_metadata(&folder_metadata, &new_node_encryption_key).await?;
 
     let mut new_parent_metadata = parent.metadata.clone();
 
@@ -38,8 +37,8 @@ pub async fn create_folder(
             .push((new_node_id, new_node_encryption_key)),
     }
 
-    let encrypted_parent_metadata = encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
-        .await?;
+    let encrypted_parent_metadata =
+        encrypt_metadata(&new_parent_metadata, &parent.encryption_key).await?;
 
     let request_body = PostCreateFolderRequest {
         parent_metadata_version: parent.change_count,
@@ -48,16 +47,14 @@ pub async fn create_folder(
         node_id: new_node_id,
     };
 
-    let response = post_create_folder(parent.id, request_body, &"".to_string())
-        .await?;
+    let response = post_create_folder(parent.id, request_body, &"".to_string()).await?;
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
             parent.metadata = new_parent_metadata;
             parent.change_count += 1;
 
-            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
-                .await?;
+            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key).await?;
 
             Ok(decrypted_node)
         }

@@ -4,19 +4,16 @@ use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption;
 use crate::utils::encryption::random;
 use crate::utils::error::wrap_js_err;
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
+use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
+use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
-pub async fn decrypt_node(
-    node: EncryptedNode,
-    key: EncryptionKey,
-) -> Result<DecryptedNode, Error> {
+pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<DecryptedNode, Error> {
     let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &key).await?;
 
     let decrypted_node = DecryptedNode {
@@ -47,16 +44,16 @@ pub async fn decrypt_metadata(
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
 
-    let decrypted_arraybuffer_promise = wrap_js_err(subtle_crypto.decrypt_with_object_and_buffer_source(
-        &algorithm,
-        &crypto_key,
-        &encrypted_metadata,
-    ))?;
-    let decrypted_arraybuffer_value = wrap_js_err(JsFuture::from(decrypted_arraybuffer_promise)
-        .await)?;
-    
-    let decrypted_arraybuffer = wrap_js_err(decrypted_arraybuffer_value
-        .dyn_into())?;
+    let decrypted_arraybuffer_promise =
+        wrap_js_err(subtle_crypto.decrypt_with_object_and_buffer_source(
+            &algorithm,
+            &crypto_key,
+            &encrypted_metadata,
+        ))?;
+    let decrypted_arraybuffer_value =
+        wrap_js_err(JsFuture::from(decrypted_arraybuffer_promise).await)?;
+
+    let decrypted_arraybuffer = wrap_js_err(decrypted_arraybuffer_value.dyn_into())?;
     let decrypted_array = Uint8Array::new(&decrypted_arraybuffer);
     let decrypted_metadata = decrypted_array.to_vec();
 
@@ -89,9 +86,7 @@ pub async fn encrypt_metadata(
     let encrypted_arraybuffer_value =
         wrap_js_err(JsFuture::from(encrypted_arraybuffer_promise).await)?;
 
-    let encrypted_arraybuffer =
-        wrap_js_err(encrypted_arraybuffer_value.dyn_into::<ArrayBuffer>())?;
-
+    let encrypted_arraybuffer = wrap_js_err(encrypted_arraybuffer_value.dyn_into::<ArrayBuffer>())?;
 
     let encrypted_array = Uint8Array::new(&encrypted_arraybuffer);
     let encrypted_metadata = encrypted_array.to_vec();

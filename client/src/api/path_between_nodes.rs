@@ -1,9 +1,9 @@
 use crate::api::requests::node::get_path_between_nodes;
 use crate::model::node::DecryptedNode;
 use crate::utils::encryption::node::decrypt_node_with_parent;
+use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetPathBetweenNodesResponse;
 use crabdrive_common::storage::NodeId;
-use anyhow::{anyhow, Result};
 
 pub async fn path_between_nodes(
     from_node: DecryptedNode,

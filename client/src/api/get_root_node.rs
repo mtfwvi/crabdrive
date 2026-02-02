@@ -2,12 +2,12 @@ use crate::api::requests::node::get_node;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::node::decrypt_node;
+use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetNodeResponse;
 use crabdrive_common::storage::NodeId;
-use anyhow::{anyhow, Result};
 
 pub async fn get_root_node() -> Result<DecryptedNode> {
-    let get_node_response= get_node(NodeId::nil(), &"".to_string()).await?;
+    let get_node_response = get_node(NodeId::nil(), &"".to_string()).await?;
 
     match get_node_response {
         GetNodeResponse::Ok(encrypted_node) => {

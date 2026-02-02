@@ -1,4 +1,4 @@
-use crate::api::requests::{request, string_from_response, RequestBody, RequestMethod};
+use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
@@ -97,10 +97,7 @@ pub async fn post_commit_file(
     Ok(response_object)
 }
 
-pub async fn get_file_versions(
-    node_id: NodeId,
-    token: &String,
-) -> Result<GetVersionsResponse> {
+pub async fn get_file_versions(node_id: NodeId, token: &String) -> Result<GetVersionsResponse> {
     let url = formatx!(crabdrive_common::routes::NODE_VERSIONS_ROUTE, node_id)?;
 
     let request_method = RequestMethod::GET;

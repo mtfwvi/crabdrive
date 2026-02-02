@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use web_sys::Window;
 
 pub fn get_window() -> Result<Window> {

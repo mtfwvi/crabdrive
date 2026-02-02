@@ -1,11 +1,9 @@
 use crate::constants::CHUNK_SIZE;
 use crate::model::chunk::DecryptedChunk;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
+use crate::utils::error::{future_from_js_promise, wrap_js_err};
+use anyhow::{Context, Result};
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
-use anyhow::{Context, Result};
-use crate::utils::error::{future_from_js_promise, wrap_js_err};
 
 pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<()>
 where
@@ -37,7 +35,9 @@ where
             last_block,
         };
 
-        handle_chunk(&chunk_info).await.context(format!("handle chunk {}", block))?;
+        handle_chunk(&chunk_info)
+            .await
+            .context(format!("handle chunk {}", block))?;
 
         if last_block || buffer_size == 0 {
             break;
