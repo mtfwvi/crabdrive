@@ -19,7 +19,11 @@ pub(crate) fn PathBreadcrumb(
                     let is_not_last = move || path_node.id != current_node().id;
 
                     view! {
-                        <PathBreadcrumbItem node=path_node is_last=!is_not_last() on_click=on_select />
+                        <PathBreadcrumbItem
+                            node=path_node
+                            is_last=!is_not_last()
+                            on_click=on_select
+                        />
                         <Show when=is_not_last>
                             <BreadcrumbDivider class="!text-xl" />
                         </Show>

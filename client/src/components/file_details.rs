@@ -109,9 +109,7 @@ pub(crate) fn FileDetails(
         <FileSelectionDialog
             open=file_selection_dialog_open
             on_confirm=move |file_list| {
-                add_toast(
-                    format!("Received file_list with file to be uploaded: {:?}", file_list),
-                );
+                add_toast(format!("Received file_list with file to be uploaded: {:?}", file_list));
                 file_selection_dialog_open.set(false)
             }
             title=Signal::derive(move || {

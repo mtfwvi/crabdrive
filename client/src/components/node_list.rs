@@ -37,7 +37,7 @@ pub(crate) fn NodeList(
                     let:node_type
                 >
                     // For grouping each node type's nodes together
-                    <div class=if sorted_nodes(node_type).is_empty() {"hidden"} else {""}>
+                    <div class=if sorted_nodes(node_type).is_empty() { "hidden" } else { "" }>
                         <For
                             each=move || sorted_nodes(node_type)
                             key=|node| node.id
