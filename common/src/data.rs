@@ -173,13 +173,13 @@ impl fmt::Display for DataAmount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let bytes = self.0 as f64;
         if self.0 >= TB {
-            write!(f, "{:.2} TB ({bytes} Bytes)", bytes / TB as f64)
+            write!(f, "{:.1} TB ({bytes} Bytes)", bytes / TB as f64)
         } else if self.0 >= GB {
-            write!(f, "{:.2} GB ({bytes} Bytes)", bytes / GB as f64)
+            write!(f, "{:.1} GB ({bytes} Bytes)", bytes / GB as f64)
         } else if self.0 >= MB {
-            write!(f, "{:.2} MB ({bytes} Bytes)", bytes / MB as f64)
+            write!(f, "{:.1} MB ({bytes} Bytes)", bytes / MB as f64)
         } else if self.0 >= KB {
-            write!(f, "{:.2} KB ({bytes} Bytes)", bytes / KB as f64)
+            write!(f, "{:.1} KB ({bytes} Bytes)", bytes / KB as f64)
         } else if self.0 == 1 {
             write!(f, "1 Byte")
         } else {

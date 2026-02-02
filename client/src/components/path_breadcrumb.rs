@@ -52,7 +52,7 @@ fn PathBreadcrumbItem(
             <BreadcrumbButton on:click=on_click>
                 <Text class=format!(
                     "!{} !font-bold",
-                    if is_last.get() { "text-3xl" } else { "text-2xl" },
+                    if is_last.get() { "text-2xl" } else { "text-xl" },
                 )>{name}</Text>
             </BreadcrumbButton>
         </BreadcrumbItem>

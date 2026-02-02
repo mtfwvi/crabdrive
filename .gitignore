@@ -24,3 +24,4 @@ dist
 .zed/
 .env
 *.sqlite
+crabdrive.toml

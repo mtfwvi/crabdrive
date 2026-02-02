@@ -6,8 +6,8 @@ use crate::utils::ui::format_date_time;
 use leptos::prelude::*;
 use std::time::Duration;
 use thaw::{
-    Button, ButtonAppearance, Divider, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
-    ToasterInjection,
+    Button, ButtonAppearance, Divider, Flex, Space, Text, Toast, ToastIntent, ToastOptions,
+    ToastTitle, ToasterInjection,
 };
 use web_sys::FileList;
 
@@ -22,13 +22,7 @@ pub(crate) fn FileDetails(
 
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
-            move || {
-                view! {
-                    <Toast>
-                        <ToastTitle>{text}</ToastTitle>
-                    </Toast>
-                }
-            },
+            move || view! {<Toast><ToastTitle>{text}</ToastTitle></Toast>},
             ToastOptions::default()
                 .with_intent(ToastIntent::Info)
                 .with_timeout(Duration::from_millis(30_000)),
@@ -100,21 +94,23 @@ pub(crate) fn FileDetails(
             <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
 
             <Divider class="my-3" />
-            <Space class="flex-1">
+            <Flex>
                 <Button
                     on_click=handle_download
                     appearance=ButtonAppearance::Primary
                     icon=icondata::MdiDownload
+                    class="flex-1 !min-w-30"
                 >
                     "Download"
                 </Button>
                 <Button
                     on_click=move |_| file_selection_dialog_open.set(true)
                     icon=icondata::MdiFileReplaceOutline
+                    class="flex-1 !min-w-30"
                 >
                     "Modify"
                 </Button>
-            </Space>
+            </Flex>
         </Space>
         <FileSelectionDialog
             open=file_selection_dialog_open

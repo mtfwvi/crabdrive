@@ -105,8 +105,10 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                         />
                         <FolderCreationButton
                             parent_node=Signal::derive(move || current_node_from(path.get()))
-                            on_created=Callback::new(move |_| children_res.refetch())
-                        />
+                            on_created=Callback::new(move |_| {
+                                children_res.refetch();
+                                path_res.refetch()
+                            })                        />
                     </Space>
                 </Space>
             </Space>
