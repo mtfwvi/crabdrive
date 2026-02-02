@@ -86,12 +86,20 @@ pub async fn create_file(
             parent.metadata = new_parent_metadata;
             parent.change_count += 1;
 
-            let file_revision = new_file
-                .current_revision
-                .expect("The server did not create a file revision when creating the file");
+            let file_revision = new_file.current_revision;
+
+            if file_revision.is_none() {
+                return Err(anyhow!(
+                    "The server did not create a file revision when creating the file"
+                ));
+            }
+
+            let file_revision = file_revision.unwrap();
 
             // if this fails the server is lying to us
-            assert_eq!(file_revision.iv, file_iv);
+            if file_revision.iv != file_iv {
+                return Err(anyhow!("The server is lying to us"));
+            }
 
             //TODO test this
             upload_file(
@@ -152,9 +160,7 @@ async fn encrypt_and_upload_chunk(
     revision_id: RevisionId,
     token: &String,
 ) -> Result<()> {
-    let encrypted_chunk = chunk::encrypt_chunk(chunk, key, iv_prefix)
-        .await
-        .expect("failed to encrypt chunk");
+    let encrypted_chunk = chunk::encrypt_chunk(chunk, key, iv_prefix).await?;
 
     let request_body = Uint8Array::new(&encrypted_chunk.chunk);
 

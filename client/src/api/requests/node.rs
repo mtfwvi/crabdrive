@@ -18,10 +18,10 @@ pub async fn delete_node(
     body: DeleteNodeRequest,
     token: &String,
 ) -> Result<DeleteNodeResponse> {
-    let url = formatx!(crabdrive_common::routes::NODE_ROUTE_NODEID, node_id).unwrap();
+    let url = formatx!(crabdrive_common::routes::NODE_ROUTE_NODEID, node_id)?;
 
     let request_method = RequestMethod::DELETE;
-    let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
+    let body = RequestBody::Json(serde_json::to_string(&body)?);
     let query_parameters = vec![];
     let auth_token = Some(token);
 
@@ -36,12 +36,12 @@ pub async fn delete_node(
     .await?;
     let response_string = string_from_response(response).await?;
 
-    let response_object = serde_json::from_str(&response_string).unwrap();
+    let response_object = serde_json::from_str(&response_string)?;
     Ok(response_object)
 }
 
 pub async fn get_node(node_id: NodeId, token: &String) -> Result<GetNodeResponse> {
-    let url = formatx!(crabdrive_common::routes::NODE_ROUTE_NODEID, node_id).unwrap();
+    let url = formatx!(crabdrive_common::routes::NODE_ROUTE_NODEID, node_id)?;
 
     let request_method = RequestMethod::GET;
     let body = RequestBody::Empty;
@@ -59,7 +59,7 @@ pub async fn get_node(node_id: NodeId, token: &String) -> Result<GetNodeResponse
     .await?;
     let response_string = string_from_response(response).await?;
 
-    let response_object = serde_json::from_str(&response_string).unwrap();
+    let response_object = serde_json::from_str(&response_string)?;
     Ok(response_object)
 }
 

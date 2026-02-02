@@ -501,7 +501,6 @@ dependencies = [
  "serde",
  "serde_json",
  "thaw",
- "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
  "tracing-web",
