@@ -16,12 +16,9 @@ pub(crate) trait UserRepository {
         password_hash: String,
         storage_limit: DataAmount,
     ) -> Result<UserEntity>;
-
-    fn get_user(&self, id: UUID) -> Result<UserEntity>;
-
+    fn get_user(&self, id: UUID) -> Result<Option<UserEntity>>;
     fn update_user(&self, updated_entity: UserEntity) -> Result<()>;
-
-    fn delete_user(&self, id: UUID) -> Result<()>;
+    fn delete_user(&self, id: UUID) -> Result<UserEntity>;
 }
 
 pub struct UserState {
@@ -57,24 +54,25 @@ impl UserRepository for UserState {
             trash_key: EncryptionKey::nil(),
             trash_node: None,
         };
-
         insert_user(&self.db_pool, &user).context("Failed to insert user")?;
         Ok(user)
     }
 
-    fn get_user(&self, id: UUID) -> Result<UserEntity> {
-        select_user(&self.db_pool, id)
-            .context("Failed to select user")?
-            .context("User not found")
+    fn get_user(&self, id: UUID) -> Result<Option<UserEntity>> {
+        select_user(&self.db_pool, id).context("Failed to select user")
     }
 
     fn update_user(&self, updated_entity: UserEntity) -> Result<()> {
         update_user(&self.db_pool, &updated_entity).context("Failed to update user")
     }
 
-    fn delete_user(&self, id: UUID) -> Result<()> {
-        delete_user(&self.db_pool, id)
-            .context("Failed to delete user")
-            .map(|_| ())
+    fn delete_user(&self, id: UUID) -> Result<UserEntity> {
+        let user = select_user(&self.db_pool, id)
+            .context("Failed to select user before deletion")?
+            .context("User not found for deletion")?;
+        
+        delete_user(&self.db_pool, id).context("Failed to delete user")?;
+        
+        Ok(user)
     }
 }
