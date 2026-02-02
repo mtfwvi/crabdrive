@@ -1,13 +1,16 @@
 use crate::components::folder_view::FolderView;
 use crabdrive_common::storage::NodeId;
+use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::use_params_map;
 use thaw::{Image, Layout, LayoutSider, Space, SpaceAlign, Text};
 
 #[component]
 pub(crate) fn HomePage() -> impl IntoView {
-    let node_id: Signal<Option<NodeId>> =
-        Signal::derive(move || use_params_map().get().get("id").map(|str| str.into()));
+    let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
+        let parameter = use_params_map().get().get("id")?;
+        UUID::parse_string(parameter)
+    });
 
     view! {
         <Layout content_style="padding: 30px 40px; height: 100vh" has_sider=true>

@@ -30,6 +30,13 @@ impl UUID {
     pub fn nil() -> Self {
         Self(uuid::Uuid::nil())
     }
+
+    pub fn parse_string(s: String) -> Option<UUID> {
+        match uuid::Uuid::parse_str(&s) {
+            Ok(uuid) => Some(UUID(uuid)),
+            Err(_) => None,
+        }
+    }
 }
 
 // Allow easy conversion from uuid::Uuid to UUID
@@ -43,13 +50,6 @@ impl From<uuid::Uuid> for UUID {
 impl From<UUID> for uuid::Uuid {
     fn from(s: UUID) -> Self {
         s.0
-    }
-}
-
-// Allow easy conversion from String to UUID
-impl From<String> for UUID {
-    fn from(s: String) -> Self {
-        uuid::Uuid::parse_str(&s).unwrap().into()
     }
 }
 
