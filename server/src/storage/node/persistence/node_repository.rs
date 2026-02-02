@@ -1,7 +1,8 @@
 use crate::db::connection::DbPool;
+use crate::db::operations;
 use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use anyhow::{Context, Result};
+use anyhow::{Context, Ok, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::NodeType;
@@ -147,33 +148,7 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        let mut node = select_node(&self.db_pool, id)
-            .context("Failed to select node to move")?
-            .context("Node to move not found")?;
-
-        node.parent_id = Some(to);
-
-        let from_parent = NodeEntity {
-            id: from,
-            metadata: from_metadata,
-            ..select_node(&self.db_pool, from)
-                .context("Failed to select from parent")?
-                .context("From parent not found")?
-        };
-        update_node(&self.db_pool, &from_parent, None).context("Failed to update from parent")?;
-
-        let to_parent = NodeEntity {
-            id: to,
-            metadata: to_metadata.clone(),
-            ..select_node(&self.db_pool, to)
-                .context("Failed to select to parent")?
-                .context("To parent not found")?
-        };
-        update_node(&self.db_pool, &to_parent, None).context("Failed to update to parent")?;
-
-        update_node(&self.db_pool, &node, Some(&to_metadata)).context("Failed to move node")?;
-
-        Ok(())
+        operations::move_node(&self.db_pool, id, from, from_metadata, to, to_metadata)
     }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
