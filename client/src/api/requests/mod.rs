@@ -4,11 +4,12 @@ pub mod folder;
 pub mod node;
 
 use crate::constants::API_BASE_PATH;
+use crate::utils::browser::get_window;
+use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
+use anyhow::{anyhow, Result};
 use leptos::wasm_bindgen::JsValue;
 use std::fmt::Display;
-use wasm_bindgen::JsCast;
-use wasm_bindgen_futures::JsFuture;
-use web_sys::js_sys::Uint8Array;
+use web_sys::js_sys::{JsString, Uint8Array};
 use web_sys::{Request, RequestInit, Response, Url};
 
 #[allow(clippy::upper_case_acronyms)]
@@ -40,7 +41,7 @@ async fn request(
     query_parameters: Vec<(String, String)>,
     auth_token: Option<&String>,
     use_api_base_path: bool,
-) -> Result<Response, JsValue> {
+) -> Result<Response> {
     let opts = RequestInit::new();
     opts.set_method(&method.to_string());
 
@@ -54,64 +55,81 @@ async fn request(
         }
     }
 
-    let url = Url::new(&if use_api_base_path {
+    let url = wrap_js_err(Url::new(&if use_api_base_path {
         let mut url_string = API_BASE_PATH.to_string();
         url_string.push_str(&url);
         url_string
     } else {
         url
-    })?;
+    }))?;
 
     for (key, value) in query_parameters {
         url.search_params().append(&key, &value);
     }
 
-    let request = Request::new_with_str_and_init(&url.to_string().as_string().unwrap(), &opts)?;
+    let request = wrap_js_err(Request::new_with_str_and_init(&url.to_string().as_string().unwrap(), &opts))?;
 
     match &body {
         RequestBody::Empty => {}
         RequestBody::Json(_) => {
-            request.headers().set("Content-Type", "application/json")?;
+            if let Err(js_error) = request.headers().set("Content-Type", "application/json") {
+                return Err(anyhow!("could not add header: {:?}", js_error));
+            };
         }
         RequestBody::Bytes(_) => {
-            request
+            if let Err(js_error) = request
                 .headers()
-                .set("Content-Type", "application/octet-stream")?;
+                .set("Content-Type", "application/octet-stream")
+            {
+                return Err(anyhow!("could not add header: {:?}", js_error));
+            };
         }
     }
 
     if let Some(auth_token) = auth_token {
-        request
+        if let Err(js_error) = request
             .headers()
-            .set("authorization", &format!("Bearer {auth_token}"))?;
+            .set("authorization", &format!("Bearer {auth_token}"))
+        {
+            return Err(anyhow!("could not add header: {:?}", js_error));
+        };
     }
 
     // obtain reference to the browser window object to use the request api
-    let window = web_sys::window().unwrap();
+    let window = get_window()?;
 
     // the actual request
-    let response_value: JsValue = JsFuture::from(window.fetch_with_request(&request)).await?;
-    let response: Response = response_value.dyn_into::<Response>()?;
+    let response_value: JsValue = future_from_js_promise(window.fetch_with_request(&request)).await?;
+    let response: Response = dyn_into(response_value)?;
 
     //TODO maybe here we should redirect to the login page in case of a 403
 
     Ok(response)
 }
 
-async fn string_from_response(response: Response) -> Result<String, JsValue> {
-    let string = JsFuture::from(response.text()?).await?.as_string().unwrap();
-    Ok(string)
+async fn string_from_response(response: Response) -> Result<String> {
+    let text_promise = wrap_js_err(response.text())?;
+
+    let string = future_from_js_promise::<JsString>(text_promise).await?.as_string();
+
+    if string.is_none() {
+        return Err(anyhow!("response.text() is not a string? impossible"));
+    }
+
+    Ok(string.unwrap())
 }
 
-async fn uint8array_from_response(response: Response) -> Result<Uint8Array, JsValue> {
-    let bytes_arraybuffer = JsFuture::from(response.array_buffer()?).await?;
+async fn uint8array_from_response(response: Response) -> Result<Uint8Array> {
+    let array_buffer_promise = wrap_js_err(response.array_buffer())?;
+
+    let bytes_arraybuffer = future_from_js_promise(array_buffer_promise).await?;
     let array = Uint8Array::new(&bytes_arraybuffer);
     Ok(array)
 }
 
 #[cfg(test)]
 mod test {
-    use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+    use crate::api::requests::{request, string_from_response, RequestBody, RequestMethod};
     use serde::{Deserialize, Serialize};
     use wasm_bindgen_test::wasm_bindgen_test;
 

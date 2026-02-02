@@ -1,15 +1,17 @@
-use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
+use crate::api::requests::{request, uint8array_from_response, RequestBody, RequestMethod};
+use anyhow::{anyhow, Result};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use formatx::formatx;
-use wasm_bindgen::JsValue;
-use web_sys::Response;
 use web_sys::js_sys::Uint8Array;
+use web_sys::Response;
 
+#[derive(Debug)]
 pub enum GetChunkResponse {
     Ok(Uint8Array),
     NotFound,
 }
 
+#[derive(Debug)]
 pub enum PostChunkResponse {
     Created,
     NotFound,
@@ -23,14 +25,13 @@ pub async fn get_chunk(
     version_id: RevisionId,
     chunk_index: ChunkIndex,
     token: &String,
-) -> Result<GetChunkResponse, JsValue> {
+) -> Result<GetChunkResponse> {
     let url = formatx!(
         crabdrive_common::routes::CHUNK_ROUTE,
         node_id,
         version_id,
         chunk_index
-    )
-    .unwrap();
+    )?;
 
     let request_method = RequestMethod::GET;
     let body = RequestBody::Empty;
@@ -49,7 +50,9 @@ pub async fn get_chunk(
     let parsed_response = match response.status() {
         200 => GetChunkResponse::Ok(uint8array_from_response(response).await?),
         404 => GetChunkResponse::NotFound,
-        _ => unreachable!("the error code cannot be handled"),
+        _ => {
+            return Err(anyhow!("unexpected status code on get chunk: {}", response.status()));
+        },
     };
 
     Ok(parsed_response)
@@ -61,14 +64,13 @@ pub async fn post_chunk(
     chunk_index: ChunkIndex,
     body: Uint8Array,
     token: &String,
-) -> Result<PostChunkResponse, JsValue> {
+) -> Result<PostChunkResponse> {
     let url = formatx!(
         crabdrive_common::routes::CHUNK_ROUTE,
         node_id,
         version_id,
         chunk_index
-    )
-    .unwrap();
+    )?;
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Bytes(body);
@@ -90,7 +92,9 @@ pub async fn post_chunk(
         400 => PostChunkResponse::BadRequest,
         409 => PostChunkResponse::Conflict,
         413 => PostChunkResponse::OutOfStorage,
-        _ => unreachable!("the error code cannot be handled"),
+        _ => {
+            return Err(anyhow!("unexpected status code on post chunk: {}", response.status()));
+        },
     };
 
     Ok(parsed_response)

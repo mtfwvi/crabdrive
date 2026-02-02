@@ -5,11 +5,12 @@ use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
+use anyhow::{anyhow, Result};
 
 pub async fn create_folder(
     parent: &mut DecryptedNode,
     folder_name: String,
-) -> Result<DecryptedNode, String> {
+) -> Result<DecryptedNode> {
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
         last_modified: Default::default(),
@@ -27,8 +28,7 @@ pub async fn create_folder(
     let new_node_id = NodeId::random();
 
     let encrypted_metadata = encrypt_metadata(&folder_metadata, &new_node_encryption_key)
-        .await
-        .unwrap();
+        .await?;
 
     let mut new_parent_metadata = parent.metadata.clone();
 
@@ -39,8 +39,7 @@ pub async fn create_folder(
     }
 
     let encrypted_parent_metadata = encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
-        .await
-        .unwrap();
+        .await?;
 
     let request_body = PostCreateFolderRequest {
         parent_metadata_version: parent.change_count,
@@ -50,8 +49,7 @@ pub async fn create_folder(
     };
 
     let response = post_create_folder(parent.id, request_body, &"".to_string())
-        .await
-        .expect("failed to post create folder");
+        .await?;
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
@@ -59,16 +57,15 @@ pub async fn create_folder(
             parent.change_count += 1;
 
             let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
-                .await
-                .unwrap();
+                .await?;
 
             Ok(decrypted_node)
         }
-        PostCreateFolderResponse::NotFound => Err(format!(
+        PostCreateFolderResponse::NotFound => Err(anyhow!(
             "no such node: {}. Check if you have permission to access it",
             parent.id
         )),
-        PostCreateFolderResponse::BadRequest => Err("bad request".to_string()),
-        PostCreateFolderResponse::Conflict => Err("Please try again".to_string()),
+        PostCreateFolderResponse::BadRequest => Err(anyhow!("bad request")),
+        PostCreateFolderResponse::Conflict => Err(anyhow!("Please try again")),
     }
 }

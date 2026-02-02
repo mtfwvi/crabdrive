@@ -492,6 +492,7 @@ checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 name = "crabdrive-client"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "chrono",
  "console_error_panic_hook",
  "crabdrive-common",
@@ -500,6 +501,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thaw",
+ "thiserror 2.0.18",
  "tracing",
  "tracing-subscriber",
  "tracing-web",

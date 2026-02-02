@@ -1,35 +1,34 @@
-use crate::api::requests::chunk::{GetChunkResponse, get_chunk};
+use crate::api::requests::chunk::{get_chunk, GetChunkResponse};
 use crate::constants::EMPTY_KEY;
 use crate::model::chunk::EncryptedChunk;
 use crate::model::node::DecryptedNode;
 use crate::utils::encryption::chunk::decrypt_chunk;
 use crate::utils::file::combine_chunks;
+use anyhow::{anyhow, Result};
 use crabdrive_common::storage::{ChunkIndex, FileRevision, NodeId};
-use wasm_bindgen::JsValue;
 use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::Blob;
 
-pub async fn download_file(node: DecryptedNode) -> Result<Blob, String> {
+pub async fn download_file(node: DecryptedNode) -> Result<Blob> {
     // TODO support chunked downloads in chrom(e/ium)
 
     let current_revision = node.current_revision;
+
     if current_revision.is_none() {
-        return Err("this node does not have a file associated with".to_string());
+        return Err(anyhow!("cannot download file that has no current revision"));
     }
+
     let current_revision = current_revision.unwrap();
 
     let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
 
-    for i in 1..(current_revision.chunk_count) {
+    for i in 1..current_revision.chunk_count {
         let decrypted_chunk_result =
-            download_chunk_and_decrypt(node.id, &current_revision, i, &"".to_string()).await;
-        if let Err(js_error) = decrypted_chunk_result {
-            return Err(format!("could not download/decrypt chunk: {:?}", js_error));
-        }
-        chunks.push(decrypted_chunk_result.unwrap());
+            download_chunk_and_decrypt(node.id, &current_revision, i, &"".to_string()).await?;
+        chunks.push(decrypted_chunk_result);
     }
 
-    Ok(combine_chunks(chunks))
+    combine_chunks(chunks)
 }
 
 async fn download_chunk_and_decrypt(
@@ -37,7 +36,7 @@ async fn download_chunk_and_decrypt(
     revision: &FileRevision,
     i: ChunkIndex,
     token: &String,
-) -> Result<Uint8Array, JsValue> {
+) -> Result<Uint8Array> {
     let chunk_response = get_chunk(node_id, revision.id, i, token).await?;
 
     match chunk_response {
@@ -56,7 +55,7 @@ async fn download_chunk_and_decrypt(
         }
         GetChunkResponse::NotFound => {
             //TODO correct error handling
-            Err(JsValue::from(format!("chunk {i} return 404")))
+            Err(anyhow!("chunk {i} returned 404"))
         }
     }
 }

@@ -4,11 +4,13 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::{Array, ArrayBuffer, Uint8Array};
 use web_sys::{Blob, File};
+use anyhow::{Context, Result};
+use crate::utils::error::{future_from_js_promise, wrap_js_err};
 
-pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<(), JsValue>
+pub async fn load_file_by_chunk<F, Fut>(file: File, handle_chunk: F) -> Result<()>
 where
     F: Fn(&DecryptedChunk) -> Fut,
-    Fut: Future<Output = Result<(), JsValue>>,
+    Fut: Future<Output = Result<()>>,
 {
     let file_size = file.size();
     let mut offset = 0.0;
@@ -16,10 +18,9 @@ where
 
     // go through the file in 16mb chunks
     loop {
-        let blob = file.slice_with_f64_and_f64(offset, offset + CHUNK_SIZE)?;
+        let blob = wrap_js_err(file.slice_with_f64_and_f64(offset, offset + CHUNK_SIZE))?;
 
-        let buffer = JsFuture::from(blob.array_buffer()).await?;
-        let buffer = buffer.dyn_into::<ArrayBuffer>()?;
+        let buffer: ArrayBuffer = future_from_js_promise(blob.array_buffer()).await?;
 
         let buffer_size = buffer.byte_length();
 
@@ -36,7 +37,7 @@ where
             last_block,
         };
 
-        handle_chunk(&chunk_info).await?;
+        handle_chunk(&chunk_info).await.context(format!("handle chunk {}", block))?;
 
         if last_block || buffer_size == 0 {
             break;
@@ -46,14 +47,14 @@ where
     Ok(())
 }
 
-pub fn combine_chunks(buffers: Vec<Uint8Array>) -> Blob {
+pub fn combine_chunks(buffers: Vec<Uint8Array>) -> Result<Blob> {
     let buffers_js = Array::new();
 
     buffers.iter().for_each(|buffer| {
         buffers_js.push(buffer);
     });
 
-    Blob::new_with_u8_array_sequence(&buffers_js).unwrap()
+    wrap_js_err(Blob::new_with_u8_array_sequence(&buffers_js))
 }
 
 #[cfg(test)]
@@ -72,7 +73,7 @@ mod test {
         let part1 = Uint8Array::new_from_slice(&vec1);
         let part2 = Uint8Array::new_from_slice(&vec2);
 
-        let result = combine_chunks(vec![part1, part2]);
+        let result = combine_chunks(vec![part1, part2]).unwrap();
         let result_buf: ArrayBuffer = JsFuture::from(result.array_buffer())
             .await
             .unwrap()
