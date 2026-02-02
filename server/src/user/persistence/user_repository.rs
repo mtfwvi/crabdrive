@@ -67,6 +67,6 @@ impl UserRepository for UserState {
     }
 
     fn delete_user(&self, id: UUID) -> Result<UserEntity> {
-    delete_user(&self.db_pool, id).context("Failed to delete user")
+        delete_user(&self.db_pool, id).context("Failed to delete user")
     }
 }
