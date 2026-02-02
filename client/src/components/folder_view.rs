@@ -117,7 +117,10 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                 <LayoutSider>
                     <Space class="!gap-0">
                         <Divider class="mx-5" vertical=true/>
-                        <FileDetails selection />
+                        <FileDetails
+                            selection=Signal::derive(move || selection.get().unwrap())
+                            on_close=Callback::new(move |_| selection.set(None))
+                        />
                     </Space>
                 </LayoutSider>
             </Show>

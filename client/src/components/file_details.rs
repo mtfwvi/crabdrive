@@ -11,7 +11,8 @@ use thaw::{
 
 #[component]
 pub(crate) fn FileDetails(
-    #[prop(into)] selection: RwSignal<Option<DecryptedNode>>,
+    #[prop(into)] selection: Signal<DecryptedNode>,
+    on_close: Callback<()>,
 ) -> impl IntoView {
     let file_selection_dialog_open = RwSignal::new(false);
 
@@ -31,8 +32,7 @@ pub(crate) fn FileDetails(
     };
 
     let metadata = Signal::derive(move || {
-        // `selection.get()` cannot be None, because FileDetails is wrapped by Show
-        let NodeMetadata::V1(metadata) = selection.get().unwrap().metadata;
+        let NodeMetadata::V1(metadata) = selection.get().metadata;
         metadata
     });
 
@@ -41,8 +41,7 @@ pub(crate) fn FileDetails(
         async move { download_file(node).await }
     });
     let handle_download = move |_| {
-        // `selection.get()` cannot be None, because FileDetails is wrapped by Show
-        download_action.dispatch(selection.get().unwrap().clone());
+        download_action.dispatch(selection.get().clone());
     };
 
     Effect::new(move || {
@@ -66,7 +65,7 @@ pub(crate) fn FileDetails(
                 <Button
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
-                    on_click=move |_| selection.set(None)
+                    on_click=move |_| on_close.run(())
                     icon=icondata::MdiClose
                 />
             </Space>
