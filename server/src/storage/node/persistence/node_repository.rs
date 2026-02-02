@@ -16,11 +16,12 @@ pub(crate) trait NodeRepository {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: crabdrive_common::storage::NodeType,
+        node_id: NodeId,
     ) -> Result<NodeEntity>;
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity>;
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>>;
 
-    fn update_node(&self, node: NodeEntity) -> Result<()>;
+    fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity>;
 
     /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
     fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
@@ -58,9 +59,8 @@ impl NodeRepository for NodeState {
         encrypted_metadata: EncryptedMetadata,
         owner: UUID,
         node_type: NodeType,
+        node_id: NodeId,
     ) -> Result<NodeEntity> {
-        let node_id = UUID::random();
-
         let node = NodeEntity {
             id: node_id,
             parent_id: parent,
@@ -87,14 +87,12 @@ impl NodeRepository for NodeState {
         Ok(node)
     }
 
-    fn get_node(&self, id: NodeId) -> Result<NodeEntity> {
-        select_node(&self.db_pool, id)
-            .context("Failed to select node")?
-            .context("Node not found")
+    fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>> {
+        select_node(&self.db_pool, id).context("Failed to select node")
     }
 
-    fn update_node(&self, node: NodeEntity) -> Result<()> {
-        update_node(&self.db_pool, &node, None)
+    fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity> {
+        update_node(&self.db_pool, node, None)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
     }

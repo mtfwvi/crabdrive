@@ -42,7 +42,7 @@ pub enum DeleteNodeResponse {
     Conflict,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum GetPathBetweenNodesResponse {
     Ok(Vec<EncryptedNode>),
     NoContent,

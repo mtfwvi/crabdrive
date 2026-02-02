@@ -67,15 +67,13 @@ pub async fn create_file(
     }
     let encrypted_parent_metadata = encrypted_parent_metadata_result.unwrap();
 
-    let chunk_count = (file.size() / CHUNK_SIZE).ceil() as u64;
+    let chunk_count = (file.size() / CHUNK_SIZE).ceil() as i64;
 
     let file_iv = get_random_iv();
     let request_body = PostCreateFileRequest {
-        parent_metadata_iv: *encrypted_parent_metadata.iv(),
         parent_metadata_version: parent.change_count,
-        parent_metadata: encrypted_parent_metadata.metadata().clone(),
-        node_metadata_iv: *encrypted_metadata.iv(),
-        node_metadata: encrypted_metadata.metadata().clone(),
+        parent_metadata: encrypted_parent_metadata.clone(),
+        node_metadata: encrypted_metadata.clone(),
         file_iv,
         chunk_count,
         node_id: new_node_id,
@@ -153,8 +151,8 @@ async fn upload_file(
             let decrypted_node = decrypt_node(encrypted_node, key).await.unwrap();
             Ok(decrypted_node)
         }
-        PostCommitFileResponse::BadRequest(missing_chunks) => {
-            Err(format!("missing chunks: {:?}", missing_chunks))
+        PostCommitFileResponse::BadRequest(err) => {
+            Err(format!("Server returned bad request: {:?}", err))
         }
         PostCommitFileResponse::NotFound => Err(format!("no such node: {}", node_id)),
     }

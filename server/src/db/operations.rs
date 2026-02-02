@@ -122,7 +122,7 @@ pub fn update_node(
     db_pool: &DbPool,
     node: &NodeEntity,
     parent_mdata: Option<&EncryptedMetadata>,
-) -> Result<()> {
+) -> Result<NodeEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::update(NodeDsl::Node)
@@ -140,7 +140,7 @@ pub fn update_node(
                 ))
                 .execute(conn)?;
         }
-        Ok(())
+        Ok(node)
     })
 }
 

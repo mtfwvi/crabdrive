@@ -88,6 +88,10 @@ impl DataAmount {
         DataAmount((amount * unit_factor) as u64)
     }
 
+    pub const fn zero() -> Self {
+        DataAmount(0)
+    }
+
     pub const fn as_bytes(&self) -> u64 {
         self.0
     }

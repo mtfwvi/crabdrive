@@ -11,7 +11,9 @@ use crate::request_handler::node::{
     post_move_node_out_of_trash, post_move_node_to_trash,
 };
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post};
+use crabdrive_common::da;
 use crabdrive_common::routes::*;
 use formatx::formatx;
 
@@ -72,7 +74,9 @@ pub fn nodes_routes() -> Router<AppState> {
         )
         .route(
             &formatx!(CHUNK_ROUTE, "{nodeId}", "{versionId}", "{chunkIndex}").unwrap(),
-            post(post_chunk).get(get_chunk),
+            post(post_chunk)
+                .layer(DefaultBodyLimit::max(da!(18 MB).as_bytes() as usize))
+                .get(get_chunk),
         )
 }
 

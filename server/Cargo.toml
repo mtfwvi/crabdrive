@@ -25,7 +25,11 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"
 tracing-appender = { workspace = true }
 
 crabdrive-common = { workspace = true, features = ["server"] }
+tower-http = {  workspace = true, features = ["catch-panic"] }
+serde_json = {  workspace = true }
+http-body-util = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 rand = { workspace = true }
+axum-test = { workspace = true }

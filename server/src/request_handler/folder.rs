@@ -1,22 +1,71 @@
-use crate::request_handler::node::get_example_node_info;
+use crate::http::AppState;
+use crate::request_handler::node::entity_to_encrypted_node;
+use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use axum::Json;
-use axum::extract::Path;
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::storage::NodeId;
+use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::uuid::UUID;
 
 pub async fn post_create_folder(
-    Path(_parent_id): Path<NodeId>,
-    Json(_payload): Json<PostCreateFolderRequest>,
+    State(state): State<AppState>,
+    Path(parent_id): Path<NodeId>,
+    Json(payload): Json<PostCreateFolderRequest>,
 ) -> (StatusCode, Json<PostCreateFolderResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostCreateFolderResponse::NotFound))
-    //(StatusCode::CONFLICT, Json(PostCreateFolderResponse::Conflict))
-    //(StatusCode::BAD_REQUEST, Json(PostCreateFolderResponse::BadRequest))
+    let parent_node = state.node_repository.get_node(parent_id).expect("db error");
 
-    //TODO implement
+    if parent_node.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostCreateFolderResponse::NotFound),
+        );
+    }
+
+    let parent_node = parent_node.unwrap();
+
+    // a file cannot have children
+    if parent_node.node_type != NodeType::Folder {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostCreateFolderResponse::BadRequest),
+        );
+    }
+
+    //TODO this is not thread safe
+    if parent_node.metadata_change_counter != payload.parent_metadata_version {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostCreateFolderResponse::Conflict),
+        );
+    }
+
+    //update the parent
+    state
+        .node_repository
+        .update_node(&NodeEntity {
+            metadata: payload.parent_metadata,
+            metadata_change_counter: 0,
+            ..parent_node
+        })
+        .expect("db error");
+
+    //create the node
+    let node = state
+        .node_repository
+        .create_node(
+            Some(parent_id),
+            payload.node_metadata,
+            UUID::nil(),
+            NodeType::Folder,
+            payload.node_id,
+        )
+        .expect("db error");
+
+    let response_node = entity_to_encrypted_node(node, &state).expect("db error");
     (
         StatusCode::CREATED,
-        Json(PostCreateFolderResponse::Created(get_example_node_info())),
+        Json(PostCreateFolderResponse::Created(response_node)),
     )
 }

@@ -1,11 +1,14 @@
 use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;
+use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset)]
+#[derive(
+    Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone, Copy,
+)]
 #[diesel(table_name = crate::db::schema::Revision)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct RevisionEntity {
@@ -24,4 +27,6 @@ pub struct RevisionEntity {
     /// derived from this value + 4 Bytes describing the index to avoid reordering. This value
     /// MUST NOT be reused for encrypting a new file
     pub iv: IV,
+
+    pub chunk_count: ChunkIndex,
 }

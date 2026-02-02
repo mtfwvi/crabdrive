@@ -40,6 +40,7 @@ diesel::table! {
         upload_started_on -> Timestamp,
         upload_ended_on -> Nullable<Timestamp>,
         iv -> Binary,
+        chunk_count -> BigInt,
     }
 }
 
