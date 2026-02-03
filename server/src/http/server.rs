@@ -6,21 +6,23 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
+
 use chrono::Local;
 use crabdrive_common::uuid::UUID;
 use http_body_util::Full;
-use std::any::Any;
 
 use axum::http::StatusCode;
-use axum::http::header::{self};
+use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
+use axum::middleware;
 use axum::response::Response;
-use axum::{Router, middleware};
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use std::any::Any;
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
@@ -28,8 +30,7 @@ async fn graceful_shutdown(state: AppState) {
     shutdown(state).await;
 }
 
-#[allow(unused_variables)] // TODO: Remove when state is actually used
-async fn shutdown(state: AppState) {
+async fn shutdown(_state: AppState) {
     info!("Stopping server");
 }
 
@@ -99,11 +100,16 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             .unwrap();
     }
 
-    let app = Router::<AppState>::new()
-        .merge(routes::routes())
+    let cors = CorsLayer::new() // TODO: Make more specific before submission
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods(tower_http::cors::Any)
+        .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
+
+    let app = routes::routes()
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
-        .layer(CatchPanicLayer::custom(handle_panic));
+        .layer(CatchPanicLayer::custom(handle_panic))
+        .layer(cors);
 
     let addr = config.addr();
 

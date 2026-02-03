@@ -1,1 +1,1 @@
-pub(crate) mod demo_page;
+pub(crate) mod home_page;

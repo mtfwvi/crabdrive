@@ -2,18 +2,19 @@ use crate::api::requests::folder::post_create_folder;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
+use chrono::Local;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
 
 pub async fn create_folder(
-    parent: &mut DecryptedNode,
+    parent: DecryptedNode,
     folder_name: String,
 ) -> Result<DecryptedNode, String> {
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
-        last_modified: Default::default(),
-        created: Default::default(),
+        last_modified: Local::now().naive_local(),
+        created: Local::now().naive_local(),
         size: None,
         mime_type: None,
         file_key: None,
@@ -55,14 +56,12 @@ pub async fn create_folder(
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
-            parent.metadata = new_parent_metadata;
-            parent.change_count += 1;
+            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key).await;
 
-            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
-                .await
-                .unwrap();
-
-            Ok(decrypted_node)
+            match decrypted_node {
+                Ok(decrypted_node) => Ok(decrypted_node),
+                Err(e) => Err(format!("failed to decrypt node: {:?}", e)),
+            }
         }
         PostCreateFolderResponse::NotFound => Err(format!(
             "no such node: {}. Check if you have permission to access it",
