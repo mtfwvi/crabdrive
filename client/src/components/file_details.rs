@@ -2,7 +2,7 @@ use crate::api::download_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
-use crate::utils::ui::format_date_time;
+use crate::utils::ui::{format_date_time, shorten_file_name};
 use leptos::prelude::*;
 use std::time::Duration;
 use thaw::{
@@ -40,18 +40,6 @@ pub(crate) fn FileDetails(
         metadata
     });
 
-    let name = Memo::new(move |_| {
-        let name = metadata.get().name;
-        let length = name.len();
-        if length > 30 {
-            let start = name[..20].to_string();
-            let end = name[length - 8..].to_string();
-            format!("{}…{}", start, end)
-        } else {
-            name
-        }
-    });
-
     let download_action = Action::new_local(|input: &DecryptedNode| {
         let node = input.to_owned();
         async move { download_file(node).await }
@@ -77,7 +65,9 @@ pub(crate) fn FileDetails(
     view! {
         <Space vertical=true>
             <Space class="my-3 content-center justify-between">
-                <Text class="!text-2xl !font-bold">{name}</Text>
+                <Text class="!text-2xl !font-bold">
+                    {move || shorten_file_name(metadata.get().name)}
+                </Text>
                 <Button
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"

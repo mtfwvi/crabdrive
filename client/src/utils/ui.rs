@@ -13,9 +13,20 @@ pub(crate) fn format_number_as_ordinal(number: usize) -> String {
     }
 }
 
+pub(crate) fn shorten_file_name(name: String) -> String {
+    let length = name.len();
+    if length > 30 {
+        let start = name[..18].to_string();
+        let end = name[length - 10..].to_string();
+        format!("{}…{}", start, end)
+    } else {
+        name
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::utils::ui::format_date_time;
+    use super::*;
     use chrono::NaiveDate;
     use pretty_assertions::assert_eq;
     use test_case::test_case;
@@ -36,5 +47,28 @@ mod tests {
             .and_hms_opt(hour, minute, second)
             .unwrap();
         assert_eq!(format_date_time(naive_date_time), expected.to_string());
+    }
+
+    #[test_case(1, "first")]
+    #[test_case(2, "second")]
+    #[test_case(3, "third")]
+    #[test_case(4, "4th")]
+    #[test_case(10, "10th")]
+    #[test_case(1234, "1234th")]
+    fn test_format_number_as_ordinal(number: usize, expected: &str) {
+        let expected = expected.to_owned();
+        assert_eq!(format_number_as_ordinal(number), expected);
+    }
+
+    #[test_case("example.txt", "example.txt")]
+    #[test_case("file_name_over_thirty_characters.md", "file_name_over_thi…racters.md")]
+    #[test_case(
+        "extremely_long_file_name_way_over_thirty_chars.md",
+        "extremely_long_fil…y_chars.md"
+    )]
+    fn test_shorten_file_name(full: &str, expected: &str) {
+        let full_name = full.to_owned();
+        let expected = expected.to_owned();
+        assert_eq!(shorten_file_name(full_name), expected);
     }
 }
