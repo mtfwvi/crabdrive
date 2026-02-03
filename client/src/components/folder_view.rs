@@ -19,9 +19,6 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
     let toaster = ToasterInjection::expect_context();
     let navigate = use_navigate();
 
-    let children_res = LocalResource::new(move || get_children(node_id.get()));
-    let path_res = LocalResource::new(move || path_to_root(node_id.get()));
-
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
             move || {
@@ -37,10 +34,8 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         )
     };
 
+    let path_res = LocalResource::new(move || path_to_root(node_id.get()));
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
-
-    let current_node_from =
-        move |path: Vec<DecryptedNode>| path.last().expect("Failed due to empty path").clone();
 
     let navigate_to_node = Callback::new(move |node_id| {
         navigate(&format!("/{}", node_id), Default::default());
@@ -68,63 +63,70 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         <ResourceWrapper
             resource=path_res
             error_text=Signal::derive(move || {
-                format!("The node '{}' could not be loaded from the server", node_id.get())
+                format!("The path to node '{}' could not be loaded from the server", node_id.get())
             })
             fallback_spinner=false
-            let:path
-        >
-            <Space vertical=true class="flex-1 flex-column gap-3 justify-between">
-                <Space vertical=true>
-                    <PathBreadcrumb path on_select=navigate_to_node />
-                    <Divider class="mb-3" />
+            children=move |path| {
+                let current_node = Signal::derive(move || {
+                    path.get().last().expect("Failed due to empty path").clone()
+                });
+                let children_res = LocalResource::new(move || get_children(current_node.get()));
 
-                    <ResourceWrapper
-                        resource=children_res
-                        error_text=Signal::derive(move || {
-                            format!(
-                                "The children of '{}' could not be loaded from the server",
-                                node_id.get(),
-                            )
-                        })
-                        let:children
-                    >
-                        <NodeList nodes=children on_select=on_select_node />
-                    </ResourceWrapper>
-                </Space>
+                view! {
+                    <Space vertical=true class="flex-1 flex-column gap-3 justify-between">
+                        <Space vertical=true>
+                            <PathBreadcrumb path on_select=navigate_to_node />
+                            <Divider class="mb-3" />
 
-                <Space vertical=true>
-                    <Divider class="my-3" />
+                            <ResourceWrapper
+                                resource=children_res
+                                error_text=Signal::derive(move || {
+                                    format!(
+                                        "The children of '{}' could not be loaded from the server",
+                                        node_id.get(),
+                                    )
+                                })
+                                let:children
+                            >
+                                <NodeList nodes=children on_select=on_select_node />
+                            </ResourceWrapper>
+                        </Space>
 
-                    <Space>
-                        <FileCreationButton
-                            parent_node=Signal::derive(move || current_node_from(path.get()))
-                            on_created=Callback::new(move |_| {
-                                children_res.refetch();
-                                path_res.refetch()
-                            })
-                        />
-                        <FolderCreationButton
-                            parent_node=Signal::derive(move || current_node_from(path.get()))
-                            on_created=Callback::new(move |_| {
-                                children_res.refetch();
-                                path_res.refetch()
-                            })
-                        />
+                        <Space vertical=true>
+                            <Divider class="my-3" />
+
+                            <Space>
+                                <FileCreationButton
+                                    parent_node=Signal::derive(move || current_node.get())
+                                    on_created=Callback::new(move |_| {
+                                        children_res.refetch();
+                                        path_res.refetch()
+                                    })
+                                />
+                                <FolderCreationButton
+                                    parent_node=Signal::derive(move || current_node.get())
+                                    on_created=Callback::new(move |_| {
+                                        children_res.refetch();
+                                        path_res.refetch()
+                                    })
+                                />
+                            </Space>
+                        </Space>
                     </Space>
-                </Space>
-            </Space>
 
-            <Show when=move || selection.get().is_some()>
-                <LayoutSider>
-                    <Space class="!gap-0">
-                        <Divider class="mx-5" vertical=true />
-                        <FileDetails
-                            selection=Signal::derive(move || selection.get().unwrap())
-                            on_close=Callback::new(move |_| selection.set(None))
-                        />
-                    </Space>
-                </LayoutSider>
-            </Show>
-        </ResourceWrapper>
+                    <Show when=move || selection.get().is_some()>
+                        <LayoutSider>
+                            <Space class="!gap-0">
+                                <Divider class="mx-5" vertical=true />
+                                <FileDetails
+                                    selection=Signal::derive(move || selection.get().unwrap())
+                                    on_close=Callback::new(move |_| selection.set(None))
+                                />
+                            </Space>
+                        </LayoutSider>
+                    </Show>
+                }
+            }
+        />
     }
 }
