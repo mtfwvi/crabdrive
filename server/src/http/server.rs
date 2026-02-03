@@ -11,6 +11,7 @@ use crabdrive_common::uuid::UUID;
 use http_body_util::Full;
 use std::any::Any;
 
+use crate::auth::secrets::Keys;
 use axum::http::StatusCode;
 use axum::http::header::{self};
 use axum::response::Response;
@@ -41,12 +42,15 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
 
+    let keys = Keys::new(&config.auth.jwt_secret);
+
     let state = AppState::new(
         config.clone(),
         pool,
         vfs,
         node_repository,
         revision_repository,
+        keys,
     );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");

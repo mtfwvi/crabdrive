@@ -1,9 +1,9 @@
-use crate::{db::connection::DbPool, http::AppConfig};
-use std::sync::{Arc, RwLock};
-
+use crate::auth::secrets::Keys;
 use crate::storage::node::NodeRepository;
 use crate::storage::revision::RevisionRepository;
 use crate::storage::vfs::FileRepository;
+use crate::{db::connection::DbPool, http::AppConfig};
+use std::sync::{Arc, RwLock};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -12,6 +12,7 @@ pub struct AppState {
     pub vfs: Arc<RwLock<dyn FileRepository + Send + Sync>>,
     pub node_repository: Arc<dyn NodeRepository + Send + Sync>,
     pub revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
+    pub keys: Arc<Keys>,
 }
 
 impl AppState {
@@ -21,6 +22,7 @@ impl AppState {
         vfs: FileRepo,
         node_repository: NodeRepo,
         revision_repository: RevisionRepo,
+        keys: Keys,
     ) -> Self
     where
         FileRepo: FileRepository + Send + Sync + 'static,
@@ -33,6 +35,7 @@ impl AppState {
             vfs: Arc::new(RwLock::new(vfs)),
             node_repository: Arc::new(node_repository),
             revision_repository: Arc::new(revision_repository),
+            keys: Arc::new(keys),
         }
     }
 }

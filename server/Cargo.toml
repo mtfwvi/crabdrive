@@ -28,6 +28,8 @@ crabdrive-common = { workspace = true, features = ["server"] }
 tower-http = {  workspace = true, features = ["catch-panic"] }
 serde_json = {  workspace = true }
 http-body-util = { workspace = true }
+jsonwebtoken = { workspace = true, features = ["rust_crypto"]}
+axum-extra = { workspace = true, features = ["typed-header"]}
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }

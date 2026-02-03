@@ -1,11 +1,11 @@
-use confique::Config;
-use serde::{Deserialize, Serialize};
-use tracing_subscriber::{Layer, Registry};
-
+use crate::http::config::confique_auth_config_layer::AuthConfigLayer;
 use crate::http::config::confique_database_config_layer::DatabaseConfigLayer;
 use crate::http::config::confique_log_config_layer::LogConfigLayer;
 use crate::http::config::confique_server_config_layer::ServerConfigLayer;
 use crate::http::config::confique_storage_config_layer::StorageConfigLayer;
+use confique::Config;
+use serde::{Deserialize, Serialize};
+use tracing_subscriber::{Layer, Registry};
 
 fn is_valid_log_level(level: &String) -> Result<(), String> {
     let level: &str = level.as_ref();
@@ -47,6 +47,8 @@ pub struct AppConfig {
     pub storage: StorageConfig,
     #[config(nested)]
     pub log: LogConfig,
+    #[config(nested)]
+    pub auth: AuthConfig,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Config)]
@@ -131,6 +133,15 @@ pub struct StorageConfig {
     pub limit: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, Config)]
+pub struct AuthConfig {
+    /// The secret used to sign JWTs
+    ///
+    /// **Default**: `not_so_secret`
+    #[config(env = "JWT_SECRET")]
+    pub jwt_secret: String,
+}
+
 type ConfLayer = <AppConfig as Config>::Layer;
 type ParsedLayerVecResult =
     Result<Vec<Box<dyn Layer<Registry> + Send + Sync>>, Box<dyn std::error::Error>>;
@@ -169,6 +180,9 @@ impl AppConfig {
                 } else {
                     vec!["/var/log/crabdrive/".to_string()]
                 }),
+            },
+            auth: AuthConfigLayer {
+                jwt_secret: Some("not_so_secret".to_string()),
             },
         }
     }

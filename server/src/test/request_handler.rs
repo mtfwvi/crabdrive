@@ -1,3 +1,4 @@
+use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
@@ -298,12 +299,15 @@ pub fn get_server() -> TestServer {
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
 
+    let keys = Keys::new(&config.auth.jwt_secret);
+
     let state = AppState::new(
         config.clone(),
         pool,
         vfs,
         node_repository,
         revision_repository,
+        keys,
     );
 
     prepare_db(&state);
