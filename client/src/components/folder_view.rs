@@ -5,13 +5,13 @@ use crate::components::folder_creation_button::FolderCreationButton;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
+use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use std::time::Duration;
 use thaw::{
-    Divider, LayoutSider, Space, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
+    Divider, LayoutSider, Space, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
@@ -24,13 +24,13 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             move || {
                 view! {
                     <Toast>
-                        <ToastBody>{text}</ToastBody>
+                        <ToastTitle>{text}</ToastTitle>
                     </Toast>
                 }
             },
             ToastOptions::default()
                 .with_intent(ToastIntent::Info)
-                .with_timeout(Duration::from_millis(10_000)),
+                .with_timeout(DEFAULT_TOAST_TIMEOUT),
         )
     };
 

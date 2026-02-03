@@ -1,11 +1,13 @@
 use crate::api::create_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
+use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::format_number_as_ordinal;
+use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
-use std::time::Duration;
 use thaw::{
-    Button, ButtonAppearance, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
+    Button, ButtonAppearance, Spinner, SpinnerSize, Toast, ToastIntent, ToastOptions, ToastTitle,
+    ToastTitleMedia, ToasterInjection,
 };
 use web_sys::File;
 
@@ -15,18 +17,44 @@ pub(crate) fn FileCreationButton(
     on_created: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
+    let upload_progress_toast_id = UUID::random();
+    let add_upload_progress_toast = move |file_count| {
+        toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>
+                            {move || {
+                                format!(
+                                    "Uploading {} file{}...",
+                                    file_count,
+                                    if file_count == 1 { "" } else { "s" },
+                                )
+                            }} <ToastTitleMedia slot>
+                                <Spinner size=SpinnerSize::Tiny />
+                            </ToastTitleMedia>
+                        </ToastTitle>
+                    </Toast>
+                }
+            },
+            ToastOptions::default()
+                .with_id(upload_progress_toast_id.into())
+                .with_intent(ToastIntent::Info)
+                .with_timeout(INFINITE_TOAST_TIMEOUT),
+        )
+    };
     let add_toast = move |text: String, intent: ToastIntent| {
         toaster.dispatch_toast(
             move || {
                 view! {
                     <Toast>
-                        <ToastBody>{text}</ToastBody>
+                        <ToastTitle>{text}</ToastTitle>
                     </Toast>
                 }
             },
             ToastOptions::default()
                 .with_intent(intent)
-                .with_timeout(Duration::from_millis(10_000)),
+                .with_timeout(DEFAULT_TOAST_TIMEOUT),
         )
     };
 
@@ -36,16 +64,14 @@ pub(crate) fn FileCreationButton(
         let files = input.to_owned();
         let file_count = files.len();
 
-        add_toast(
-            format!("Uploading {} files...", file_count),
-            ToastIntent::Info,
-        );
+        add_upload_progress_toast(file_count);
 
         async move {
             let mut parent = parent_node.get();
             for (i, file) in files.into_iter().enumerate() {
                 let result = create_file(&mut parent, file.name(), file).await;
                 if result.is_err() {
+                    toaster.dismiss_toast(upload_progress_toast_id.into());
                     return Err(format!(
                         "Error on the {} file: {}; aborted upload.",
                         format_number_as_ordinal(i + 1),
@@ -60,16 +86,12 @@ pub(crate) fn FileCreationButton(
     Effect::new(move || {
         let status = creation_action.value().get();
         if status.is_some() {
+            toaster.dismiss_toast(upload_progress_toast_id.into());
             match status.unwrap() {
-                Ok(_) => {
-                    add_toast("Upload complete".to_string(), ToastIntent::Success);
-                    on_created.run(())
-                }
-                Err(e) => {
-                    add_toast(format!("Failed to create file: {}", e), ToastIntent::Error);
-                    on_created.run(())
-                }
+                Ok(_) => add_toast("Upload complete".to_string(), ToastIntent::Success),
+                Err(e) => add_toast(format!("Failed to create file: {}", e), ToastIntent::Error),
             }
+            on_created.run(())
         }
     });
 

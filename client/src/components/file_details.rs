@@ -1,10 +1,10 @@
 use crate::api::download_file;
 use crate::components::file_selection_dialog::FileSelectionDialog;
+use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{format_date_time, shorten_file_name};
 use leptos::prelude::*;
-use std::time::Duration;
 use thaw::{
     Button, ButtonAppearance, Divider, Flex, Space, Text, Toast, ToastIntent, ToastOptions,
     ToastTitle, ToasterInjection,
@@ -31,7 +31,7 @@ pub(crate) fn FileDetails(
             },
             ToastOptions::default()
                 .with_intent(ToastIntent::Error)
-                .with_timeout(Duration::from_millis(10_000)),
+                .with_timeout(DEFAULT_TOAST_TIMEOUT),
         )
     };
 
