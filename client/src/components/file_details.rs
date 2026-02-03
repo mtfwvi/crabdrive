@@ -9,7 +9,7 @@ use thaw::{
     Button, ButtonAppearance, Divider, Flex, Space, Text, Toast, ToastIntent, ToastOptions,
     ToastTitle, ToasterInjection,
 };
-use web_sys::FileList;
+use web_sys::File;
 
 #[component]
 pub(crate) fn FileDetails(
@@ -120,8 +120,8 @@ pub(crate) fn FileDetails(
         </Space>
         <FileSelectionDialog
             open=file_selection_dialog_open
-            on_confirm=Callback::new(move |file_list: FileList| {
-                add_toast(format!("Received file_list with file to be uploaded: {:?}", file_list));
+            on_confirm=Callback::new(move |files: Vec<File>| {
+                add_toast(format!("Received {} files to be uploaded", files.len()));
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {

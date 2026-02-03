@@ -7,7 +7,7 @@ use std::time::Duration;
 use thaw::{
     Button, ButtonAppearance, Toast, ToastBody, ToastIntent, ToastOptions, ToasterInjection,
 };
-use web_sys::FileList;
+use web_sys::File;
 
 #[component]
 pub(crate) fn FileCreationButton(
@@ -32,9 +32,9 @@ pub(crate) fn FileCreationButton(
 
     let file_selection_dialog_open = RwSignal::new(false);
 
-    let creation_action = Action::new_local(move |input: &FileList| {
-        let file_list = input.to_owned();
-        let file_count = file_list.length();
+    let creation_action = Action::new_local(move |input: &Vec<File>| {
+        let files = input.to_owned();
+        let file_count = files.len();
 
         add_toast(
             format!("Uploading {} files...", file_count),
@@ -43,8 +43,7 @@ pub(crate) fn FileCreationButton(
 
         async move {
             let mut parent = parent_node.get();
-            for i in 0..file_count {
-                let file = file_list.get(i).unwrap();
+            for (i, file) in files.into_iter().enumerate() {
                 let result = create_file(&mut parent, file.name(), file).await;
                 if result.is_err() {
                     return Err(format!(
@@ -74,8 +73,8 @@ pub(crate) fn FileCreationButton(
         }
     });
 
-    let on_files_selected = Callback::new(move |file_list: FileList| {
-        creation_action.dispatch_local(file_list);
+    let on_files_selected = Callback::new(move |files: Vec<File>| {
+        creation_action.dispatch_local(files);
         file_selection_dialog_open.set(false);
     });
 

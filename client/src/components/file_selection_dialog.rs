@@ -8,36 +8,29 @@ use web_sys::{File, FileList};
 #[component]
 pub(crate) fn FileSelectionDialog(
     #[prop(into)] open: RwSignal<bool>,
-    on_confirm: Callback<FileList>,
+    on_confirm: Callback<Vec<File>>,
     #[prop(into)] title: Signal<String>,
     #[prop(optional, default = true)] allow_multiple: bool,
 ) -> impl IntoView {
-    let selection = RwSignal::new_local(None);
+    let selection = RwSignal::new_local(vec![]);
 
-    let set_file_list = move |file_list: FileList| selection.set(Some(file_list));
-
-    let selected_files = move || {
-        if selection.get().is_none() {
-            return vec![];
-        }
-        let current_selection = selection.get().unwrap();
-
+    let set_file_list = move |file_list: FileList| {
         let mut files: Vec<File> = vec![];
-        for i in 0..current_selection.length() {
-            let file = current_selection.item(i).unwrap();
+        for i in 0..file_list.length() {
+            let file = file_list.item(i).unwrap();
             files.push(file)
         }
-        files
+        selection.set(files)
     };
 
     let file_names = move || {
-        let names: Vec<String> = selected_files().iter().map(File::name).collect();
+        let names: Vec<String> = selection.get().iter().map(File::name).collect();
         names
     };
 
     let handle_confirm = move || {
-        on_confirm.run(selection.get().unwrap());
-        selection.set(None)
+        on_confirm.run(selection.get());
+        selection.set(vec![])
     };
 
     view! {
@@ -53,12 +46,12 @@ pub(crate) fn FileSelectionDialog(
 
                             <UploadDragger>
                                 "Click or drag a file to this area"
-                                <Show when=move || selection.get().is_some()>
+                                <Show when=move || !selection.get().is_empty()>
                                     <Space vertical=true>
                                         <Divider class="py-4" />
                                         <Text>
                                             {move || {
-                                                let length = selection.get().unwrap().length();
+                                                let length = selection.get().len();
                                                 format!(
                                                     "{} {} selected:",
                                                     length,
@@ -84,7 +77,7 @@ pub(crate) fn FileSelectionDialog(
                         <Button
                             appearance=ButtonAppearance::Primary
                             on_click=move |_| handle_confirm()
-                            disabled=Signal::derive(move || selection.get().is_none())
+                            disabled=Signal::derive(move || selection.get().is_empty())
                         >
                             "Upload"
                         </Button>
