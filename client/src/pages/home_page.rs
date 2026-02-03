@@ -23,7 +23,7 @@ pub(crate) fn HomePage() -> impl IntoView {
             </LayoutSider>
 
             <Layout
-                class="h-fit min-h-57 flex-1 p-8 rounded-sm outline outline-gray-300"
+                class="h-fit min-h-57 flex-1 rounded-sm outline outline-gray-300"
                 has_sider=true
             >
                 <Show

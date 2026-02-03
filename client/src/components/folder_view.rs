@@ -73,7 +73,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                 let children_res = LocalResource::new(move || get_children(current_node.get()));
 
                 view! {
-                    <Space vertical=true class="flex-1 flex-column gap-3 justify-between">
+                    <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                         <Space vertical=true>
                             <PathBreadcrumb path on_select=navigate_to_node />
                             <Divider class="mb-3" />
@@ -115,9 +115,9 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     </Space>
 
                     <Show when=move || selection.get().is_some()>
-                        <LayoutSider>
-                            <Space class="!gap-0">
-                                <Divider class="mx-5" vertical=true />
+                        <LayoutSider content_style="height: 100%">
+                            <Space class="!gap-0 h-full">
+                                <Divider vertical=true />
                                 <FileDetails
                                     selection=Signal::derive(move || selection.get().unwrap())
                                     on_close=Callback::new(move |_| selection.set(None))
