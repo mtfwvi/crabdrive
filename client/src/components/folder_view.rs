@@ -130,7 +130,7 @@ pub(crate) fn FolderView(
                             <Space class="!gap-0 h-full">
                                 <Divider vertical=true />
                                 <FileDetails
-                                    selection=Signal::derive(move || selection.get().unwrap())
+                                    node=Signal::derive(move || selection.get().unwrap())
                                     on_close=Callback::new(move |_| selection.set(None))
                                 />
                             </Space>

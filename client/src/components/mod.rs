@@ -4,6 +4,7 @@ pub(crate) mod file_selection_dialog;
 mod folder_creation_button;
 pub(crate) mod folder_view;
 pub(crate) mod input_dialog;
+mod modify_node_menu;
 pub(crate) mod node_list;
 pub(crate) mod path_breadcrumb;
 pub(crate) mod resource_wrapper;

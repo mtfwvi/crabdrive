@@ -1,5 +1,5 @@
 use crate::api::download_file;
-use crate::components::file_selection_dialog::FileSelectionDialog;
+use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
@@ -10,15 +10,12 @@ use thaw::{
     Button, ButtonAppearance, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
     ToasterInjection,
 };
-use web_sys::File;
 
 #[component]
 pub(crate) fn FileDetails(
-    #[prop(into)] selection: Signal<DecryptedNode>,
+    #[prop(into)] node: Signal<DecryptedNode>,
     on_close: Callback<()>,
 ) -> impl IntoView {
-    let file_selection_dialog_open = RwSignal::new(false);
-
     let toaster = ToasterInjection::expect_context();
 
     let add_toast = move |text: String| {
@@ -37,7 +34,7 @@ pub(crate) fn FileDetails(
     };
 
     let metadata = Signal::derive(move || {
-        let NodeMetadata::V1(metadata) = selection.get().metadata;
+        let NodeMetadata::V1(metadata) = node.get().metadata;
         metadata
     });
 
@@ -46,7 +43,7 @@ pub(crate) fn FileDetails(
         async move { download_file(node).await.map_err(|err| err.to_string()) }
     });
     let handle_download = move |_| {
-        download_action.dispatch(selection.get().clone());
+        download_action.dispatch(node.get().clone());
     };
 
     Effect::new(move || {
@@ -91,7 +88,7 @@ pub(crate) fn FileDetails(
             <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
 
             <Space vertical=true class="mt-4">
-                <Show when=move || selection.get().node_type == NodeType::File>
+                <Show when=move || node.get().node_type == NodeType::File>
                     <Button
                         on_click=handle_download
                         appearance=ButtonAppearance::Primary
@@ -101,48 +98,8 @@ pub(crate) fn FileDetails(
                         "Download"
                     </Button>
                 </Show>
-                <Show when=move || selection.get().node_type == NodeType::File>
-                    <Button
-                        on_click=move |_| file_selection_dialog_open.set(true)
-                        icon=icondata_mdi::MdiFileReplaceOutline
-                        block=true
-                    >
-                        "Modify"
-                    </Button>
-                </Show>
-                <Button
-                    on_click=move |_| add_toast("TODO".to_owned())
-                    icon=icondata_mdi::MdiRenameOutline
-                    block=true
-                >
-                    "Rename"
-                </Button>
-                <Button
-                    on_click=move |_| add_toast("TODO".to_owned())
-                    icon=icondata_mdi::MdiFileMoveOutline
-                    block=true
-                >
-                    "Move"
-                </Button>
-                <Button
-                    on_click=move |_| add_toast("TODO".to_owned())
-                    icon=icondata_mdi::MdiDeleteOutline
-                    block=true
-                >
-                    "Move to trash"
-                </Button>
+                <ModifyNodeMenu node />
             </Space>
         </Space>
-        <FileSelectionDialog
-            open=file_selection_dialog_open
-            on_confirm=Callback::new(move |_files: Vec<File>| {
-                add_toast("TODO".to_owned());
-                file_selection_dialog_open.set(false)
-            })
-            title=Signal::derive(move || {
-                format!("Upload new revision of {}", shorten_file_name(metadata.get().name))
-            })
-            allow_multiple=false
-        />
     }
 }
