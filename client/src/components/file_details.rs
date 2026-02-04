@@ -4,10 +4,11 @@ use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{format_date_time, shorten_file_name};
+use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Divider, Flex, Space, Text, Toast, ToastIntent, ToastOptions,
-    ToastTitle, ToasterInjection,
+    Button, ButtonAppearance, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
+    ToasterInjection,
 };
 use web_sys::File;
 
@@ -72,7 +73,7 @@ pub(crate) fn FileDetails(
                     appearance=ButtonAppearance::Subtle
                     class="!min-w-0 ml-2"
                     on_click=move |_| on_close.run(())
-                    icon=icondata::MdiClose
+                    icon=icondata_mdi::MdiClose
                 />
             </Space>
 
@@ -89,33 +90,57 @@ pub(crate) fn FileDetails(
             </Text>
             <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
 
-            <Divider class="my-3" />
-            <Flex>
+            <Space vertical=true class="mt-4">
+                <Show when=move || selection.get().node_type == NodeType::File>
+                    <Button
+                        on_click=handle_download
+                        appearance=ButtonAppearance::Primary
+                        icon=icondata_mdi::MdiDownload
+                        block=true
+                    >
+                        "Download"
+                    </Button>
+                </Show>
+                <Show when=move || selection.get().node_type == NodeType::File>
+                    <Button
+                        on_click=move |_| file_selection_dialog_open.set(true)
+                        icon=icondata_mdi::MdiFileReplaceOutline
+                        block=true
+                    >
+                        "Modify"
+                    </Button>
+                </Show>
                 <Button
-                    on_click=handle_download
-                    appearance=ButtonAppearance::Primary
-                    icon=icondata::MdiDownload
-                    class="flex-1 !min-w-30"
+                    on_click=move |_| add_toast("TODO".to_owned())
+                    icon=icondata_mdi::MdiRenameOutline
+                    block=true
                 >
-                    "Download"
+                    "Rename"
                 </Button>
                 <Button
-                    on_click=move |_| file_selection_dialog_open.set(true)
-                    icon=icondata::MdiFileReplaceOutline
-                    class="flex-1 !min-w-30"
+                    on_click=move |_| add_toast("TODO".to_owned())
+                    icon=icondata_mdi::MdiFileMoveOutline
+                    block=true
                 >
-                    "Modify"
+                    "Move"
                 </Button>
-            </Flex>
+                <Button
+                    on_click=move |_| add_toast("TODO".to_owned())
+                    icon=icondata_mdi::MdiDeleteOutline
+                    block=true
+                >
+                    "Move to trash"
+                </Button>
+            </Space>
         </Space>
         <FileSelectionDialog
             open=file_selection_dialog_open
-            on_confirm=Callback::new(move |files: Vec<File>| {
-                add_toast(format!("Received {} files to be uploaded", files.len()));
+            on_confirm=Callback::new(move |_files: Vec<File>| {
+                add_toast("TODO".to_owned());
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
-                format!("Upload new revision of {}", &metadata.get().name)
+                format!("Upload new revision of {}", shorten_file_name(metadata.get().name))
             })
             allow_multiple=false
         />

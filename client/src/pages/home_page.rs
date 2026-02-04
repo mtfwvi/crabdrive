@@ -121,7 +121,7 @@ pub(crate) fn HomePage() -> impl IntoView {
             >
                 <Show
                     when=move || node_id.get().is_some()
-                    fallback=|| view! { <Text>No node selected.</Text> }
+                    fallback=|| view! { <Text class="m-8">No node selected.</Text> }
                 >
                     <FolderView
                         node_id=Signal::derive(move || node_id.get().unwrap())

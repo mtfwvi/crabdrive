@@ -5,14 +5,11 @@ use crate::components::folder_creation_button::FolderCreationButton;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
-use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
-use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{
-    Divider, LayoutSider, Space, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
-};
+use thaw::{Divider, LayoutSider, Space};
 
 #[component]
 pub(crate) fn FolderView(
@@ -55,7 +52,7 @@ pub(crate) fn FolderView(
         selection.set(None);
     });
 
-    let toggle_selection = move |file: DecryptedNode| {
+    let toggle_selection = Callback::new(move |file: DecryptedNode| {
         let selected = selection.get().clone();
         let is_selected = selected.is_some() && selected.unwrap().id == file.id;
 
@@ -64,12 +61,6 @@ pub(crate) fn FolderView(
         } else {
             Some(file.clone())
         });
-    };
-
-    let on_select_node = Callback::new(move |node: DecryptedNode| match node.node_type {
-        NodeType::File => toggle_selection(node),
-        NodeType::Folder => navigate_to_node.run(node.id),
-        NodeType::Link => add_toast(String::from("Links have not been implemented")),
     });
 
     let on_node_created = Callback::new(move |_| {
@@ -110,7 +101,11 @@ pub(crate) fn FolderView(
                                 })
                                 let:children
                             >
-                                <NodeList nodes=children on_select=on_select_node />
+                                <NodeList
+                                    nodes=children
+                                    on_select=toggle_selection
+                                    on_open_folder=navigate_to_node
+                                />
                             </ResourceWrapper>
                         </Space>
 
