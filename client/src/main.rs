@@ -14,6 +14,7 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 use leptos_use::use_preferred_dark;
 use pages::home_page::HomePage;
+use pages::login_page::LoginPage;
 use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
@@ -66,6 +67,14 @@ fn CrabDrive() -> impl IntoView {
                 <Router>
                     <Routes fallback=|| "Frontend route not found">
                         <Route path=path!("") view=HomePage />
+                        <Route
+                            path=path!("/register")
+                            view=move || view! { <LoginPage register_new_account=true /> }
+                        />
+                        <Route
+                            path=path!("/login")
+                            view=move || view! { <LoginPage register_new_account=false /> }
+                        />
                         <Route path=path!("/:id") view=HomePage />
                     </Routes>
                 </Router>
