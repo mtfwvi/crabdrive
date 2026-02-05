@@ -61,7 +61,7 @@ pub(crate) fn FileDetails(
     });
 
     view! {
-        <Space vertical=true class="p-8">
+        <Space vertical=true class="p-8 !max-w-[30vw]">
             <Space class="my-3 content-center justify-between">
                 <Text class="!text-2xl !font-bold">
                     {move || shorten_file_name(metadata.get().name)}

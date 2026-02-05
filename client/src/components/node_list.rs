@@ -56,7 +56,7 @@ pub(crate) fn NodeList(
             when=move || !nodes.get().is_empty()
             fallback=|| view! { <Text>"Folder is empty"</Text> }
         >
-            <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::SpaceBetween>
+            <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::FlexStart>
                 <For
                     each=move || vec![NodeType::Folder, NodeType::File, NodeType::Link]
                     key=|node_type| *node_type

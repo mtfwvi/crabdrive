@@ -116,7 +116,8 @@ pub(crate) fn HomePage() -> impl IntoView {
             </LayoutSider>
 
             <Layout
-                class="h-fit min-h-57 flex-1 rounded-sm outline outline-gray-300"
+                class="h-full flex-1 rounded-sm outline outline-gray-300"
+                content_style="height: 100%"
                 has_sider=true
             >
                 <Show
