@@ -4,7 +4,7 @@ use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{format_date_time, shorten_file_name};
-use crabdrive_common::storage::NodeType;
+use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
@@ -14,6 +14,7 @@ use thaw::{
 #[component]
 pub(crate) fn FileDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
+    #[prop(into)] parent_id: Signal<NodeId>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -62,7 +63,7 @@ pub(crate) fn FileDetails(
     });
 
     view! {
-        <Space vertical=true class="p-8 !max-w-[30vw]">
+        <Space vertical=true class="p-8 !max-w-[35vw]">
             <Space class="my-3 content-center justify-between">
                 <Text class="!text-2xl !font-bold">
                     {move || shorten_file_name(metadata.get().name)}
@@ -99,7 +100,7 @@ pub(crate) fn FileDetails(
                         "Download"
                     </Button>
                 </Show>
-                <ModifyNodeMenu node on_modified />
+                <ModifyNodeMenu node parent_id on_modified />
             </Space>
         </Space>
     }

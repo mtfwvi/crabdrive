@@ -62,7 +62,11 @@ fn CrabDrive() -> impl IntoView {
 
     view! {
         <ConfigProvider theme>
-            <style>".thaw-toast { outline: 1px solid lightgray}"</style>
+            // Provide contrast against page background in dark theme
+            // + provide space for "Dismiss all" button below toasts
+            <style>
+                ".thaw-toast { outline: 1px solid lightgray; } .thaw-toaster--bottom-start { bottom: 60px}"
+            </style>
             <ToasterProvider position=ToastPosition::BottomStart>
                 <Router>
                     <Routes fallback=|| "Frontend route not found">

@@ -8,12 +8,14 @@ use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use thaw::{
-    Button, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign,
+    Button, ButtonAppearance, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign,
     Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
 pub(crate) fn HomePage() -> impl IntoView {
+    let toaster = ToasterInjection::expect_context();
+
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
         let parameter = use_params_map().get().get("id")?;
         UUID::parse_string(parameter)
@@ -135,5 +137,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                 </Show>
             </Layout>
         </Layout>
+        <Button
+            class="absolute bottom-[15px] left-[20px] !text-gray-500 hover:!text-[var(--colorNeutralForeground2BrandHover)]"
+            appearance=ButtonAppearance::Transparent
+            on_click=move |_| {
+                toaster.dismiss_all();
+            }
+        >
+            "Dismiss all"
+        </Button>
     }
 }

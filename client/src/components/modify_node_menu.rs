@@ -1,10 +1,11 @@
 use crate::api::rename_node;
 use crate::components::file_selection_dialog::FileSelectionDialog;
+use crate::components::folder_selection_dialog::FolderSelectionDialog;
 use crate::components::input_dialog::InputDialog;
 use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
-use crabdrive_common::storage::NodeType;
+use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use thaw::{
     Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Toast, ToastIntent, ToastOptions,
@@ -15,6 +16,7 @@ use web_sys::File;
 #[component]
 pub(crate) fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
+    #[prop(into)] parent_id: Signal<NodeId>,
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -34,6 +36,7 @@ pub(crate) fn ModifyNodeMenu(
     };
 
     let file_selection_dialog_open = RwSignal::new(false);
+    let folder_selection_dialog_open = RwSignal::new(false);
     let input_dialog_open = RwSignal::new(false);
     let metadata = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = node.get().metadata;
@@ -43,7 +46,7 @@ pub(crate) fn ModifyNodeMenu(
     let on_select = move |key: &str| match key {
         "new_revision" => file_selection_dialog_open.set(true),
         "rename" => input_dialog_open.set(true),
-        "move" => add_toast("TODO".to_owned()),
+        "move" => folder_selection_dialog_open.set(true),
         "move_to_trash" => add_toast("TODO".to_owned()),
         _ => add_toast("TODO".to_owned()),
     };
@@ -100,9 +103,21 @@ pub(crate) fn ModifyNodeMenu(
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
-                format!("Upload new revision of {}", shorten_file_name(metadata.get().name))
+                format!("Upload new revision of '{}'", shorten_file_name(metadata.get().name))
             })
             allow_multiple=false
+        />
+        <FolderSelectionDialog
+            open=folder_selection_dialog_open
+            on_confirm=Callback::new(move |selected_node| {
+                add_toast(format!("TODO: Move to {}", selected_node));
+                folder_selection_dialog_open.set(false)
+            })
+            title=Signal::derive(move || {
+                format!("Select destination for '{}'", shorten_file_name(metadata.get().name))
+            })
+            confirm_label="Move here"
+            current_node=parent_id
         />
     }
 }

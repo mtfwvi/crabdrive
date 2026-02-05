@@ -103,8 +103,9 @@ pub(crate) fn FolderView(
                             >
                                 <NodeList
                                     nodes=children
-                                    on_select=toggle_selection
-                                    on_open_folder=navigate_to_node
+                                    on_node_click=toggle_selection
+                                    on_folder_dblclick=navigate_to_node
+                                    folders_only=false
                                 />
                             </ResourceWrapper>
                         </Space>
@@ -131,6 +132,7 @@ pub(crate) fn FolderView(
                                 <Divider vertical=true />
                                 <FileDetails
                                     node=Signal::derive(move || selection.get().unwrap())
+                                    parent_id=node_id
                                     on_close=Callback::new(move |_| selection.set(None))
                                     on_modified=Callback::new(move |_| {
                                         children_res.refetch();

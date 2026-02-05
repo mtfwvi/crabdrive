@@ -18,7 +18,7 @@ where
         move |e| view! { <Text>{format!("{}: {}", error_text.get(), e)}</Text> }.into_any();
 
     view! {
-        <Suspense fallback=move || {
+        <Transition fallback=move || {
             view! {
                 <Show when=move || fallback_spinner>
                     <Spinner />
@@ -35,6 +35,6 @@ where
                         }
                     })
             }}
-        </Suspense>
+        </Transition>
     }
 }

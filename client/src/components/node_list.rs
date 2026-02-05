@@ -11,8 +11,9 @@ use thaw::{
 #[component]
 pub(crate) fn NodeList(
     #[prop(into)] nodes: Signal<Vec<DecryptedNode>>,
-    on_select: Callback<DecryptedNode>,
-    on_open_folder: Callback<NodeId>,
+    #[prop(into)] folders_only: Signal<bool>,
+    on_node_click: Callback<DecryptedNode>,
+    on_folder_dblclick: Callback<NodeId>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
@@ -32,7 +33,7 @@ pub(crate) fn NodeList(
     };
     let on_dblclick = move |node: DecryptedNode| match node.node_type {
         NodeType::File => {}
-        NodeType::Folder => on_open_folder.run(node.id),
+        NodeType::Folder => on_folder_dblclick.run(node.id),
         NodeType::Link => add_toast(String::from("Links have not been implemented")),
     };
 
@@ -51,14 +52,28 @@ pub(crate) fn NodeList(
         filtered_nodes
     };
 
+    let is_empty = move || {
+        if folders_only.get() {
+            !nodes
+                .get()
+                .iter()
+                .any(|node| node.node_type == NodeType::Folder)
+        } else {
+            nodes.get().is_empty()
+        }
+    };
+
     view! {
-        <Show
-            when=move || !nodes.get().is_empty()
-            fallback=|| view! { <Text>"Folder is empty"</Text> }
-        >
+        <Show when=move || !is_empty() fallback=|| view! { <Text>"Folder is empty"</Text> }>
             <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::FlexStart>
                 <For
-                    each=move || vec![NodeType::Folder, NodeType::File, NodeType::Link]
+                    each=move || {
+                        if folders_only.get() {
+                            vec![NodeType::Folder]
+                        } else {
+                            vec![NodeType::Folder, NodeType::File, NodeType::Link]
+                        }
+                    }
                     key=|node_type| *node_type
                     let:node_type
                 >
@@ -76,7 +91,7 @@ pub(crate) fn NodeList(
                                             metadata.name
                                         })
                                         node_type=Signal::derive(move || node.get().node_type)
-                                        on:click=move |_| on_select.run(node.get())
+                                        on:click=move |_| on_node_click.run(node.get())
                                         on:dblclick=move |e| {
                                             e.prevent_default();
                                             on_dblclick(node.get())
