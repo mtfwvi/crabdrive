@@ -140,6 +140,12 @@ pub struct AuthConfig {
     /// **Default**: `not_so_secret`
     #[config(env = "JWT_SECRET")]
     pub jwt_secret: String,
+
+    /// the time in seconds that JWTs are valid for in seconds
+    ///
+    /// **Default**: `86400` (one day)
+    #[config(env = "JWT_EXPIRATION_PERIOD")]
+    pub jwt_expiration_period: i64,
 }
 
 type ConfLayer = <AppConfig as Config>::Layer;
@@ -183,6 +189,7 @@ impl AppConfig {
             },
             auth: AuthConfigLayer {
                 jwt_secret: Some("not_so_secret".to_string()),
+                jwt_expiration_period: Some(86400)
             },
         }
     }
