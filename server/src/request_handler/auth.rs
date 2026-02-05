@@ -1,10 +1,8 @@
-use crate::auth::claims::Claims;
 use crate::http::AppState;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::Json;
-use chrono::TimeDelta;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
@@ -14,13 +12,12 @@ use crabdrive_common::payloads::auth::response::login::{
 };
 use crabdrive_common::payloads::auth::response::register::{PostRegisterResponse, RegisterConflictReason};
 use crabdrive_common::storage::{NodeId, NodeType};
-use jsonwebtoken::Header;
-use std::ops::Add;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use tracing::log::debug;
 use crabdrive_common::da;
 use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
+use crate::auth::new_bearer_token;
 use crate::user::persistence::model::user_entity::UserEntity;
 
 pub async fn post_login(
@@ -49,15 +46,7 @@ pub async fn post_login(
             .verify_password(payload.password.as_bytes(), &parsed_hash.unwrap())
             .is_ok()
     {
-        let time_delta = TimeDelta::new(state.config.auth.jwt_expiration_period, 0).unwrap();
-
-        let claims = Claims {
-            user_id: user_entity.id,
-            expires: chrono::Utc::now().naive_utc().add(time_delta),
-        };
-
-        let jwt =
-            jsonwebtoken::encode(&Header::default(), &claims, &state.keys.encoding_key).unwrap();
+        let jwt = new_bearer_token(user_entity.id, state.config.auth.jwt_expiration_period, &state.keys.encoding_key).unwrap();
 
         if user_entity.trash_node.is_none() {
             debug!(

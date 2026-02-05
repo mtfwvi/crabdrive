@@ -93,9 +93,7 @@ pub async fn test_register() {
         let jwt = response.bearer_token;
 
         let user_info_url = API_BASE_PATH.to_owned() + USER_INFO_ROUTE;
-        let user_info_request = server.get(&user_info_url).add_header("Authorization", format!("Bearer {:?}", jwt)).await;
-
-        println!("{:?}", user_info_request);
+        let user_info_request = server.get(&user_info_url).add_header("Authorization", format!("Bearer {}", jwt)).await;
 
         let user_info_response: GetSelfInfoResponse = user_info_request.json();
 
