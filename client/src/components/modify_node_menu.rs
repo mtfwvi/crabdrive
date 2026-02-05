@@ -1,5 +1,7 @@
+use crate::api::rename_node;
 use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::constants::DEFAULT_TOAST_TIMEOUT;
+use crate::components::input_dialog::InputDialog;
+use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
 use crabdrive_common::storage::NodeType;
@@ -11,9 +13,11 @@ use thaw::{
 use web_sys::File;
 
 #[component]
-pub(crate) fn ModifyNodeMenu(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
+pub(crate) fn ModifyNodeMenu(
+    #[prop(into)] node: Signal<DecryptedNode>,
+    on_modified: Callback<()>,
+) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
-
     let add_toast = move |text: String| {
         toaster.dispatch_toast(
             move || {
@@ -25,11 +29,12 @@ pub(crate) fn ModifyNodeMenu(#[prop(into)] node: Signal<DecryptedNode>) -> impl 
             },
             ToastOptions::default()
                 .with_intent(ToastIntent::Error)
-                .with_timeout(DEFAULT_TOAST_TIMEOUT),
+                .with_timeout(INFINITE_TOAST_TIMEOUT),
         )
     };
 
     let file_selection_dialog_open = RwSignal::new(false);
+    let input_dialog_open = RwSignal::new(false);
     let metadata = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = node.get().metadata;
         metadata
@@ -37,20 +42,30 @@ pub(crate) fn ModifyNodeMenu(#[prop(into)] node: Signal<DecryptedNode>) -> impl 
 
     let on_select = move |key: &str| match key {
         "new_revision" => file_selection_dialog_open.set(true),
-        "rename" => add_toast("TODO".to_owned()),
+        "rename" => input_dialog_open.set(true),
         "move" => add_toast("TODO".to_owned()),
         "move_to_trash" => add_toast("TODO".to_owned()),
         _ => add_toast("TODO".to_owned()),
     };
 
+    let rename_action = Action::new_local(move |input: &String| {
+        let new_name = input.to_owned();
+        async move { rename_node(node.get(), new_name).await }
+    });
+    Effect::new(move || {
+        let status = rename_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => on_modified.run(()),
+                Err(e) => add_toast(format!("Failed to rename: {}", e)),
+            }
+        }
+    });
+
     view! {
         <Menu on_select trigger_type=MenuTriggerType::Hover>
             <MenuTrigger slot>
-                <Button
-                    on_click=move |_| file_selection_dialog_open.set(true)
-                    icon=icondata_mdi::MdiPencilOutline
-                    block=true
-                >
+                <Button icon=icondata_mdi::MdiPencilOutline block=true>
                     "Modify"
                 </Button>
             </MenuTrigger>
@@ -69,6 +84,15 @@ pub(crate) fn ModifyNodeMenu(#[prop(into)] node: Signal<DecryptedNode>) -> impl 
                 "Move to trash"
             </MenuItem>
         </Menu>
+        <InputDialog
+            open=input_dialog_open
+            title=Signal::derive(move || format!("Rename '{}'", metadata.get().name))
+            confirm_label="Rename"
+            on_confirm=Callback::new(move |new_name| {
+                rename_action.dispatch(new_name);
+                input_dialog_open.set(false);
+            })
+        />
         <FileSelectionDialog
             open=file_selection_dialog_open
             on_confirm=Callback::new(move |_files: Vec<File>| {

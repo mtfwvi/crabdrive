@@ -14,6 +14,7 @@ use thaw::{
 #[component]
 pub(crate) fn FileDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
+    on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -98,7 +99,7 @@ pub(crate) fn FileDetails(
                         "Download"
                     </Button>
                 </Show>
-                <ModifyNodeMenu node />
+                <ModifyNodeMenu node on_modified />
             </Space>
         </Space>
     }

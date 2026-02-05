@@ -132,6 +132,10 @@ pub(crate) fn FolderView(
                                 <FileDetails
                                     node=Signal::derive(move || selection.get().unwrap())
                                     on_close=Callback::new(move |_| selection.set(None))
+                                    on_modified=Callback::new(move |_| {
+                                        children_res.refetch();
+                                        selection.set(None);
+                                    })
                                 />
                             </Space>
                         </LayoutSider>
