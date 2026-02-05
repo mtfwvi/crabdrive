@@ -11,19 +11,19 @@ use http_body_util::Full;
 use std::any::Any;
 
 use crate::auth::secrets::Keys;
+use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::http::header::{self};
 use axum::response::Response;
 use axum::{Router, middleware};
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::encryption_key::EncryptionKey;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 use tracing::{error, info};
-use crabdrive_common::encryption_key::EncryptionKey;
-use crate::user::persistence::user_repository::UserState;
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;

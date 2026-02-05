@@ -1,7 +1,7 @@
 use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{routes, AppConfig, AppState};
+use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
@@ -9,7 +9,7 @@ use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::model::user_entity::UserEntity;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
-use axum::{middleware, Router};
+use axum::{Router, middleware};
 use axum_test::TestServer;
 use bytes::Bytes;
 use chrono::Local;
@@ -21,7 +21,9 @@ use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
 use crabdrive_common::payloads::auth::response::info::GetSelfInfoResponse;
 use crabdrive_common::payloads::auth::response::login::{PostLoginResponse, UserKeys};
-use crabdrive_common::payloads::auth::response::register::{PostRegisterResponse, RegisterConflictReason};
+use crabdrive_common::payloads::auth::response::register::{
+    PostRegisterResponse, RegisterConflictReason,
+};
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::file::CommitFileError::AlreadyCommitted;
@@ -32,10 +34,13 @@ use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse
 use crabdrive_common::payloads::node::response::node::{
     GetNodeResponse, GetPathBetweenNodesResponse,
 };
-use crabdrive_common::routes::{CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, LOGIN_ROUTE, NODE_ROUTE_NODEID, PATH_BETWEEN_NODES_ROUTE, REGISTER_ROUTE, USER_INFO_ROUTE};
+use crabdrive_common::routes::{
+    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, LOGIN_ROUTE,
+    NODE_ROUTE_NODEID, PATH_BETWEEN_NODES_ROUTE, REGISTER_ROUTE, USER_INFO_ROUTE,
+};
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use formatx::formatx;
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
@@ -76,8 +81,10 @@ pub async fn test_register() {
 
     let register_request2 = server.post(&register_url).json(&register).await;
     let register_response2: PostRegisterResponse = register_request2.json();
-    assert_eq!(register_response2, PostRegisterResponse::Conflict(RegisterConflictReason::UsernameTaken));
-
+    assert_eq!(
+        register_response2,
+        PostRegisterResponse::Conflict(RegisterConflictReason::UsernameTaken)
+    );
 
     let login = PostLoginRequest {
         username: username.to_string(),
@@ -93,7 +100,10 @@ pub async fn test_register() {
         let jwt = response.bearer_token;
 
         let user_info_url = API_BASE_PATH.to_owned() + USER_INFO_ROUTE;
-        let user_info_request = server.get(&user_info_url).add_header("Authorization", format!("Bearer {}", jwt)).await;
+        let user_info_request = server
+            .get(&user_info_url)
+            .add_header("Authorization", format!("Bearer {}", jwt))
+            .await;
 
         let user_info_response: GetSelfInfoResponse = user_info_request.json();
 

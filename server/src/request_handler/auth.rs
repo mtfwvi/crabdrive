@@ -1,24 +1,26 @@
+use crate::auth::new_bearer_token;
 use crate::http::AppState;
+use crate::user::persistence::model::user_entity::UserEntity;
+use argon2::password_hash::SaltString;
+use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
-use axum::Json;
+use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
+use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::{Password, Username};
 use crabdrive_common::payloads::auth::response::login::{
     LoginSuccess, PostLoginResponse, UserKeys,
 };
-use crabdrive_common::payloads::auth::response::register::{PostRegisterResponse, RegisterConflictReason};
+use crabdrive_common::payloads::auth::response::register::{
+    PostRegisterResponse, RegisterConflictReason,
+};
 use crabdrive_common::storage::{NodeId, NodeType};
-use argon2::password_hash::rand_core::OsRng;
-use argon2::password_hash::SaltString;
 use tracing::log::debug;
-use crabdrive_common::da;
-use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
-use crate::auth::new_bearer_token;
-use crate::user::persistence::model::user_entity::UserEntity;
 
 pub async fn post_login(
     State(state): State<AppState>,
@@ -46,7 +48,12 @@ pub async fn post_login(
             .verify_password(payload.password.as_bytes(), &parsed_hash.unwrap())
             .is_ok()
     {
-        let jwt = new_bearer_token(user_entity.id, state.config.auth.jwt_expiration_period, &state.keys.encoding_key).unwrap();
+        let jwt = new_bearer_token(
+            user_entity.id,
+            state.config.auth.jwt_expiration_period,
+            &state.keys.encoding_key,
+        )
+        .unwrap();
 
         if user_entity.trash_node.is_none() {
             debug!(
@@ -89,7 +96,7 @@ pub async fn post_login(
                 )
                 .expect("db error when creating trash node");
 
-            user_entity.root_node= Some(inserted.id);
+            user_entity.root_node = Some(inserted.id);
             user_entity = state
                 .user_repository
                 .update_user(user_entity)
@@ -135,20 +142,32 @@ pub async fn post_register(
 
     //TODO maybe check for weird characters in usernames
 
-    if state.user_repository.get_user_by_username(&username).expect("db error").is_some() {
-        return (StatusCode::CONFLICT, Json(PostRegisterResponse::Conflict(RegisterConflictReason::UsernameTaken)))
+    if state
+        .user_repository
+        .get_user_by_username(&username)
+        .expect("db error")
+        .is_some()
+    {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostRegisterResponse::Conflict(
+                RegisterConflictReason::UsernameTaken,
+            )),
+        );
     }
 
     let password_salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
-    let password_hash = argon2.hash_password(payload.password.as_bytes(), &password_salt).unwrap().to_string();
+    let password_hash = argon2
+        .hash_password(payload.password.as_bytes(), &password_salt)
+        .unwrap()
+        .to_string();
 
     // TODO pretty inefficient to do create + update
-    let mut created_user = state.user_repository.create_user(
-        username,
-        password_hash,
-        da!(15 GB)
-    ).expect("db error when creating user");
+    let mut created_user = state
+        .user_repository
+        .create_user(username, password_hash, da!(15 GB))
+        .expect("db error when creating user");
 
     created_user.root_key = payload.keys.root_key;
     created_user.trash_key = payload.keys.trash_key;
@@ -156,7 +175,10 @@ pub async fn post_register(
     created_user.master_key = payload.keys.master_key;
     created_user.private_key = payload.keys.private_key;
 
-    let _ = state.user_repository.update_user(created_user).expect("db error when updating user");
+    let _ = state
+        .user_repository
+        .update_user(created_user)
+        .expect("db error when updating user");
 
     (StatusCode::CREATED, Json(PostRegisterResponse::Created))
 }

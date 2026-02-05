@@ -1,6 +1,6 @@
 use crate::encryption_key::EncryptionKey;
-use serde::{Deserialize, Serialize};
 use crate::storage::NodeId;
+use serde::{Deserialize, Serialize};
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug)]
@@ -62,7 +62,13 @@ pub struct UserKeys {
 }
 
 impl UserKeys {
-    pub fn new(public_key: Vec<u8>, private_key: EncryptionKey, master_key: EncryptionKey, root_key: EncryptionKey, trash_key: EncryptionKey) -> Self {
+    pub fn new(
+        public_key: Vec<u8>,
+        private_key: EncryptionKey,
+        master_key: EncryptionKey,
+        root_key: EncryptionKey,
+        trash_key: EncryptionKey,
+    ) -> Self {
         Self {
             public_key,
             private_key,
@@ -71,7 +77,7 @@ impl UserKeys {
             trash_key,
         }
     }
-    
+
     pub fn nil() -> Self {
         Self {
             public_key: vec![],

@@ -189,7 +189,7 @@ impl AppConfig {
             },
             auth: AuthConfigLayer {
                 jwt_secret: Some("not_so_secret".to_string()),
-                jwt_expiration_period: Some(86400)
+                jwt_expiration_period: Some(86400),
             },
         }
     }

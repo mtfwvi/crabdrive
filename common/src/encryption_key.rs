@@ -1,3 +1,4 @@
+use crate::iv::IV;
 #[cfg(feature = "server")]
 use diesel::{
     deserialize::{FromSql, FromSqlRow},
@@ -7,7 +8,6 @@ use diesel::{
     sqlite::Sqlite,
 };
 use serde::{Deserialize, Serialize};
-use crate::iv::IV;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]

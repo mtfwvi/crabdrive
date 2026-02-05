@@ -1,10 +1,10 @@
 use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
+use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::{UserId, UserType};
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
-use crabdrive_common::encryption_key::EncryptionKey;
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
 #[diesel(table_name = crate::db::schema::User)]

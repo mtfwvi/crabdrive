@@ -2,9 +2,9 @@ use crate::auth::secrets::Keys;
 use crate::storage::node::NodeRepository;
 use crate::storage::revision::RevisionRepository;
 use crate::storage::vfs::FileRepository;
+use crate::user::persistence::user_repository::UserRepository;
 use crate::{db::connection::DbPool, http::AppConfig};
 use std::sync::{Arc, RwLock};
-use crate::user::persistence::user_repository::UserRepository;
 
 #[derive(Clone)]
 pub struct AppState {

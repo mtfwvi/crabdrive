@@ -3,17 +3,17 @@ use crate::http::AppState;
 use crate::user::persistence::model::user_entity::UserEntity;
 use anyhow::Result;
 use axum::extract::FromRequestParts;
-use axum::http::request::Parts;
 use axum::http::StatusCode;
+use axum::http::request::Parts;
 use axum::response::{IntoResponse, Response};
 use axum::{Json, RequestPartsExt};
-use axum_extra::headers::authorization::Bearer;
-use axum_extra::headers::Authorization;
 use axum_extra::TypedHeader;
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
 use chrono::{TimeDelta, Utc};
 use crabdrive_common::user::UserId;
-use jsonwebtoken::{decode, DecodingKey, EncodingKey, Header, Validation};
 use jsonwebtoken::errors::ErrorKind::ExpiredSignature;
+use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::log::warn;
@@ -64,19 +64,23 @@ impl FromRequestParts<AppState> for UserEntity {
             .await
             .map_err(|_| AuthError::NoToken)?;
 
-        let claims = decode_bearer_token(bearer.token(), &state.keys.decoding_key)
-            .map_err(|err| {
+        let claims =
+            decode_bearer_token(bearer.token(), &state.keys.decoding_key).map_err(|err| {
                 if err.kind().eq(&ExpiredSignature) {
                     AuthError::Expired
                 } else {
                     AuthError::Unauthorized
-                }})?;
+                }
+            })?;
 
         let user_entity_result = state.user_repository.get_user(claims.user_id);
 
         if let Err(err) = user_entity_result {
-            error!("auth: Could not authenticate user because of db error: {:?}", err);
-            return Err(AuthError::ServerError)
+            error!(
+                "auth: Could not authenticate user because of db error: {:?}",
+                err
+            );
+            return Err(AuthError::ServerError);
         }
 
         let user_entity = user_entity_result.unwrap();
@@ -93,7 +97,11 @@ impl FromRequestParts<AppState> for UserEntity {
     }
 }
 
-pub fn new_bearer_token(user_id: UserId, expires_in_seconds: i64, encoding_key: &EncodingKey) -> jsonwebtoken::errors::Result<String> {
+pub fn new_bearer_token(
+    user_id: UserId,
+    expires_in_seconds: i64,
+    encoding_key: &EncodingKey,
+) -> jsonwebtoken::errors::Result<String> {
     let time_delta = TimeDelta::new(expires_in_seconds, 0).unwrap();
     let expiry_time = (Utc::now() + time_delta).timestamp();
 
@@ -102,18 +110,16 @@ pub fn new_bearer_token(user_id: UserId, expires_in_seconds: i64, encoding_key: 
         exp: expiry_time,
     };
 
-    let jwt =
-        jsonwebtoken::encode(&Header::default(), &claims, encoding_key)?;
+    let jwt = jsonwebtoken::encode(&Header::default(), &claims, encoding_key)?;
 
     Ok(jwt)
 }
 
-pub fn decode_bearer_token(token: &str, decoding_key: &DecodingKey) -> jsonwebtoken::errors::Result<Claims> {
-    let token_data = decode::<Claims>(
-        token,
-        decoding_key,
-        &Validation::default(),
-    )?;
+pub fn decode_bearer_token(
+    token: &str,
+    decoding_key: &DecodingKey,
+) -> jsonwebtoken::errors::Result<Claims> {
+    let token_data = decode::<Claims>(token, decoding_key, &Validation::default())?;
 
     Ok(token_data.claims)
 }
@@ -132,7 +138,6 @@ mod test {
         let encoding_key = EncodingKey::from_secret(secret.as_bytes());
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
-
         let id = UserId::random();
         let token = new_bearer_token(id, 3600, &encoding_key).unwrap();
 
@@ -148,13 +153,13 @@ mod test {
         let encoding_key = EncodingKey::from_secret(secret.as_bytes());
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
-
         let id = UserId::random();
 
         // default settings allow for 60 seconds of "leeway" so our expiry must be at least 60 seconds in the past
         let token = new_bearer_token(id, -61, &encoding_key).unwrap();
 
-        let claims_result_error: jsonwebtoken::errors::Error = decode_bearer_token(&token, &decoding_key).err().unwrap();
+        let claims_result_error: jsonwebtoken::errors::Error =
+            decode_bearer_token(&token, &decoding_key).err().unwrap();
 
         assert_eq!(ExpiredSignature, claims_result_error.kind().clone());
     }
