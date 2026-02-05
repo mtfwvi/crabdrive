@@ -173,13 +173,13 @@ impl fmt::Display for DataAmount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let bytes = self.0 as f64;
         if self.0 >= TB {
-            write!(f, "{:.2} TB ({bytes} Bytes)", bytes / TB as f64)
+            write!(f, "{:.1} TB ({bytes} Bytes)", bytes / TB as f64)
         } else if self.0 >= GB {
-            write!(f, "{:.2} GB ({bytes} Bytes)", bytes / GB as f64)
+            write!(f, "{:.1} GB ({bytes} Bytes)", bytes / GB as f64)
         } else if self.0 >= MB {
-            write!(f, "{:.2} MB ({bytes} Bytes)", bytes / MB as f64)
+            write!(f, "{:.1} MB ({bytes} Bytes)", bytes / MB as f64)
         } else if self.0 >= KB {
-            write!(f, "{:.2} KB ({bytes} Bytes)", bytes / KB as f64)
+            write!(f, "{:.1} KB ({bytes} Bytes)", bytes / KB as f64)
         } else if self.0 == 1 {
             write!(f, "1 Byte")
         } else {
@@ -268,9 +268,9 @@ mod tests {
 
     #[test_case("0 Bytes", 0 ; "for zero")]
     #[test_case("1 Byte", 1 ; "for single Byte")]
-    #[test_case("100.00 KB (100000 Bytes)", 100_000 ; "for one hundred kilobytes")]
-    #[test_case("1.00 MB (1000000 Bytes)", 1_000_000 ; "for one megabyte")]
-    #[test_case("1.02 KB (1024 Bytes)", 1_024 ; "for one kibibyte")]
+    #[test_case("100.0 KB (100000 Bytes)", 100_000 ; "for one hundred kilobytes")]
+    #[test_case("1.0 MB (1000000 Bytes)", 1_000_000 ; "for one megabyte")]
+    #[test_case("1.0 KB (1024 Bytes)", 1_024 ; "for one kibibyte")]
     fn test_display(expected: &str, for_bytes: u64) {
         let actual = format!("{}", da!(for_bytes));
         assert_eq!(actual, expected);

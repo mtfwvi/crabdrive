@@ -19,7 +19,7 @@ use diesel::{
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "server", diesel(sql_type = Text))]
-pub struct UUID(pub uuid::Uuid);
+pub struct UUID(uuid::Uuid);
 
 // Small function to easily initialize our uuid
 impl UUID {
@@ -29,6 +29,20 @@ impl UUID {
 
     pub fn nil() -> Self {
         Self(uuid::Uuid::nil())
+    }
+
+    pub fn parse_string(s: String) -> Option<UUID> {
+        match uuid::Uuid::parse_str(&s) {
+            Ok(uuid) => Some(UUID(uuid)),
+            Err(_) => None,
+        }
+    }
+}
+
+// Allow easy conversion from uuid::Uuid to UUID
+impl From<uuid::Uuid> for UUID {
+    fn from(s: uuid::Uuid) -> Self {
+        Self(s)
     }
 }
 

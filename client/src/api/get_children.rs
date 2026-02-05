@@ -22,7 +22,7 @@ pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>, S
                     decrypted_children.push(decrypted_child);
                 } else {
                     return Err(format!(
-                        "could not decrypt node: {:?}",
+                        "Failed to decrypt node: {:?}",
                         decrypted_child.err().unwrap()
                     ));
                 }

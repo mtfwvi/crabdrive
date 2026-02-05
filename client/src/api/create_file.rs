@@ -8,6 +8,9 @@ use crate::utils::encryption::chunk;
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
 use crate::utils::encryption::random::get_random_iv;
 use crate::utils::file::load_file_by_chunk;
+use chrono::Local;
+use crabdrive_common::data::DataAmount;
+use crabdrive_common::data::DataUnit::Byte;
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::response::file::{
@@ -32,10 +35,10 @@ pub async fn create_file(
 
     let file_metadata = NodeMetadata::V1(MetadataV1 {
         name: file_name,
-        last_modified: Default::default(),
-        created: Default::default(),
-        size: None,
-        mime_type: None,
+        last_modified: Local::now().naive_local(),
+        created: Local::now().naive_local(),
+        size: Some(DataAmount::new(file.size(), Byte)),
+        mime_type: Some(file.type_()),
         file_key: Some(file_encryption_key),
         children_key: vec![],
     });
@@ -90,7 +93,7 @@ pub async fn create_file(
     match response {
         PostCreateFileResponse::Created(new_file) => {
             parent.metadata = new_parent_metadata;
-            parent.change_count += 1;
+            parent.change_count += 2; // First update the parent metadata, then insert the new node
 
             let file_revision = new_file
                 .current_revision

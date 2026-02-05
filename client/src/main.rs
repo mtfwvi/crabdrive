@@ -5,10 +5,16 @@ pub(crate) mod components;
 pub(crate) mod constants;
 pub(crate) mod model;
 pub(crate) mod pages;
+mod theme;
 pub(crate) mod utils;
 
+use crate::theme::get_theme;
 use leptos::prelude::*;
-use pages::demo_page::DemoPage;
+use leptos_router::components::{Route, Router, Routes};
+use leptos_router::path;
+use leptos_use::use_preferred_dark;
+use pages::home_page::HomePage;
+use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -26,6 +32,7 @@ fn main() {
 
     let fmt_layer = tracing_subscriber::fmt::layer()
         .with_ansi(false)
+        .with_line_number(true)
         .without_time()
         .with_writer(MakeWebConsoleWriter::new());
     let perf_layer = performance_layer().with_details_from_fields(DefaultFields::default());
@@ -35,5 +42,31 @@ fn main() {
         .with(perf_layer)
         .init();
 
-    mount_to_body(DemoPage)
+    mount_to_body(CrabDrive)
+}
+
+#[component]
+fn CrabDrive() -> impl IntoView {
+    let theme = RwSignal::new(get_theme(false));
+
+    let is_dark_preferred = use_preferred_dark();
+
+    Effect::new(move || {
+        let adaptive_theme = get_theme(is_dark_preferred.get());
+        theme.set(adaptive_theme)
+    });
+
+    view! {
+        <ConfigProvider theme>
+            <style>".thaw-toast { outline: 1px solid lightgray}"</style>
+            <ToasterProvider position=ToastPosition::BottomStart>
+                <Router>
+                    <Routes fallback=|| "Frontend route not found">
+                        <Route path=path!("") view=HomePage />
+                        <Route path=path!("/:id") view=HomePage />
+                    </Routes>
+                </Router>
+            </ToasterProvider>
+        </ConfigProvider>
+    }
 }
