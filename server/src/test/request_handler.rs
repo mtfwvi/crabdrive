@@ -1,17 +1,13 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{AppConfig, AppState, routes};
+use crate::http::{AppConfig, AppState};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
-use axum::http::StatusCode;
-use axum::{Router, middleware};
-use axum_test::TestServer;
-use bytes::Bytes;
-use chrono::Local;
+
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
@@ -25,19 +21,22 @@ use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse
 use crabdrive_common::payloads::node::response::node::{
     GetNodeResponse, GetPathBetweenNodesResponse,
 };
-use crabdrive_common::routes::{
-    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID,
-    PATH_BETWEEN_NODES_ROUTE,
-};
+use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
+
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use axum::http::StatusCode;
+use axum::{Router, middleware};
+use axum_test::TestServer;
+use bytes::Bytes;
+use chrono::Local;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-use formatx::formatx;
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use std::path::PathBuf;
-use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
@@ -66,7 +65,7 @@ pub async fn test_folder() {
         node_id,
     };
 
-    let url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
+    let url = API_BASE_PATH.to_owned() + &routes::node::folder::create(UUID::nil());
 
     let test_request = server.post(&url).json(&create_node_request).await;
 
@@ -112,7 +111,7 @@ pub async fn test_path_between_nodes() {
     };
 
     let create_folder_in_root_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
+        API_BASE_PATH.to_owned() + &routes::node::folder::create(UUID::nil());
     let create_node_request1_response = server
         .post(&create_folder_in_root_url)
         .json(&create_node_request1)
@@ -123,8 +122,8 @@ pub async fn test_path_between_nodes() {
         StatusCode::CREATED
     );
 
-    let create_folder_url = API_BASE_PATH.to_owned()
-        + &formatx!(CREATE_FOLDER_ROUTE, create_node_request1.node_id).unwrap();
+    let create_folder_url =
+        API_BASE_PATH.to_owned() + &routes::node::folder::create(create_node_request1.node_id);
 
     let create_node_request2_response = server
         .post(&create_folder_url)
@@ -145,23 +144,26 @@ pub async fn test_path_between_nodes() {
     );
 
     let path_between_nodes_url1 = API_BASE_PATH.to_owned()
-        + &formatx!(
+        + &format!(
             "{}?from_id={}&to_id={}",
-            PATH_BETWEEN_NODES_ROUTE,
+            routes::node::path_between_nodes(UUID::nil(), create_node_request2.node_id),
             UUID::nil(),
             create_node_request2.node_id
-        )
-        .unwrap();
+        );
+
     let path_between_nodes_response1 = server.get(&path_between_nodes_url1).await;
 
     let path_between_nodes_url2 = API_BASE_PATH.to_owned()
-        + &formatx!(
+        + &format!(
             "{}?from_id={}&to_id={}",
-            PATH_BETWEEN_NODES_ROUTE,
+            routes::node::path_between_nodes(
+                create_node_request3.node_id,
+                create_node_request2.node_id
+            ),
             create_node_request3.node_id,
             create_node_request2.node_id
-        )
-        .unwrap();
+        );
+
     let path_between_nodes_response2 = server.get(&path_between_nodes_url2).await;
 
     match path_between_nodes_response1.json::<GetPathBetweenNodesResponse>() {
@@ -198,8 +200,7 @@ pub async fn test_file() {
         node_id,
     };
 
-    let create_file_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, UUID::nil()).unwrap();
+    let create_file_url = API_BASE_PATH.to_owned() + &routes::node::file::create(UUID::nil());
 
     let test_request = server
         .post(&create_file_url)
@@ -234,9 +235,9 @@ pub async fn test_file() {
     let chunk2 = Bytes::from(chunk2);
 
     let chunk_url1 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 1).unwrap();
+        + &routes::node::chunks(create_node_request.node_id, revision.id, 1);
     let chunk_url2 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
+        + &routes::node::chunks(create_node_request.node_id, revision.id, 2);
 
     let chunk1_response = server.post(&chunk_url1).bytes(chunk1.clone()).await;
     assert_eq!(chunk1_response.status_code(), StatusCode::CREATED);
@@ -245,7 +246,7 @@ pub async fn test_file() {
     assert_eq!(chunk2_response.status_code(), StatusCode::CREATED);
 
     let commit_file_url = API_BASE_PATH.to_owned()
-        + &formatx!(COMMIT_FILE_ROUTE, create_node_request.node_id, revision.id).unwrap();
+        + &routes::node::file::commit(create_node_request.node_id, revision.id);
 
     let commit_file_response: PostCommitFileResponse = server.post(&commit_file_url).await.json();
 
@@ -259,8 +260,7 @@ pub async fn test_file() {
 
     assert_eq!(node.current_revision.as_ref().unwrap().id, revision.id);
 
-    let get_node_url = API_BASE_PATH.to_owned()
-        + &formatx!(NODE_ROUTE_NODEID, create_node_request.node_id).unwrap();
+    let get_node_url = API_BASE_PATH.to_owned() + &routes::node::by_id(create_node_request.node_id);
 
     let node_response: GetNodeResponse = server.get(&get_node_url).await.json();
 
@@ -309,7 +309,7 @@ pub fn get_server() -> TestServer {
     prepare_db(&state);
 
     let app = Router::<AppState>::new()
-        .merge(routes::routes())
+        .merge(crate::http::routes::routes())
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
         .layer(CatchPanicLayer::custom(crate::http::server::handle_panic));
