@@ -67,10 +67,8 @@ pub mod node {
 
     pub const ROUTE_PATH_BETWEEN: &str = "/api/path_between_nodes/";
     /// `/api/path_between_nodes/`
-    ///
-    /// Arguments are reserved for future use.
-    pub fn path_between_nodes(_from_id: NodeId, _to_id: NodeId) -> String {
-        ROUTE_PATH_BETWEEN.to_string()
+    pub fn path_between_nodes(from_id: NodeId, to_id: NodeId) -> String {
+        format!("{}?from_id={}&to_id={}", ROUTE_PATH_BETWEEN, from_id, to_id)
     }
 
     pub const ROUTE_VERSIONS: &str = "/api/node/{id}/versions/";

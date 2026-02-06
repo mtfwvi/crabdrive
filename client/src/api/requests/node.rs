@@ -206,10 +206,7 @@ pub async fn get_path_between_nodes(
 
     let request_method = RequestMethod::GET;
     let body = RequestBody::Empty;
-    let query_parameters = vec![
-        ("from_id".to_string(), from_id.to_string()),
-        ("to_id".to_string(), to_id.to_string()),
-    ];
+    let query_parameters = vec![];
     let auth_token = Some(token);
 
     let response: Response = request(

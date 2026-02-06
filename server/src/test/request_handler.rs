@@ -144,24 +144,14 @@ pub async fn test_path_between_nodes() {
     );
 
     let path_between_nodes_url1 = API_BASE_PATH.to_owned()
-        + &format!(
-            "{}?from_id={}&to_id={}",
-            routes::node::path_between_nodes(UUID::nil(), create_node_request2.node_id),
-            UUID::nil(),
-            create_node_request2.node_id
-        );
+        + &routes::node::path_between_nodes(UUID::nil(), create_node_request2.node_id);
 
     let path_between_nodes_response1 = server.get(&path_between_nodes_url1).await;
 
     let path_between_nodes_url2 = API_BASE_PATH.to_owned()
-        + &format!(
-            "{}?from_id={}&to_id={}",
-            routes::node::path_between_nodes(
-                create_node_request3.node_id,
-                create_node_request2.node_id
-            ),
+        + &routes::node::path_between_nodes(
             create_node_request3.node_id,
-            create_node_request2.node_id
+            create_node_request2.node_id,
         );
 
     let path_between_nodes_response2 = server.get(&path_between_nodes_url2).await;
