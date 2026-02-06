@@ -77,7 +77,6 @@ pub async fn post_commit_file(
 
     let request_method = RequestMethod::POST;
 
-    //TODO if this works with current server routes
     let body = RequestBody::Empty;
     let query_parameters = vec![];
     let auth_token = Some(token);

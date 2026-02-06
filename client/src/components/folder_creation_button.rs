@@ -31,7 +31,11 @@ pub(crate) fn FolderCreationButton(
 
     let creation_action = Action::new_local(move |input: &String| {
         let name = input.to_owned();
-        async move { create_folder(parent_node.get(), name).await.map_err(|err| err.to_string()) }
+        async move {
+            create_folder(parent_node.get(), name)
+                .await
+                .map_err(|err| err.to_string())
+        }
     });
 
     Effect::new(move || {

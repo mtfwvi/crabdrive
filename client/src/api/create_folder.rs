@@ -2,16 +2,13 @@ use crate::api::requests::folder::post_create_folder;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
-use anyhow::{Result, anyhow, Context};
+use anyhow::{Context, Result, anyhow};
 use chrono::Local;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
 
-pub async fn create_folder(
-    parent: DecryptedNode,
-    folder_name: String,
-) -> Result<DecryptedNode> {
+pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result<DecryptedNode> {
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
         last_modified: Local::now().naive_local(),
@@ -52,7 +49,9 @@ pub async fn create_folder(
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
-            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key).await.context("failed to decrypt node")?;
+            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
+                .await
+                .context("failed to decrypt node")?;
 
             Ok(decrypted_node)
         }

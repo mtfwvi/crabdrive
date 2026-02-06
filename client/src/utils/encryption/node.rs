@@ -109,7 +109,6 @@ pub async fn decrypt_node_with_parent(
     };
 
     if key.is_none() {
-        //TODO error handling instead of creating js strings
         return Err(anyhow!("key not found"));
     }
     let key = key.unwrap();

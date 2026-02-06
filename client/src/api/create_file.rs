@@ -135,7 +135,6 @@ async fn upload_file(
         // this does not clone the actual arraybuffer, just the ref to it
         let chunk = chunk.clone();
         async move {
-            // TODO errors are not caught
             encrypt_and_upload_chunk(&chunk, revision.iv, &key, node_id, revision.id, token).await
         }
     })
