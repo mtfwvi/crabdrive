@@ -74,9 +74,9 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                     path.get().last().expect("Failed due to empty path").clone()
                 });
                 let children_res = LocalResource::new(move || {
-                let current_node = current_node.get();
-                async move {get_children(current_node).await.map_err(|err| err.to_string())}
-            } );
+                    let current_node = current_node.get();
+                    async move { get_children(current_node).await.map_err(|err| err.to_string()) }
+                });
 
                 view! {
                     <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
