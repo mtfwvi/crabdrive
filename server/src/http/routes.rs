@@ -16,11 +16,14 @@ use axum::routing::{delete, get, post};
 use crabdrive_common::da;
 use crabdrive_common::routes::*;
 use formatx::formatx;
+use tower_http::services::{ServeDir, ServeFile};
 
 pub fn routes() -> Router<AppState> {
+    let frontend_build =
+        ServeDir::new("./client/dist").fallback(ServeFile::new("./client/dist/index.html"));
+
     Router::new()
-        // Add request handlers here
-        .route("/", get(|| async { "Hello Crabdrive!" }))
+        .fallback_service(frontend_build)
         .merge(nodes_routes())
         .merge(admin_routes())
         .merge(auth_routes())

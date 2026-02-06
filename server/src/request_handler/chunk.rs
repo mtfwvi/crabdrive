@@ -69,7 +69,7 @@ pub async fn get_chunk(
         .get_chunk(file_key, chunk_index, chunk_size);
 
     if let Ok(data) = result {
-        return (StatusCode::CREATED, data.data.to_vec());
+        return (StatusCode::OK, data.data.to_vec());
     }
 
     match result.err().unwrap() {

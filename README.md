@@ -172,8 +172,9 @@ You can also generate a template using `./crabdrive-server --generate-config-tem
 ```
 ## Client
 
-To run the client on its own run `trunk server --open` from `/client`.
-Make sure `trunk` is installed - if not install it with `cargo install trunk` - and add the `wasm32-unknown-unknown` target with `rustup target add wasm32-unknown-unknown`.
+To run the client on its own run `trunk server --open` from `/client` - to build it for serving via the server run `trunk build --release`.
+
+Make sure `trunk` is installed (if not install it with `cargo install trunk`) and add the `wasm32-unknown-unknown` target with `rustup target add wasm32-unknown-unknown`.
 
 Optionally, you can install `leptosfmt` with `cargo install leptosfmt` to more easily format the view macros inside
 leptos.
