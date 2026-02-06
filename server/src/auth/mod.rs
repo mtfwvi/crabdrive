@@ -139,7 +139,7 @@ mod test {
         let decoding_key = DecodingKey::from_secret(secret.as_bytes());
 
         let id = UserId::random();
-        let token = new_bearer_token(id, 3600, &encoding_key).unwrap();
+        let token = new_bearer_token(id, 1, &encoding_key).unwrap();
 
         let claims = decode_bearer_token(&token, &decoding_key).unwrap();
 
