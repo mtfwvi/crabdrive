@@ -47,7 +47,7 @@ pub fn nodes_routes() -> Router<AppState> {
         .route(routes::node::folder::ROUTE_CREATE, post(post_create_folder))
         .route(routes::node::ROUTE_CHILDREN, get(get_node_children))
         .route(
-            routes::node::ROUTE_PATH_BETWEEN, // TODO: FIXME
+            routes::node::ROUTE_PATH_BETWEEN,
             get(get_path_between_nodes),
         )
         .route(routes::node::ROUTE_VERSIONS, get(get_file_versions))
