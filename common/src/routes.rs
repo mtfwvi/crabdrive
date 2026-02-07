@@ -101,7 +101,30 @@ pub mod auth {
     }
 
     pub const ROUTE_LOGOUT: &str = "/api/auth/logout/";
+    /// `/api/auth/logout/`
     pub fn logout() -> String {
         ROUTE_LOGOUT.to_string()
+    }
+
+    pub const ROUTE_INFO: &str = "/api/auth/info/";
+    /// `/api/auth/info/`
+    pub fn info() -> String {
+        ROUTE_INFO.to_string()
+    }
+}
+
+pub mod admin {
+    use crate::user::UserId;
+
+    pub const ROUTE_USER_BY_ID: &str = "/api/admin/user/{id}/";
+    /// `/api/admin/user/{id}/`
+    pub fn user_by_id(id: UserId) -> String {
+        ROUTE_USER_BY_ID.replace("{id}", &id.to_string())
+    }
+
+    pub const ROUTE_USER: &str = "/api/admin/user/";
+    /// `/api/admin/user/{id}/`
+    pub fn user() -> String {
+        ROUTE_USER.to_string()
     }
 }

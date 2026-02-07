@@ -1,5 +1,6 @@
 use crate::http::AppState;
 
+use crate::request_handler::admin::*;
 use crate::request_handler::auth::*;
 use crate::request_handler::chunk::*;
 use crate::request_handler::file::*;
@@ -22,7 +23,7 @@ pub fn routes() -> Router<AppState> {
     Router::new()
         .fallback_service(frontend_build)
         .merge(nodes_routes())
-        // .merge(admin_routes())
+        .merge(admin_routes())
         .merge(auth_routes())
 }
 
@@ -64,13 +65,14 @@ pub fn auth_routes() -> Router<AppState> {
         .route(routes::auth::ROUTE_LOGIN, post(post_login))
         .route(routes::auth::ROUTE_REGISTER, post(post_register))
         .route(routes::auth::ROUTE_LOGOUT, post(post_logout))
+        .route(routes::auth::ROUTE_INFO, get(get_user_info))
 }
 
-// pub fn admin_routes() -> Router<AppState> {
-//     Router::new()
-//         .route(
-//             &formatx!(ADMIN_USER_ROUTE_ID, "{userId}").unwrap(),
-//             get(get_user).delete(delete_user),
-//         )
-//         .route(ADMIN_USER_ROUTE, post(post_user))
-// }
+pub fn admin_routes() -> Router<AppState> {
+    Router::new()
+        .route(
+            routes::admin::ROUTE_USER_BY_ID,
+            get(get_user).delete(delete_user),
+        )
+        .route(routes::admin::ROUTE_USER, post(post_user))
+}

@@ -1,23 +1,27 @@
-use crabdrive_common::iv::IV;
-use diesel::deserialize::{FromSql, FromSqlRow};
-use diesel::expression::AsExpression;
-use diesel::serialize::ToSql;
-use diesel::sql_types::Binary;
-use diesel::sqlite::Sqlite;
+use crate::iv::IV;
+#[cfg(feature = "server")]
+use diesel::{
+    deserialize::{FromSql, FromSqlRow},
+    expression::AsExpression,
+    serialize::ToSql,
+    sql_types::Binary,
+    sqlite::Sqlite,
+};
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, FromSqlRow, AsExpression, Clone)]
-#[diesel(sql_type = Binary)]
-pub(crate) struct EncryptionKey {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
+#[cfg_attr(feature = "server", diesel(sql_type = Binary))]
+pub struct EncryptionKey {
     key: Vec<u8>,
     iv: IV,
 }
 impl EncryptionKey {
-    pub(crate) fn new(key: Vec<u8>, iv: IV) -> Self {
+    pub fn new(key: Vec<u8>, iv: IV) -> Self {
         Self { key, iv }
     }
 
-    pub(crate) fn nil() -> Self {
+    pub fn nil() -> Self {
         Self {
             key: Vec::new(),
             iv: IV::new([0u8; 12]),
@@ -25,6 +29,7 @@ impl EncryptionKey {
     }
 }
 
+#[cfg(feature = "server")]
 impl ToSql<Binary, Sqlite> for EncryptionKey {
     fn to_sql<'b>(
         &'b self,
@@ -40,6 +45,7 @@ impl ToSql<Binary, Sqlite> for EncryptionKey {
     }
 }
 
+#[cfg(feature = "server")]
 impl FromSql<Binary, Sqlite> for EncryptionKey {
     fn from_sql(
         bytes: <Sqlite as diesel::backend::Backend>::RawValue<'_>,
