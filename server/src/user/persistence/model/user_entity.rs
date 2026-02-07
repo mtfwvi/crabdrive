@@ -1,6 +1,6 @@
-use crate::user::persistence::model::encryption_key::EncryptionKey;
 use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
+use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::{UserId, UserType};
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};

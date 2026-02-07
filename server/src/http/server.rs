@@ -4,19 +4,21 @@ use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
-use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
 
 use chrono::Local;
 use crabdrive_common::uuid::UUID;
 use http_body_util::Full;
 
+use crate::auth::secrets::Keys;
+use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;
 use axum::response::Response;
 use bytes::Bytes;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::encryption_key::EncryptionKey;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::any::Any;
 use std::io::ErrorKind;
@@ -41,6 +43,9 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
+    let user_repository = UserState::new(Arc::new(pool.clone()));
+
+    let keys = Keys::new(&config.auth.jwt_secret);
 
     let state = AppState::new(
         config.clone(),
@@ -48,6 +53,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         vfs,
         node_repository,
         revision_repository,
+        user_repository,
+        keys,
     );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");

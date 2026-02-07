@@ -1,3 +1,4 @@
+use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
@@ -5,8 +6,8 @@ use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
-use crate::user::persistence::model::encryption_key::EncryptionKey;
 use crate::user::persistence::model::user_entity::UserEntity;
+use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
@@ -14,7 +15,15 @@ use bytes::Bytes;
 use chrono::Local;
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::iv::IV;
+use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
+use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
+use crabdrive_common::payloads::auth::response::info::GetSelfInfoResponse;
+use crabdrive_common::payloads::auth::response::login::{PostLoginResponse, UserKeys};
+use crabdrive_common::payloads::auth::response::register::{
+    PostRegisterResponse, RegisterConflictReason,
+};
 use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::file::CommitFileError::AlreadyCommitted;
@@ -26,8 +35,8 @@ use crabdrive_common::payloads::node::response::node::{
     GetNodeResponse, GetPathBetweenNodesResponse,
 };
 use crabdrive_common::routes::{
-    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, NODE_ROUTE_NODEID,
-    PATH_BETWEEN_NODES_ROUTE,
+    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, LOGIN_ROUTE,
+    NODE_ROUTE_NODEID, PATH_BETWEEN_NODES_ROUTE, REGISTER_ROUTE, USER_INFO_ROUTE,
 };
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
@@ -49,6 +58,60 @@ pub fn random_metadata() -> EncryptedMetadata {
     rand::rng().fill_bytes(&mut iv_bytes);
     let iv = IV::new(iv_bytes);
     EncryptedMetadata::new(data, iv)
+}
+
+#[tokio::test]
+pub async fn test_register() {
+    let server = get_server();
+
+    let username = "test_user";
+    let password = "test_password";
+
+    let register = PostRegisterRequest {
+        username: username.to_string(),
+        password: password.to_string(),
+        keys: UserKeys::nil(),
+    };
+
+    let register_url = API_BASE_PATH.to_owned() + REGISTER_ROUTE;
+
+    let register_request = server.post(&register_url).json(&register).await;
+    let register_response: PostRegisterResponse = register_request.json();
+    assert_eq!(register_response, PostRegisterResponse::Created);
+
+    let register_request2 = server.post(&register_url).json(&register).await;
+    let register_response2: PostRegisterResponse = register_request2.json();
+    assert_eq!(
+        register_response2,
+        PostRegisterResponse::Conflict(RegisterConflictReason::UsernameTaken)
+    );
+
+    let login = PostLoginRequest {
+        username: username.to_string(),
+        password: password.to_string(),
+    };
+
+    let login_url = API_BASE_PATH.to_owned() + LOGIN_ROUTE;
+
+    let login_request = server.post(&login_url).json(&login).await;
+    let login_response: PostLoginResponse = login_request.json();
+
+    if let PostLoginResponse::Ok(response) = login_response {
+        let jwt = response.bearer_token;
+
+        let user_info_url = API_BASE_PATH.to_owned() + USER_INFO_ROUTE;
+        let user_info_request = server
+            .get(&user_info_url)
+            .add_header("Authorization", format!("Bearer {}", jwt))
+            .await;
+
+        let user_info_response: GetSelfInfoResponse = user_info_request.json();
+
+        let GetSelfInfoResponse::Ok(info) = user_info_response;
+        assert_eq!(info.username, username.to_string());
+    } else {
+        unreachable!("login_response should be OK");
+    }
 }
 
 #[tokio::test]
@@ -297,6 +360,9 @@ pub fn get_server() -> TestServer {
 
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
+    let user_repository = UserState::new(Arc::new(pool.clone()));
+
+    let keys = Keys::new(&config.auth.jwt_secret);
 
     let state = AppState::new(
         config.clone(),
@@ -304,6 +370,8 @@ pub fn get_server() -> TestServer {
         vfs,
         node_repository,
         revision_repository,
+        user_repository,
+        keys,
     );
 
     prepare_db(&state);

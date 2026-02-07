@@ -1,6 +1,6 @@
 use crate::http::AppState;
 use crate::request_handler::admin::{delete_user, get_user, post_user};
-use crate::request_handler::auth::{post_login, post_logout, post_register};
+use crate::request_handler::auth::{get_user_info, post_login, post_logout, post_register};
 use crate::request_handler::chunk::{get_chunk, post_chunk};
 use crate::request_handler::file::{
     get_file_versions, post_commit_file, post_create_file, post_update_file,
@@ -88,6 +88,7 @@ pub fn auth_routes() -> Router<AppState> {
         .route(LOGIN_ROUTE, post(post_login))
         .route(REGISTER_ROUTE, post(post_register))
         .route(LOGOUT_ROUTE, post(post_logout))
+        .route(USER_INFO_ROUTE, get(get_user_info))
 }
 
 pub fn admin_routes() -> Router<AppState> {

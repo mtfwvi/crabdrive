@@ -35,6 +35,17 @@ pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntit
     })
 }
 
+pub fn select_user_by_username(db_pool: &DbPool, username: &str) -> Result<Option<UserEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let user = UserDsl::User
+            .filter(UserDsl::username.eq(username))
+            .first::<UserEntity>(conn)
+            .optional()?;
+        Ok(user)
+    })
+}
+
 pub fn insert_user(db_pool: &DbPool, user: &UserEntity) -> Result<()> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
@@ -45,14 +56,15 @@ pub fn insert_user(db_pool: &DbPool, user: &UserEntity) -> Result<()> {
     })
 }
 
-pub fn update_user(db_pool: &DbPool, user: &UserEntity) -> Result<()> {
+pub fn update_user(db_pool: &DbPool, user: &UserEntity) -> Result<UserEntity> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
-        diesel::update(UserDsl::User)
+        let updated = diesel::update(UserDsl::User)
             .filter(UserDsl::id.eq(user.id))
             .set(user)
-            .execute(conn)?;
-        Ok(())
+            .returning(UserEntity::as_select())
+            .get_result(conn)?;
+        Ok(updated)
     })
 }
 
@@ -105,7 +117,7 @@ pub fn insert_node(
         // In Parent-Node: Update metadata and increase Metadata-Counter by 1
         // Skip this, if ID is nil, since it is the global root node
         // TODO: Remove when adding auth
-        if node.id != UUID::nil() {
+        if node.id != UUID::nil() && node.parent_id.is_some() {
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(node.parent_id.unwrap()))
                 .set((
