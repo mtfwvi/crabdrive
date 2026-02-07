@@ -27,7 +27,9 @@ tower-http = {workspace = true, features = ["fs", "cors", "catch-panic"]}
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "fmt", "json"] }
 tracing-appender = { workspace = true }
-
+jsonwebtoken = { workspace = true, features = ["rust_crypto"]}
+axum-extra = { workspace = true, features = ["typed-header"]}
+argon2 = { workspace = true, features = ["alloc"]}
 
 [dev-dependencies]
 axum-test = { workspace = true }

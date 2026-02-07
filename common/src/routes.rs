@@ -41,6 +41,8 @@ pub const REGISTER_ROUTE: &str = "/api/auth/register";
 
 pub const LOGOUT_ROUTE: &str = "/api/auth/logout";
 
+pub const USER_INFO_ROUTE: &str = "/api/auth/info";
+
 /// - user_id
 pub const ADMIN_USER_ROUTE_ID: &str = "/api/admin/user/{}";
 
