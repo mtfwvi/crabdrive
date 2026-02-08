@@ -15,7 +15,6 @@ crabdrive-common = { workspace = true, features = ["server"] }
 diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { workspace = true }
 dotenvy = { workspace = true }
-formatx = { workspace = true }
 http-body-util = { workspace = true }
 libsqlite3-sys = { workspace = true } # Needed implicitly by Diesel
 nanoid = { workspace = true }

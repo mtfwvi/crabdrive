@@ -1,7 +1,7 @@
 use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
-use crate::http::{AppConfig, AppState, routes};
+use crate::http::{AppConfig, AppState};
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
@@ -10,6 +10,7 @@ use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
 use bytes::Bytes;
+
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
@@ -30,19 +31,17 @@ use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse
 use crabdrive_common::payloads::node::response::node::{
     GetNodeResponse, GetPathBetweenNodesResponse,
 };
-use crabdrive_common::routes::{
-    CHUNK_ROUTE, COMMIT_FILE_ROUTE, CREATE_FILE_ROUTE, CREATE_FOLDER_ROUTE, LOGIN_ROUTE,
-    NODE_ROUTE_NODEID, PATH_BETWEEN_NODES_ROUTE, REGISTER_ROUTE, USER_INFO_ROUTE,
-};
+use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
+use std::path::PathBuf;
+use std::sync::Arc;
+
+use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-use formatx::formatx;
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use std::path::PathBuf;
-use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
@@ -71,7 +70,7 @@ pub async fn test_register() {
         keys: UserKeys::nil(),
     };
 
-    let register_url = API_BASE_PATH.to_owned() + REGISTER_ROUTE;
+    let register_url = API_BASE_PATH.to_owned() + &routes::auth::register();
 
     let register_request = server.post(&register_url).json(&register).await;
     let register_response: PostRegisterResponse = register_request.json();
@@ -89,7 +88,7 @@ pub async fn test_register() {
         password: password.to_string(),
     };
 
-    let login_url = API_BASE_PATH.to_owned() + LOGIN_ROUTE;
+    let login_url = API_BASE_PATH.to_owned() + &routes::auth::login();
 
     let login_request = server.post(&login_url).json(&login).await;
     let login_response: PostLoginResponse = login_request.json();
@@ -97,7 +96,7 @@ pub async fn test_register() {
     if let PostLoginResponse::Ok(response) = login_response {
         let jwt = response.bearer_token;
 
-        let user_info_url = API_BASE_PATH.to_owned() + USER_INFO_ROUTE;
+        let user_info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
         let user_info_request = server
             .get(&user_info_url)
             .add_header("Authorization", format!("Bearer {}", jwt))
@@ -119,7 +118,7 @@ pub async fn test_folder() {
     let (jwt, root_node_id) = login(&server).await;
 
     let get_user_info_request = server
-        .get(USER_INFO_ROUTE)
+        .get(routes::auth::ROUTE_INFO)
         .add_header("Authorization", format!("Bearer {}", jwt))
         .await;
 
@@ -137,7 +136,7 @@ pub async fn test_folder() {
         node_id,
     };
 
-    let url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, root_node_id).unwrap();
+    let url = API_BASE_PATH.to_owned() + &routes::node::folder::create(root_node_id);
 
     let test_request = server
         .post(&url)
@@ -188,7 +187,7 @@ pub async fn test_path_between_nodes() {
     };
 
     let create_folder_in_root_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, root_node_id).unwrap();
+        API_BASE_PATH.to_owned() + &routes::node::folder::create(root_node_id);
     let create_node_request1_response = server
         .post(&create_folder_in_root_url)
         .add_header("Authorization", format!("Bearer {}", jwt))
@@ -200,8 +199,8 @@ pub async fn test_path_between_nodes() {
         StatusCode::CREATED
     );
 
-    let create_folder_url = API_BASE_PATH.to_owned()
-        + &formatx!(CREATE_FOLDER_ROUTE, create_node_request1.node_id).unwrap();
+    let create_folder_url =
+        API_BASE_PATH.to_owned() + &routes::node::folder::create(create_node_request1.node_id);
 
     let create_node_request2_response = server
         .post(&create_folder_url)
@@ -224,26 +223,19 @@ pub async fn test_path_between_nodes() {
     );
 
     let path_between_nodes_url1 = API_BASE_PATH.to_owned()
-        + &formatx!(
-            "{}?from_id={}&to_id={}",
-            PATH_BETWEEN_NODES_ROUTE,
-            root_node_id,
-            create_node_request2.node_id
-        )
-        .unwrap();
+        + &routes::node::path_between_nodes(root_node_id, create_node_request2.node_id);
+
     let path_between_nodes_response1 = server
         .get(&path_between_nodes_url1)
         .add_header("Authorization", format!("Bearer {}", jwt))
         .await;
 
     let path_between_nodes_url2 = API_BASE_PATH.to_owned()
-        + &formatx!(
-            "{}?from_id={}&to_id={}",
-            PATH_BETWEEN_NODES_ROUTE,
+        + &routes::node::path_between_nodes(
             create_node_request3.node_id,
-            create_node_request2.node_id
-        )
-        .unwrap();
+            create_node_request2.node_id,
+        );
+
     let path_between_nodes_response2 = server
         .get(&path_between_nodes_url2)
         .add_header("Authorization", format!("Bearer {}", jwt))
@@ -284,8 +276,7 @@ pub async fn test_file() {
         node_id,
     };
 
-    let create_file_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, root_node_id).unwrap();
+    let create_file_url = API_BASE_PATH.to_owned() + &routes::node::file::create(root_node_id);
 
     let test_request = server
         .post(&create_file_url)
@@ -322,9 +313,9 @@ pub async fn test_file() {
     let chunk2 = Bytes::from(chunk2);
 
     let chunk_url1 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 1).unwrap();
+        + &routes::node::chunks(create_node_request.node_id, revision.id, 1);
     let chunk_url2 = API_BASE_PATH.to_owned()
-        + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
+        + &routes::node::chunks(create_node_request.node_id, revision.id, 2);
 
     let chunk1_response = server
         .post(&chunk_url1)
@@ -341,7 +332,7 @@ pub async fn test_file() {
     assert_eq!(chunk2_response.status_code(), StatusCode::CREATED);
 
     let commit_file_url = API_BASE_PATH.to_owned()
-        + &formatx!(COMMIT_FILE_ROUTE, create_node_request.node_id, revision.id).unwrap();
+        + &routes::node::file::commit(create_node_request.node_id, revision.id);
 
     let commit_file_response: PostCommitFileResponse = server
         .post(&commit_file_url)
@@ -359,8 +350,7 @@ pub async fn test_file() {
 
     assert_eq!(node.current_revision.as_ref().unwrap().id, revision.id);
 
-    let get_node_url = API_BASE_PATH.to_owned()
-        + &formatx!(NODE_ROUTE_NODEID, create_node_request.node_id).unwrap();
+    let get_node_url = API_BASE_PATH.to_owned() + &routes::node::by_id(create_node_request.node_id);
 
     let node_response: GetNodeResponse = server
         .get(&get_node_url)
@@ -434,7 +424,7 @@ pub async fn get_server() -> TestServer {
     prepare_db(&state);
 
     let app = Router::<AppState>::new()
-        .merge(routes::routes())
+        .merge(crate::http::routes::routes())
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
         .layer(CatchPanicLayer::custom(crate::http::server::handle_panic));
@@ -448,7 +438,7 @@ pub async fn get_server() -> TestServer {
     };
 
     let register_response = server
-        .post(REGISTER_ROUTE)
+        .post(ROUTE_REGISTER)
         .json(&register_admin_request_body)
         .await;
 
@@ -462,52 +452,6 @@ fn prepare_db(state: &AppState) {
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
     let mut conn = state.db_pool.get().unwrap();
     conn.run_pending_migrations(MIGRATIONS).unwrap();
-
-    // HACK: Create a root node with a zeroed UUID, if it's not already existing.
-    // TODO: Remove when adding auth!
-
-    // if crate::db::operations::select_user(&state.db_pool, UUID::nil())
-    //     .unwrap()
-    //     .is_none()
-    // {
-    //     let system_user = UserEntity {
-    //         id: UUID::nil(),
-    //         username: "system".to_string(),
-    //         user_type: crabdrive_common::user::UserType::Admin,
-    //         created_at: Local::now().naive_local(),
-    //         password_hash: "".to_string(),
-    //         storage_limit: da!(500 MB),
-    //         encryption_uninitialized: false,
-    //         master_key: EncryptionKey::nil(),
-    //         private_key: EncryptionKey::nil(),
-    //         public_key: vec![],
-    //         root_key: EncryptionKey::nil(),
-    //         root_node: None,
-    //         trash_key: EncryptionKey::nil(),
-    //         trash_node: None,
-    //     };
-    //
-    //     crate::db::operations::insert_user(&state.db_pool, &system_user).unwrap();
-    // }
-
-    // if crate::db::operations::select_node(&state.db_pool, UUID::nil())
-    //     .unwrap()
-    //     .is_none()
-    // {
-    //     let node = NodeEntity {
-    //         id: UUID::nil(),
-    //         owner_id: UUID::nil(),
-    //         parent_id: None,
-    //         metadata: EncryptedMetadata::nil(),
-    //         deleted_on: None,
-    //         current_revision: None,
-    //         metadata_change_counter: 0,
-    //         node_type: NodeType::Folder,
-    //     };
-    //
-    //     crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
-    //         .unwrap();
-    // }
 }
 
 pub async fn login(server: &TestServer) -> (String, NodeId) {
@@ -516,9 +460,12 @@ pub async fn login(server: &TestServer) -> (String, NodeId) {
         password: TEST_PASSWORD.to_string(),
     };
 
-    let login_url = API_BASE_PATH.to_owned() + LOGIN_ROUTE;
+    let login_url = API_BASE_PATH.to_owned() + ROUTE_LOGIN;
 
     let login_request = server.post(&login_url).json(&login).await;
+
+    println!("login: {:?}", login_request);
+
     let login_response: PostLoginResponse = login_request.json();
 
     if let PostLoginResponse::Ok(response) = login_response {
