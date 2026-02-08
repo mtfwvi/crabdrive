@@ -7,7 +7,6 @@ use crabdrive_common::payloads::node::response::file::{
     GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
 use crabdrive_common::storage::{NodeId, RevisionId};
-use formatx::formatx;
 use web_sys::Response;
 
 pub async fn post_create_file(
@@ -15,7 +14,7 @@ pub async fn post_create_file(
     body: PostCreateFileRequest,
     token: &String,
 ) -> Result<PostCreateFileResponse> {
-    let url = formatx!(crabdrive_common::routes::CREATE_FILE_ROUTE, parent_id)?;
+    let url = crabdrive_common::routes::node::file::create(parent_id);
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Json(serde_json::to_string(&body)?);
@@ -42,7 +41,7 @@ pub async fn post_update_file(
     body: PostUpdateFileRequest,
     token: &String,
 ) -> Result<PostUpdateFileResponse> {
-    let url = formatx!(crabdrive_common::routes::UPDATE_FILE_ROUTE, node_id)?;
+    let url = crabdrive_common::routes::node::file::update(node_id);
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Json(serde_json::to_string(&body)?);
@@ -69,11 +68,7 @@ pub async fn post_commit_file(
     version_id: RevisionId,
     token: &String,
 ) -> Result<PostCommitFileResponse> {
-    let url = formatx!(
-        crabdrive_common::routes::COMMIT_FILE_ROUTE,
-        node_id,
-        version_id
-    )?;
+    let url = crabdrive_common::routes::node::file::commit(node_id, version_id);
 
     let request_method = RequestMethod::POST;
 
@@ -97,7 +92,7 @@ pub async fn post_commit_file(
 }
 
 pub async fn get_file_versions(node_id: NodeId, token: &String) -> Result<GetVersionsResponse> {
-    let url = formatx!(crabdrive_common::routes::NODE_VERSIONS_ROUTE, node_id)?;
+    let url = crabdrive_common::routes::node::versions(node_id);
 
     let request_method = RequestMethod::GET;
     let body = RequestBody::Empty;

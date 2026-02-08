@@ -1,7 +1,6 @@
 use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
 use anyhow::{Result, anyhow};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use formatx::formatx;
 use web_sys::Response;
 use web_sys::js_sys::Uint8Array;
 
@@ -26,12 +25,7 @@ pub async fn get_chunk(
     chunk_index: ChunkIndex,
     token: &String,
 ) -> Result<GetChunkResponse> {
-    let url = formatx!(
-        crabdrive_common::routes::CHUNK_ROUTE,
-        node_id,
-        version_id,
-        chunk_index
-    )?;
+    let url = crabdrive_common::routes::node::chunks(node_id, version_id, chunk_index);
 
     let request_method = RequestMethod::GET;
     let body = RequestBody::Empty;
@@ -47,6 +41,7 @@ pub async fn get_chunk(
         true,
     )
     .await?;
+
     let parsed_response = match response.status() {
         200 => GetChunkResponse::Ok(uint8array_from_response(response).await?),
         404 => GetChunkResponse::NotFound,
@@ -68,12 +63,7 @@ pub async fn post_chunk(
     body: Uint8Array,
     token: &String,
 ) -> Result<PostChunkResponse> {
-    let url = formatx!(
-        crabdrive_common::routes::CHUNK_ROUTE,
-        node_id,
-        version_id,
-        chunk_index
-    )?;
+    let url = crabdrive_common::routes::node::chunks(node_id, version_id, chunk_index);
 
     let request_method = RequestMethod::POST;
     let body = RequestBody::Bytes(body);
@@ -89,6 +79,7 @@ pub async fn post_chunk(
         true,
     )
     .await?;
+
     let parsed_response = match response.status() {
         201 => PostChunkResponse::Created,
         404 => PostChunkResponse::NotFound,
