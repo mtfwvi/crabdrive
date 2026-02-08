@@ -2,9 +2,10 @@ use crate::http::AppState;
 use crate::request_handler::node::{entity_to_encrypted_node, entity_to_file_revision};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::vfs::model::new_filekey;
-use axum::Json;
+use crate::user::persistence::model::user_entity::UserEntity;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
+use axum::Json;
 use chrono::Utc;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
@@ -17,9 +18,9 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
-use crabdrive_common::uuid::UUID;
 
 pub async fn post_create_file(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(parent_id): Path<NodeId>,
     Json(payload): Json<PostCreateFileRequest>,
@@ -34,6 +35,13 @@ pub async fn post_create_file(
     }
 
     let parent_node = parent_node.unwrap();
+
+    if parent_node.owner_id != current_user.id  {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostCreateFileResponse::NotFound),
+        );
+    }
 
     // a file cannot have children
     if parent_node.node_type != NodeType::Folder {
@@ -64,7 +72,7 @@ pub async fn post_create_file(
         .create_node(
             Some(parent_id),
             payload.node_metadata,
-            UUID::nil(),
+            current_user.id,
             NodeType::File,
             payload.node_id,
         )
@@ -108,6 +116,7 @@ pub async fn post_create_file(
 }
 
 pub async fn post_update_file(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(file_id): Path<NodeId>,
     Json(payload): Json<PostUpdateFileRequest>,
@@ -122,6 +131,13 @@ pub async fn post_update_file(
     }
 
     let node_entity = node_entity.unwrap();
+
+    if node_entity.owner_id != current_user.id  {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostUpdateFileResponse::NotFound),
+        );
+    }
 
     if node_entity.node_type != NodeType::File {
         return (
@@ -158,6 +174,7 @@ pub async fn post_update_file(
 }
 
 pub async fn post_commit_file(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path((file_id, revision_id)): Path<(NodeId, RevisionId)>,
 ) -> (StatusCode, Json<PostCommitFileResponse>) {
@@ -175,6 +192,14 @@ pub async fn post_commit_file(
     }
 
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
+
+    // check if node belongs to user and if the revision belongs to the node
+    if node_entity.owner_id != current_user.id || revision.file_id != node_entity.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostCommitFileResponse::NotFound),
+        );
+    }
 
     if revision.upload_ended_on.is_some() {
         return (
@@ -229,12 +254,13 @@ pub async fn post_commit_file(
 }
 
 pub async fn get_file_versions(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(file_id): Path<NodeId>,
 ) -> (StatusCode, Json<GetVersionsResponse>) {
     let node_entity = state.node_repository.get_node(file_id).expect("db error");
 
-    if node_entity.is_none() {
+    if node_entity.is_none() || node_entity.unwrap().owner_id != current_user.id  {
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 

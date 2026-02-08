@@ -1,8 +1,8 @@
 use std::vec;
 
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -16,6 +16,7 @@ use crabdrive_common::payloads::node::response::node::{
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use crate::user::persistence::model::user_entity::UserEntity;
 use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
 
@@ -32,21 +33,28 @@ pub async fn delete_node(
 }
 
 pub async fn get_node(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
 ) -> (StatusCode, Json<GetNodeResponse>) {
-    let node_entity = state.node_repository.get_node(node_id);
+    let node_entity = state.node_repository.get_node(node_id).expect("db error");
 
-    if node_entity.as_ref().unwrap().is_none() {
+    if node_entity.is_none(){
+        return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
+    }
+    let node_entity = node_entity.unwrap();
+
+    if node_entity.owner_id != current_user.id {
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
 
-    let node = entity_to_encrypted_node(node_entity.unwrap().unwrap(), &state).unwrap();
+    let node = entity_to_encrypted_node(node_entity, &state).unwrap();
 
     (StatusCode::OK, Json(GetNodeResponse::Ok(node)))
 }
 
 pub async fn patch_node(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
     Json(payload): Json<PatchNodeRequest>,
@@ -59,18 +67,22 @@ pub async fn patch_node(
         return (StatusCode::NOT_FOUND, Json(PatchNodeResponse::NotFound));
     }
 
-    let node = node.unwrap();
+    let node_entity = node.unwrap();
+
+    if node_entity.owner_id != current_user.id {
+        return (StatusCode::NOT_FOUND, Json(PatchNodeResponse::NotFound));
+    }
 
     // TODO this should happen in one transaction as it it could lead to updates being lost
     // (which is bad)
-    if node.metadata_change_counter != payload.node_change_count {
+    if node_entity.metadata_change_counter != payload.node_change_count {
         return (StatusCode::CONFLICT, Json(PatchNodeResponse::Conflict));
     }
 
     let updated_node = NodeEntity {
         metadata: payload.node_metadata,
-        metadata_change_counter: node.metadata_change_counter + 1,
-        ..node
+        metadata_change_counter: node_entity.metadata_change_counter + 1,
+        ..node_entity
     };
 
     let updated_node_entity = state
@@ -83,6 +95,7 @@ pub async fn patch_node(
 }
 
 pub async fn post_move_node(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
     Json(payload): Json<PostMoveNodeRequest>,
@@ -92,6 +105,10 @@ pub async fn post_move_node(
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
     let node = node.unwrap();
+
+    if node.owner_id != current_user.id {
+        return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
+    }
 
     let to_node = state
         .node_repository
@@ -106,6 +123,10 @@ pub async fn post_move_node(
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
     let (to_node, from_node) = (to_node.unwrap(), from_node.unwrap());
+
+    if to_node.owner_id != current_user.id || from_node.owner_id != current_user.id {
+        return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
+    }
 
     //TODO check version (in one transaction)
 
@@ -147,6 +168,7 @@ pub async fn post_move_node_out_of_trash(
 }
 
 pub async fn get_path_between_nodes(
+    current_user: UserEntity,
     State(state): State<AppState>,
     path_constraints: Query<PathConstraints>,
 ) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
@@ -190,22 +212,27 @@ pub async fn get_path_between_nodes(
         path.push(parent);
     }
 
-    let path = path
+    let path: Vec<EncryptedNode> = path
         .into_iter()
         .map(|node_entity| entity_to_encrypted_node(node_entity.clone(), &state).unwrap())
         .rev()
         .collect();
 
+    if path[0].owner_id != current_user.id || path.last().unwrap().owner_id != current_user.id {
+        return (StatusCode::NOT_FOUND, Json(GetPathBetweenNodesResponse::NotFound))
+    }
+
     (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))
 }
 
 pub async fn get_node_children(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(parent_id): Path<NodeId>,
 ) -> (StatusCode, Json<GetNodeChildrenResponse>) {
-    let node = state.node_repository.get_node(parent_id);
+    let node = state.node_repository.get_node(parent_id).expect("db error");
 
-    if node.unwrap().is_none() {
+    if node.as_ref().is_none() || node.unwrap().owner_id != current_user.id {
         return (
             StatusCode::NOT_FOUND,
             Json(GetNodeChildrenResponse::NotFound),
