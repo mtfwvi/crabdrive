@@ -3,9 +3,9 @@ use crate::request_handler::node::{entity_to_encrypted_node, entity_to_file_revi
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::vfs::model::new_filekey;
 use crate::user::persistence::model::user_entity::UserEntity;
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::Json;
 use chrono::Utc;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
@@ -36,7 +36,7 @@ pub async fn post_create_file(
 
     let parent_node = parent_node.unwrap();
 
-    if parent_node.owner_id != current_user.id  {
+    if parent_node.owner_id != current_user.id {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFileResponse::NotFound),
@@ -132,7 +132,7 @@ pub async fn post_update_file(
 
     let node_entity = node_entity.unwrap();
 
-    if node_entity.owner_id != current_user.id  {
+    if node_entity.owner_id != current_user.id {
         return (
             StatusCode::NOT_FOUND,
             Json(PostUpdateFileResponse::NotFound),
@@ -260,7 +260,7 @@ pub async fn get_file_versions(
 ) -> (StatusCode, Json<GetVersionsResponse>) {
     let node_entity = state.node_repository.get_node(file_id).expect("db error");
 
-    if node_entity.is_none() || node_entity.unwrap().owner_id != current_user.id  {
+    if node_entity.is_none() || node_entity.unwrap().owner_id != current_user.id {
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 

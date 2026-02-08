@@ -1,8 +1,8 @@
 use std::vec;
 
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -39,7 +39,7 @@ pub async fn get_node(
 ) -> (StatusCode, Json<GetNodeResponse>) {
     let node_entity = state.node_repository.get_node(node_id).expect("db error");
 
-    if node_entity.is_none(){
+    if node_entity.is_none() {
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
     let node_entity = node_entity.unwrap();
@@ -219,7 +219,10 @@ pub async fn get_path_between_nodes(
         .collect();
 
     if path[0].owner_id != current_user.id || path.last().unwrap().owner_id != current_user.id {
-        return (StatusCode::NOT_FOUND, Json(GetPathBetweenNodesResponse::NotFound))
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetPathBetweenNodesResponse::NotFound),
+        );
     }
 
     (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))

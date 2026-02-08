@@ -2,20 +2,16 @@ use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
-use crate::user::persistence::model::user_entity::UserEntity;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
 use bytes::Bytes;
-use chrono::Local;
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
@@ -50,6 +46,8 @@ use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
+const TEST_USERNAME: &str = "admin";
+const TEST_PASSWORD: &str = "admin";
 
 pub fn random_metadata() -> EncryptedMetadata {
     let mut data = vec![0; 6403];
@@ -62,7 +60,7 @@ pub fn random_metadata() -> EncryptedMetadata {
 
 #[tokio::test]
 pub async fn test_register() {
-    let server = get_server();
+    let server = get_server().await;
 
     let username = "test_user";
     let password = "test_password";
@@ -116,7 +114,17 @@ pub async fn test_register() {
 
 #[tokio::test]
 pub async fn test_folder() {
-    let server = get_server();
+    let server = get_server().await;
+
+    let (jwt, root_node_id) = login(&server).await;
+
+    let get_user_info_request = server
+        .get(USER_INFO_ROUTE)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+
+    let GetSelfInfoResponse::Ok(info) = get_user_info_request.json();
+    let self_id = info.user_id;
 
     let parent_metadata = random_metadata();
     let node_metadata = random_metadata();
@@ -129,17 +137,22 @@ pub async fn test_folder() {
         node_id,
     };
 
-    let url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
+    let url = API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, root_node_id).unwrap();
 
-    let test_request = server.post(&url).json(&create_node_request).await;
+    let test_request = server
+        .post(&url)
+        .json(&create_node_request)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
 
+    assert_eq!(test_request.status_code(), StatusCode::CREATED);
     let create_folder_response: PostCreateFolderResponse = test_request.json();
 
     let expected_response = PostCreateFolderResponse::Created(EncryptedNode {
         id: node_id,
         change_count: 0,
-        parent_id: Some(UUID::nil()),
-        owner_id: UUID::nil(),
+        parent_id: Some(root_node_id),
+        owner_id: self_id,
         deleted_on: None,
         node_type: NodeType::Folder,
         current_revision: None,
@@ -151,8 +164,8 @@ pub async fn test_folder() {
 
 #[tokio::test]
 pub async fn test_path_between_nodes() {
-    let server = get_server();
-
+    let server = get_server().await;
+    let (jwt, root_node_id) = login(&server).await;
     let create_node_request1 = PostCreateFolderRequest {
         parent_metadata_version: 0,
         parent_metadata: random_metadata(),
@@ -175,9 +188,10 @@ pub async fn test_path_between_nodes() {
     };
 
     let create_folder_in_root_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, UUID::nil()).unwrap();
+        API_BASE_PATH.to_owned() + &formatx!(CREATE_FOLDER_ROUTE, root_node_id).unwrap();
     let create_node_request1_response = server
         .post(&create_folder_in_root_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
         .json(&create_node_request1)
         .await;
 
@@ -191,6 +205,7 @@ pub async fn test_path_between_nodes() {
 
     let create_node_request2_response = server
         .post(&create_folder_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
         .json(&create_node_request2)
         .await;
     assert_eq!(
@@ -200,6 +215,7 @@ pub async fn test_path_between_nodes() {
 
     let create_node_request3_response = server
         .post(&create_folder_in_root_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
         .json(&create_node_request3)
         .await;
     assert_eq!(
@@ -211,11 +227,14 @@ pub async fn test_path_between_nodes() {
         + &formatx!(
             "{}?from_id={}&to_id={}",
             PATH_BETWEEN_NODES_ROUTE,
-            UUID::nil(),
+            root_node_id,
             create_node_request2.node_id
         )
         .unwrap();
-    let path_between_nodes_response1 = server.get(&path_between_nodes_url1).await;
+    let path_between_nodes_response1 = server
+        .get(&path_between_nodes_url1)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
 
     let path_between_nodes_url2 = API_BASE_PATH.to_owned()
         + &formatx!(
@@ -225,11 +244,14 @@ pub async fn test_path_between_nodes() {
             create_node_request2.node_id
         )
         .unwrap();
-    let path_between_nodes_response2 = server.get(&path_between_nodes_url2).await;
+    let path_between_nodes_response2 = server
+        .get(&path_between_nodes_url2)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
 
     match path_between_nodes_response1.json::<GetPathBetweenNodesResponse>() {
         GetPathBetweenNodesResponse::Ok(path) => {
-            assert_eq!(path[0].id, UUID::nil());
+            assert_eq!(path[0].id, root_node_id);
             assert_eq!(path[1].id, create_node_request1.node_id);
             assert_eq!(path[2].id, create_node_request2.node_id);
         }
@@ -246,7 +268,8 @@ pub async fn test_path_between_nodes() {
 
 #[tokio::test]
 pub async fn test_file() {
-    let server = get_server();
+    let server = get_server().await;
+    let (jwt, root_node_id) = login(&server).await;
 
     let parent_metadata = random_metadata();
     let node_metadata = random_metadata();
@@ -262,13 +285,15 @@ pub async fn test_file() {
     };
 
     let create_file_url =
-        API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, UUID::nil()).unwrap();
+        API_BASE_PATH.to_owned() + &formatx!(CREATE_FILE_ROUTE, root_node_id).unwrap();
 
     let test_request = server
         .post(&create_file_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
         .json(&create_node_request)
         .await;
 
+    assert_eq!(test_request.status_code(), StatusCode::CREATED);
     let create_file_response: PostCreateFileResponse = test_request.json();
 
     let revision;
@@ -301,16 +326,28 @@ pub async fn test_file() {
     let chunk_url2 = API_BASE_PATH.to_owned()
         + &formatx!(CHUNK_ROUTE, create_node_request.node_id, revision.id, 2).unwrap();
 
-    let chunk1_response = server.post(&chunk_url1).bytes(chunk1.clone()).await;
+    let chunk1_response = server
+        .post(&chunk_url1)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .bytes(chunk1.clone())
+        .await;
     assert_eq!(chunk1_response.status_code(), StatusCode::CREATED);
 
-    let chunk2_response = server.post(&chunk_url2).bytes(chunk2.clone()).await;
+    let chunk2_response = server
+        .post(&chunk_url2)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .bytes(chunk2.clone())
+        .await;
     assert_eq!(chunk2_response.status_code(), StatusCode::CREATED);
 
     let commit_file_url = API_BASE_PATH.to_owned()
         + &formatx!(COMMIT_FILE_ROUTE, create_node_request.node_id, revision.id).unwrap();
 
-    let commit_file_response: PostCommitFileResponse = server.post(&commit_file_url).await.json();
+    let commit_file_response: PostCommitFileResponse = server
+        .post(&commit_file_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await
+        .json();
 
     let node;
     match commit_file_response {
@@ -325,7 +362,11 @@ pub async fn test_file() {
     let get_node_url = API_BASE_PATH.to_owned()
         + &formatx!(NODE_ROUTE_NODEID, create_node_request.node_id).unwrap();
 
-    let node_response: GetNodeResponse = server.get(&get_node_url).await.json();
+    let node_response: GetNodeResponse = server
+        .get(&get_node_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await
+        .json();
 
     match node_response {
         GetNodeResponse::Ok(same_node_as_before) => {
@@ -336,19 +377,35 @@ pub async fn test_file() {
         }
     }
 
-    let get_chunk_response1 = server.get(&chunk_url1).await.into_bytes();
-    let get_chunk_response2 = server.get(&chunk_url2).await.into_bytes();
+    let get_chunk_response1 = server
+        .get(&chunk_url1)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    let get_chunk_response2 = server
+        .get(&chunk_url2)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
 
-    assert_eq!(get_chunk_response1, chunk1);
-    assert_eq!(get_chunk_response2, chunk2);
+    assert_eq!(get_chunk_response1.status_code(), StatusCode::OK);
+    assert_eq!(get_chunk_response2.status_code(), StatusCode::OK);
+
+    let chunk1_bytes_response = get_chunk_response1.as_bytes();
+    let chunk2_bytes_response = get_chunk_response2.as_bytes();
+
+    assert_eq!(chunk1, chunk1_bytes_response);
+    assert_eq!(chunk2, chunk2_bytes_response);
 
     // try to commit the file a second time
-    let commit_file_response2: PostCommitFileResponse = server.post(&commit_file_url).await.json();
+    let commit_file_response2: PostCommitFileResponse = server
+        .post(&commit_file_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await
+        .json();
     let expected_commit_file_response2 = PostCommitFileResponse::BadRequest(AlreadyCommitted);
     assert_eq!(commit_file_response2, expected_commit_file_response2);
 }
 
-pub fn get_server() -> TestServer {
+pub async fn get_server() -> TestServer {
     let config = AppConfig::load(&PathBuf::from("./crabdrive.toml")).unwrap();
 
     // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
@@ -382,7 +439,22 @@ pub fn get_server() -> TestServer {
         .layer(middleware::from_fn(logging_middleware))
         .layer(CatchPanicLayer::custom(crate::http::server::handle_panic));
 
-    TestServer::new(app).unwrap()
+    let server = TestServer::new(app).unwrap();
+
+    let register_admin_request_body = PostRegisterRequest {
+        username: TEST_USERNAME.to_string(),
+        password: TEST_PASSWORD.to_string(),
+        keys: UserKeys::nil(),
+    };
+
+    let register_response = server
+        .post(REGISTER_ROUTE)
+        .json(&register_admin_request_body)
+        .await;
+
+    assert_eq!(register_response.status_code(), StatusCode::CREATED);
+
+    server
 }
 
 // copied from server.rs/start
@@ -394,46 +466,64 @@ fn prepare_db(state: &AppState) {
     // HACK: Create a root node with a zeroed UUID, if it's not already existing.
     // TODO: Remove when adding auth!
 
-    if crate::db::operations::select_user(&state.db_pool, UUID::nil())
-        .unwrap()
-        .is_none()
-    {
-        let system_user = UserEntity {
-            id: UUID::nil(),
-            username: "system".to_string(),
-            user_type: crabdrive_common::user::UserType::Admin,
-            created_at: Local::now().naive_local(),
-            password_hash: "".to_string(),
-            storage_limit: da!(500 MB),
-            encryption_uninitialized: false,
-            master_key: EncryptionKey::nil(),
-            private_key: EncryptionKey::nil(),
-            public_key: vec![],
-            root_key: EncryptionKey::nil(),
-            root_node: None,
-            trash_key: EncryptionKey::nil(),
-            trash_node: None,
-        };
+    // if crate::db::operations::select_user(&state.db_pool, UUID::nil())
+    //     .unwrap()
+    //     .is_none()
+    // {
+    //     let system_user = UserEntity {
+    //         id: UUID::nil(),
+    //         username: "system".to_string(),
+    //         user_type: crabdrive_common::user::UserType::Admin,
+    //         created_at: Local::now().naive_local(),
+    //         password_hash: "".to_string(),
+    //         storage_limit: da!(500 MB),
+    //         encryption_uninitialized: false,
+    //         master_key: EncryptionKey::nil(),
+    //         private_key: EncryptionKey::nil(),
+    //         public_key: vec![],
+    //         root_key: EncryptionKey::nil(),
+    //         root_node: None,
+    //         trash_key: EncryptionKey::nil(),
+    //         trash_node: None,
+    //     };
+    //
+    //     crate::db::operations::insert_user(&state.db_pool, &system_user).unwrap();
+    // }
 
-        crate::db::operations::insert_user(&state.db_pool, &system_user).unwrap();
-    }
+    // if crate::db::operations::select_node(&state.db_pool, UUID::nil())
+    //     .unwrap()
+    //     .is_none()
+    // {
+    //     let node = NodeEntity {
+    //         id: UUID::nil(),
+    //         owner_id: UUID::nil(),
+    //         parent_id: None,
+    //         metadata: EncryptedMetadata::nil(),
+    //         deleted_on: None,
+    //         current_revision: None,
+    //         metadata_change_counter: 0,
+    //         node_type: NodeType::Folder,
+    //     };
+    //
+    //     crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
+    //         .unwrap();
+    // }
+}
 
-    if crate::db::operations::select_node(&state.db_pool, UUID::nil())
-        .unwrap()
-        .is_none()
-    {
-        let node = NodeEntity {
-            id: UUID::nil(),
-            owner_id: UUID::nil(),
-            parent_id: None,
-            metadata: EncryptedMetadata::nil(),
-            deleted_on: None,
-            current_revision: None,
-            metadata_change_counter: 0,
-            node_type: NodeType::Folder,
-        };
+pub async fn login(server: &TestServer) -> (String, NodeId) {
+    let login = PostLoginRequest {
+        username: TEST_USERNAME.to_string(),
+        password: TEST_PASSWORD.to_string(),
+    };
 
-        crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
-            .unwrap();
+    let login_url = API_BASE_PATH.to_owned() + LOGIN_ROUTE;
+
+    let login_request = server.post(&login_url).json(&login).await;
+    let login_response: PostLoginResponse = login_request.json();
+
+    if let PostLoginResponse::Ok(response) = login_response {
+        (response.bearer_token, response.root_node_id)
+    } else {
+        panic!("login failed: {:?}", login_response);
     }
 }

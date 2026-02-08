@@ -2,9 +2,9 @@ use crate::http::AppState;
 use crate::request_handler::node::entity_to_encrypted_node;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
+use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use axum::Json;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::{NodeId, NodeType};
@@ -26,7 +26,7 @@ pub async fn post_create_folder(
 
     let parent_node = parent_node.unwrap();
 
-    if parent_node.owner_id != current_user.id  {
+    if parent_node.owner_id != current_user.id {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFolderResponse::NotFound),

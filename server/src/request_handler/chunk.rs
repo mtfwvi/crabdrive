@@ -1,14 +1,14 @@
-use axum::body::Body;
 use crate::http::AppState;
 use crate::storage::vfs::FileChunk;
 use crate::storage::vfs::model::{FileError, new_filekey};
+use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
+use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use crate::user::persistence::model::user_entity::UserEntity;
 
 pub async fn post_chunk(
     current_user: UserEntity,
@@ -22,7 +22,10 @@ pub async fn post_chunk(
     };
 
     let node_entity = state.node_repository.get_node(node_id).expect("db error");
-    let revision_entity = state.revision_repository.get_revision(revision_id).expect("db error");
+    let revision_entity = state
+        .revision_repository
+        .get_revision(revision_id)
+        .expect("db error");
     if revision_entity.is_none() || node_entity.is_none() {
         return (StatusCode::NOT_FOUND, Json(()));
     }
@@ -65,7 +68,10 @@ pub async fn get_chunk(
     Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
 ) -> Response<Body> {
     let node_entity = state.node_repository.get_node(node_id).expect("db error");
-    let revision_entity = state.revision_repository.get_revision(revision_id).expect("db error");
+    let revision_entity = state
+        .revision_repository
+        .get_revision(revision_id)
+        .expect("db error");
     if revision_entity.is_none() || node_entity.is_none() {
         return StatusCode::NOT_FOUND.into_response();
     }
