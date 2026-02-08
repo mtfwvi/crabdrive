@@ -1,11 +1,12 @@
 use crate::constants::AES_GCM;
 use crate::model::chunk::{DecryptedChunk, EncryptedChunk};
 use crate::model::encryption::EncryptionKey;
+use crate::utils::browser::get_subtle_crypto;
 use crate::utils::encryption;
+use crate::utils::error::{future_from_js_promise, wrap_js_err};
+use anyhow::Result;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
-use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
@@ -20,12 +21,9 @@ fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
     }
 }
 
-pub async fn decrypt_chunk(
-    chunk: &EncryptedChunk,
-    key: &EncryptionKey,
-) -> Result<DecryptedChunk, JsValue> {
-    let subtle_crypto = encryption::get_subtle_crypto();
-    let key = encryption::get_key_from_bytes(key).await;
+pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Result<DecryptedChunk> {
+    let subtle_crypto = get_subtle_crypto()?;
+    let key = encryption::get_key_from_bytes(key).await?;
 
     let encryption_params = get_encryption_params(
         chunk.first_block,
@@ -34,14 +32,12 @@ pub async fn decrypt_chunk(
         chunk.iv_prefix,
     );
 
-    let decrypted_arraybuffer_promise = subtle_crypto.decrypt_with_object_and_buffer_source(
-        &encryption_params,
-        &key,
-        &chunk.chunk,
+    let decrypted_arraybuffer_promise = wrap_js_err(
+        subtle_crypto.decrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
     )?;
-    let decrypted_arraybuffer: ArrayBuffer = JsFuture::from(decrypted_arraybuffer_promise)
-        .await?
-        .dyn_into()?;
+
+    let decrypted_arraybuffer: ArrayBuffer =
+        future_from_js_promise(decrypted_arraybuffer_promise).await?;
 
     Ok(DecryptedChunk {
         chunk: decrypted_arraybuffer,
@@ -55,21 +51,19 @@ pub async fn encrypt_chunk(
     chunk: &DecryptedChunk,
     key: &EncryptionKey,
     iv_prefix: IV,
-) -> Result<EncryptedChunk, JsValue> {
-    let subtle_crypto = encryption::get_subtle_crypto();
-    let key = encryption::get_key_from_bytes(key).await;
+) -> Result<EncryptedChunk> {
+    let subtle_crypto = get_subtle_crypto()?;
+    let key = encryption::get_key_from_bytes(key).await?;
 
     let encryption_params =
         get_encryption_params(chunk.first_block, chunk.last_block, chunk.index, iv_prefix);
 
-    let encrypted_arraybuffer_promise = subtle_crypto.encrypt_with_object_and_buffer_source(
-        &encryption_params,
-        &key,
-        &chunk.chunk,
+    let encrypted_arraybuffer_promise = wrap_js_err(
+        subtle_crypto.encrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
     )?;
-    let encrypted_arraybuffer: ArrayBuffer = JsFuture::from(encrypted_arraybuffer_promise)
-        .await?
-        .dyn_into()?;
+
+    let encrypted_arraybuffer: ArrayBuffer =
+        future_from_js_promise(encrypted_arraybuffer_promise).await?;
 
     Ok(EncryptedChunk {
         chunk: Uint8Array::new(&encrypted_arraybuffer),

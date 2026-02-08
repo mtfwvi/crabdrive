@@ -1,14 +1,16 @@
 use crate::api::requests::{RequestBody, RequestMethod, request, uint8array_from_response};
+use anyhow::{Result, anyhow};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use wasm_bindgen::JsValue;
 use web_sys::Response;
 use web_sys::js_sys::Uint8Array;
 
+#[derive(Debug)]
 pub enum GetChunkResponse {
     Ok(Uint8Array),
     NotFound,
 }
 
+#[derive(Debug)]
 pub enum PostChunkResponse {
     Created,
     NotFound,
@@ -22,7 +24,7 @@ pub async fn get_chunk(
     version_id: RevisionId,
     chunk_index: ChunkIndex,
     token: &String,
-) -> Result<GetChunkResponse, JsValue> {
+) -> Result<GetChunkResponse> {
     let url = crabdrive_common::routes::node::chunks(node_id, version_id, chunk_index);
 
     let request_method = RequestMethod::GET;
@@ -43,7 +45,12 @@ pub async fn get_chunk(
     let parsed_response = match response.status() {
         200 => GetChunkResponse::Ok(uint8array_from_response(response).await?),
         404 => GetChunkResponse::NotFound,
-        _ => unreachable!("the error code cannot be handled"),
+        _ => {
+            return Err(anyhow!(
+                "unexpected status code on get chunk: {}",
+                response.status()
+            ));
+        }
     };
 
     Ok(parsed_response)
@@ -55,7 +62,7 @@ pub async fn post_chunk(
     chunk_index: ChunkIndex,
     body: Uint8Array,
     token: &String,
-) -> Result<PostChunkResponse, JsValue> {
+) -> Result<PostChunkResponse> {
     let url = crabdrive_common::routes::node::chunks(node_id, version_id, chunk_index);
 
     let request_method = RequestMethod::POST;
@@ -79,7 +86,12 @@ pub async fn post_chunk(
         400 => PostChunkResponse::BadRequest,
         409 => PostChunkResponse::Conflict,
         413 => PostChunkResponse::OutOfStorage,
-        _ => unreachable!("the error code cannot be handled"),
+        _ => {
+            return Err(anyhow!(
+                "unexpected status code on post chunk: {}",
+                response.status()
+            ));
+        }
     };
 
     Ok(parsed_response)

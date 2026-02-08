@@ -1,19 +1,19 @@
 use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+use anyhow::Result;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
-use wasm_bindgen::JsValue;
 use web_sys::Response;
 
 pub async fn post_create_folder(
     parent_id: NodeId,
     body: PostCreateFolderRequest,
     token: &String,
-) -> Result<PostCreateFolderResponse, JsValue> {
+) -> Result<PostCreateFolderResponse> {
     let url = crabdrive_common::routes::node::folder::create(parent_id);
 
     let request_method = RequestMethod::POST;
-    let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
+    let body = RequestBody::Json(serde_json::to_string(&body)?);
     let query_parameters = vec![];
     let auth_token = Some(token);
 
@@ -29,6 +29,6 @@ pub async fn post_create_folder(
 
     let response_string = string_from_response(response).await?;
 
-    let response_object = serde_json::from_str(&response_string).unwrap();
+    let response_object = serde_json::from_str(&response_string)?;
     Ok(response_object)
 }
