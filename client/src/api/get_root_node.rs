@@ -2,15 +2,12 @@ use crate::api::requests::node::get_node;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::utils::encryption::node::decrypt_node;
+use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetNodeResponse;
 use crabdrive_common::storage::NodeId;
 
-pub async fn get_root_node() -> Result<DecryptedNode, String> {
-    let get_node_result = get_node(NodeId::nil(), &"".to_string()).await;
-    if let Err(js_error) = get_node_result {
-        return Err(format!("could not get root node: {:?}", js_error));
-    }
-    let get_node_response = get_node_result.unwrap();
+pub async fn get_root_node() -> Result<DecryptedNode> {
+    let get_node_response = get_node(NodeId::nil(), &"".to_string()).await?;
 
     match get_node_response {
         GetNodeResponse::Ok(encrypted_node) => {
@@ -51,13 +48,13 @@ pub async fn get_root_node() -> Result<DecryptedNode, String> {
                 let decrypted_node_result = decrypt_node(encrypted_node, EMPTY_KEY).await;
 
                 if let Err(js_error) = decrypted_node_result {
-                    return Err(format!("could not decrypt node: {:?}", js_error));
+                    return Err(anyhow!("could not decrypt node: {:?}", js_error));
                 }
 
-                let decrypted_node = decrypted_node_result.unwrap();
+                let decrypted_node = decrypted_node_result?;
                 Ok(decrypted_node)
             }
         }
-        GetNodeResponse::NotFound => Err("root node returned 404".to_string()),
+        GetNodeResponse::NotFound => Err(anyhow!("root node returned 404")),
     }
 }

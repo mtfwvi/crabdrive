@@ -34,7 +34,10 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         )
     };
 
-    let path_res = LocalResource::new(move || path_to_root(node_id.get()));
+    let path_res = LocalResource::new(move || {
+        let node_id = node_id.get();
+        async move { path_to_root(node_id).await.map_err(|err| err.to_string()) }
+    });
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let navigate_to_node = Callback::new(move |node_id| {
@@ -70,7 +73,10 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                 let current_node = Signal::derive(move || {
                     path.get().last().expect("Failed due to empty path").clone()
                 });
-                let children_res = LocalResource::new(move || get_children(current_node.get()));
+                let children_res = LocalResource::new(move || {
+                    let current_node = current_node.get();
+                    async move { get_children(current_node).await.map_err(|err| err.to_string()) }
+                });
 
                 view! {
                     <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">

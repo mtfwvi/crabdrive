@@ -21,6 +21,7 @@ wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true, features = ["Request", "RequestInit", "RequestMode", "Response", "Window", "Blob", "SubtleCrypto", "Crypto", "CryptoKey", "AesGcmParams", "File", "FileList"] }
 
 crabdrive-common = { workspace = true }
+anyhow = { workspace = true }
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
