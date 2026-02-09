@@ -49,7 +49,7 @@ pub(crate) trait NodeRepository {
         to_trash: NodeId,
         to_trash_metadata: EncryptedMetadata,
     ) -> Result<()>;
-    
+
     fn move_node_out_of_trash(
         &self,
         id: NodeId,
@@ -179,12 +179,15 @@ impl NodeRepository for NodeState {
         to_trash: NodeId,
         to_trash_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        let mut conn = self.db_pool.get().context("Failed to get database connection")?;
-        
+        let mut conn = self
+            .db_pool
+            .get()
+            .context("Failed to get database connection")?;
+
         conn.transaction(|conn| {
             use crate::db::schema::nodes::dsl as NodeDsl;
             let now = chrono::Utc::now().naive_utc();
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(from))
                 .set((
@@ -193,7 +196,7 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to update old parent")?;
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(to_trash))
                 .set((
@@ -202,7 +205,7 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to update trash parent")?;
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(id))
                 .set((
@@ -212,13 +215,13 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to move node to trash")?;
-            
+
             Ok::<(), anyhow::Error>(())
         })?;
-        
+
         Ok(())
     }
-    
+
     fn move_node_out_of_trash(
         &self,
         id: NodeId,
@@ -227,11 +230,14 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        let mut conn = self.db_pool.get().context("Failed to get database connection")?;
-        
+        let mut conn = self
+            .db_pool
+            .get()
+            .context("Failed to get database connection")?;
+
         conn.transaction(|conn| {
             use crate::db::schema::nodes::dsl as NodeDsl;
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(from_trash))
                 .set((
@@ -240,7 +246,7 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to update trash parent")?;
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(to))
                 .set((
@@ -249,7 +255,7 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to update new parent")?;
-            
+
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(id))
                 .set((
@@ -259,10 +265,10 @@ impl NodeRepository for NodeState {
                 ))
                 .execute(conn)
                 .context("Failed to move node out of trash")?;
-            
+
             Ok::<(), anyhow::Error>(())
         })?;
-        
+
         Ok(())
     }
 }
