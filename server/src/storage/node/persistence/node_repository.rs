@@ -9,6 +9,9 @@ use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
 use std::sync::Arc;
 use diesel::Connection;
+use chrono::NaiveDateTime;
+use diesel::ExpressionMethods;
+use diesel::RunQueryDsl;
 
 pub(crate) trait NodeRepository {
     fn create_node(
@@ -186,7 +189,7 @@ impl NodeRepository for NodeState {
             .context("Failed to get database connection")?;
 
         conn.transaction(|conn| {
-            use crate::db::schema::node::dsl as NodeDsl;
+            use crate::db::schema::Node::dsl as NodeDsl;
             let now = chrono::Utc::now().naive_utc();
 
             diesel::update(NodeDsl::Node)
@@ -217,7 +220,7 @@ impl NodeRepository for NodeState {
                 .execute(conn)
                 .context("Failed to move node to trash")?;
 
-            Ok::<(), anyhow::Error>(())
+            Ok(())
         })?;
 
         Ok(())
@@ -237,7 +240,7 @@ impl NodeRepository for NodeState {
             .context("Failed to get database connection")?;
 
         conn.transaction(|conn| {
-            use crate::db::schema::node::dsl as NodeDsl;
+            use crate::db::schema::Node::dsl as NodeDsl;
 
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(from_trash))
@@ -267,7 +270,7 @@ impl NodeRepository for NodeState {
                 .execute(conn)
                 .context("Failed to move node out of trash")?;
 
-            Ok::<(), anyhow::Error>(())
+            Ok(())
         })?;
 
         Ok(())
