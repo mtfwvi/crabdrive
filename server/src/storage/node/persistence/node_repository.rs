@@ -40,6 +40,24 @@ pub(crate) trait NodeRepository {
     ) -> Result<()>;
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>>;
+
+    fn move_node_to_trash(
+        &self,
+        id: NodeId,
+        from: NodeId,
+        from_metadata: EncryptedMetadata,
+        to_trash: NodeId,
+        to_trash_metadata: EncryptedMetadata,
+    ) -> Result<()>;
+    
+    fn move_node_out_of_trash(
+        &self,
+        id: NodeId,
+        from_trash: NodeId,
+        from_trash_metadata: EncryptedMetadata,
+        to: NodeId,
+        to_metadata: EncryptedMetadata,
+    ) -> Result<()>;
 }
 
 pub struct NodeState {
@@ -151,5 +169,100 @@ impl NodeRepository for NodeState {
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
         get_all_children(&self.db_pool, parent_id).context("Failed to get children")
+    }
+
+    fn move_node_to_trash(
+        &self,
+        id: NodeId,
+        from: NodeId,
+        from_metadata: EncryptedMetadata,
+        to_trash: NodeId,
+        to_trash_metadata: EncryptedMetadata,
+    ) -> Result<()> {
+        let mut conn = self.db_pool.get().context("Failed to get database connection")?;
+        
+        conn.transaction(|conn| {
+            use crate::db::schema::nodes::dsl as NodeDsl;
+            let now = chrono::Utc::now().naive_utc();
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(from))
+                .set((
+                    NodeDsl::metadata.eq(&from_metadata),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to update old parent")?;
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(to_trash))
+                .set((
+                    NodeDsl::metadata.eq(&to_trash_metadata),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to update trash parent")?;
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(id))
+                .set((
+                    NodeDsl::parent_id.eq(Some(to_trash)),
+                    NodeDsl::deleted_on.eq(Some(now)),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to move node to trash")?;
+            
+            Ok::<(), anyhow::Error>(())
+        })?;
+        
+        Ok(())
+    }
+    
+    fn move_node_out_of_trash(
+        &self,
+        id: NodeId,
+        from_trash: NodeId,
+        from_trash_metadata: EncryptedMetadata,
+        to: NodeId,
+        to_metadata: EncryptedMetadata,
+    ) -> Result<()> {
+        let mut conn = self.db_pool.get().context("Failed to get database connection")?;
+        
+        conn.transaction(|conn| {
+            use crate::db::schema::nodes::dsl as NodeDsl;
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(from_trash))
+                .set((
+                    NodeDsl::metadata.eq(&from_trash_metadata),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to update trash parent")?;
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(to))
+                .set((
+                    NodeDsl::metadata.eq(&to_metadata),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to update new parent")?;
+            
+            diesel::update(NodeDsl::Node)
+                .filter(NodeDsl::id.eq(id))
+                .set((
+                    NodeDsl::parent_id.eq(Some(to)),
+                    NodeDsl::deleted_on.eq(None::<NaiveDateTime>),
+                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+                ))
+                .execute(conn)
+                .context("Failed to move node out of trash")?;
+            
+            Ok::<(), anyhow::Error>(())
+        })?;
+        
+        Ok(())
     }
 }
