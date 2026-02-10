@@ -138,13 +138,14 @@ pub async fn wrap_key(
 
     let params = AesGcmParams::new("AES-GCM", &iv_bytes);
 
-    let key: CryptoKey = future_from_js_promise(
+    let wrapped_key: JsValue = future_from_js_promise(
         crypto
             .wrap_key_with_object("raw", &master_key, &derived_key, &params)
             .map_err(|_| anyhow!("Cannot wrap key!"))?,
     )
     .await?;
-    let key = export_key(&key).await?;
+
+    let key = Uint8Array::new(&wrapped_key).to_vec();
 
     Ok(EncryptionKey::new(key.into(), iv))
 }
