@@ -1,9 +1,11 @@
 use crate::utils::browser::SessionStorage;
+
 use anyhow::{Result, anyhow};
 use argon2::{
     Algorithm, Argon2, Params, ParamsBuilder, PasswordHasher, Version, password_hash::Salt,
 };
-use base64::{Engine, prelude::BASE64_STANDARD};
+use base64::Engine;
+use base64::prelude::BASE64_STANDARD_NO_PAD;
 
 /// Checks if a password has the minimum requirements.
 /// Currently:
@@ -39,7 +41,8 @@ pub fn password_is_secure(password: &str) -> bool {
 
 /// Creates a Base64 encoded
 pub fn salt_from_username(username: &str) -> String {
-    BASE64_STANDARD.encode(username)
+    // No padding, because argon2 returns `Err` if Base-64 encoded string contains `=`
+    BASE64_STANDARD_NO_PAD.encode(username)
 }
 
 pub fn get_argon2id_params() -> Params {
@@ -95,7 +98,7 @@ mod tests {
 
     #[test_case("Crabdrive", "Q3JhYmRyaXZl")]
     #[test_case("evirdbraC", "ZXZpcmRicmFD")]
-    #[test_case("CrabdriveIsBetterThanMega", "Q3JhYmRyaXZlSXNCZXR0ZXJUaGFuTWVnYQ==")]
+    #[test_case("CrabdriveIsBetterThanMega", "Q3JhYmRyaXZlSXNCZXR0ZXJUaGFuTWVnYQ")]
     #[wasm_bindgen_test]
     async fn test_username_to_salt(username: &str, expected: &str) {
         assert_eq!(utils::auth::salt_from_username(username), expected);
