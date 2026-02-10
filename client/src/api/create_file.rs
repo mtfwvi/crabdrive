@@ -33,7 +33,7 @@ pub async fn create_file(
     // The key which is used for encrypting metadata. This will later be stored inside the encrypted
     // metadata of the parent.
     let metadata_encryption_key: MetadataKey = utils::encryption::generate_aes256_key().await?;
-    // The key used to encrypt the file chunks. This will be stored in the associated revision.
+    // The key used to encrypt the file chunks. This will be stored in the encrypted metadata of the node.
     let file_encryption_key: FileKey = utils::encryption::generate_aes256_key().await?;
 
     let file_metadata = NodeMetadata::V1(MetadataV1 {

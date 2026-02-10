@@ -21,6 +21,7 @@ use crabdrive_common::storage::NodeId;
 
 use anyhow::Result;
 use tracing::debug_span;
+use wasm_bindgen::prelude::wasm_bindgen;
 
 // The next three functions are used for testing via browser console. They can be accessed via:
 // - await window.wasmBindings._register_user()
@@ -29,7 +30,7 @@ use tracing::debug_span;
 // Only present when building in debug mode.
 
 #[cfg(debug_assertions)]
-#[wasm_bindgen::prelude::wasm_bindgen]
+#[wasm_bindgen]
 pub async fn _login_user(username: &str, password: &str) {
     let result = login(username, password, false).await;
     if result.is_err() {
@@ -38,7 +39,7 @@ pub async fn _login_user(username: &str, password: &str) {
 }
 
 #[cfg(debug_assertions)]
-#[wasm_bindgen::prelude::wasm_bindgen]
+#[wasm_bindgen]
 pub async fn _register_user(username: &str, password: &str) {
     let result = register(username, password).await;
     if result.is_err() {
@@ -47,7 +48,7 @@ pub async fn _register_user(username: &str, password: &str) {
 }
 
 #[cfg(debug_assertions)]
-#[wasm_bindgen::prelude::wasm_bindgen]
+#[wasm_bindgen]
 pub async fn _logout_user() {
     let result = logout().await;
     if result.is_err() {
