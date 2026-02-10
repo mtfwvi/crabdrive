@@ -24,6 +24,8 @@ async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
     let key_usage = Array::new();
     key_usage.push(&JsValue::from("encrypt"));
     key_usage.push(&JsValue::from("decrypt"));
+    key_usage.push(&JsValue::from("wrapKey"));
+    key_usage.push(&JsValue::from("unwrapKey"));
 
     let key_promise = wrap_js_err(get_subtle_crypto()?.import_key_with_str(
         format,
