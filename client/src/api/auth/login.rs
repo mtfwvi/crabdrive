@@ -10,7 +10,7 @@ use tracing::{debug, debug_span};
 /// Attempts to authenticate a user, with username and (unencrypted) password.
 ///
 /// This function does not return, if successful. Instead, it redirects to the URL.
-pub async fn login(username: &str, password: &str, remeber_username: bool) -> Result<()> {
+pub async fn login(username: &str, password: &str, remember_username: bool) -> Result<()> {
     let _guard = debug_span!("api::login").entered();
 
     if utils::auth::is_authenticated()? {
@@ -82,7 +82,7 @@ pub async fn login(username: &str, password: &str, remeber_username: bool) -> Re
     // Store username in storage
     SessionStorage::set("username", &username)?;
 
-    if remeber_username {
+    if remember_username {
         // Store last username in local storage to remember
         LocalStorage::set("last_user", &username)?;
     } else {
