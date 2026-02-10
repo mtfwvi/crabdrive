@@ -131,7 +131,7 @@ pub async fn login(username: String, password: String, remeber_username: bool) -
     SessionStorage::set("root_id", &login_response.root_node_id)?;
     SessionStorage::set("trash_id", &login_response.trash_node_id)?;
 
-    utils::browser::redirect(login_response.redirect_url, true).inspect_err(|_| {
+    utils::browser::redirect(&login_response.redirect_url, true).inspect_err(|_| {
         // Clear session storage on error
         SessionStorage::clear().expect("Failed to clear session storage!");
     })?;

@@ -30,7 +30,7 @@ pub fn get_subtle_crypto() -> Result<SubtleCrypto> {
 ///
 /// Supports replacing the URL and assiging the URL. Replacing a URL removes the current entry
 /// from the browser history.
-pub fn redirect(url: String, replace: bool) -> Result<()> {
+pub fn redirect(url: &str, replace: bool) -> Result<()> {
     let location = get_window()?.location();
 
     // The current origin (Protocol + Domain + Port)
@@ -44,7 +44,7 @@ pub fn redirect(url: String, replace: bool) -> Result<()> {
         .map_err(|_| anyhow!("Cannot access current href"))?;
 
     let target_url =
-        Url::new_with_base(&url, &current_href).map_err(|_| anyhow!("Invalid URL format"))?;
+        Url::new_with_base(url, &current_href).map_err(|_| anyhow!("Invalid URL format"))?;
 
     if target_url.origin() != current_origin {
         return Err(anyhow!("Cannot redirect outside origin"));
@@ -52,11 +52,11 @@ pub fn redirect(url: String, replace: bool) -> Result<()> {
 
     if replace {
         location
-            .replace(&url)
+            .replace(url)
             .map_err(|_| anyhow!("Failed to redirect"))?;
     } else {
         location
-            .assign(&url)
+            .assign(url)
             .map_err(|_| anyhow!("Failed to redirect"))?;
     }
 

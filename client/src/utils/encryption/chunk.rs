@@ -92,15 +92,16 @@ fn get_encryption_params(
 
 #[cfg(test)]
 mod test {
-    use crate::constants::EMPTY_KEY;
     use crate::model::chunk::DecryptedChunk;
     use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
+    use crate::utils::encryption::generate_aes256_key;
     use crabdrive_common::iv::IV;
     use wasm_bindgen_futures::js_sys::Uint8Array;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_chunk() {
+        let key = generate_aes256_key().await.unwrap();
         let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
@@ -112,13 +113,13 @@ mod test {
 
         let encrypted_chunk = encrypt_chunk(
             &chunk,
-            &EMPTY_KEY,
+            &key,
             IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
         )
         .await
         .expect("encrypt chunk");
 
-        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY)
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &key)
             .await
             .expect("decrypt chunk");
 
@@ -129,6 +130,7 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_detect_chunk_removal() {
+        let key = generate_aes256_key().await.unwrap();
         let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
@@ -140,7 +142,7 @@ mod test {
 
         let mut encrypted_chunk = encrypt_chunk(
             &chunk,
-            &EMPTY_KEY,
+            &key,
             IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
         )
         .await
@@ -150,7 +152,7 @@ mod test {
         encrypted_chunk.index = 1;
         encrypted_chunk.first_block = true;
 
-        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &key).await;
 
         assert!(decrypted_chunk.is_err())
     }

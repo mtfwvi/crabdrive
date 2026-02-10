@@ -120,29 +120,37 @@ pub async fn decrypt_node_with_parent(
 
 #[cfg(test)]
 mod test {
-    use crate::constants::EMPTY_KEY;
     use crate::model::node::{MetadataV1, NodeMetadata};
+    use crate::utils::encryption::generate_aes256_key;
     use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
     use chrono::NaiveDateTime;
+    use crabdrive_common::uuid::UUID;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_metadata() {
+        let key = generate_aes256_key().await.unwrap();
+        let file_key = generate_aes256_key().await.unwrap();
+
         let example_metadata = NodeMetadata::V1(MetadataV1 {
             name: "hello.txt".to_string(),
             last_modified: NaiveDateTime::default(),
             created: NaiveDateTime::default(),
             size: None,
             mime_type: Some("txt".to_string()),
-            file_key: None,
-            children_key: vec![],
+            file_key: Some(file_key),
+            children_key: vec![
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+            ],
         });
 
-        let encrypted_metadata = encrypt_metadata(&example_metadata, &EMPTY_KEY)
+        let encrypted_metadata = encrypt_metadata(&example_metadata, &key)
             .await
             .expect("could not encrypt node");
 
-        let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &EMPTY_KEY)
+        let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &key)
             .await
             .expect("could not decrypt node");
 
