@@ -147,7 +147,7 @@ pub async fn wrap_key(
 
     let key = Uint8Array::new(&wrapped_key).to_vec();
 
-    Ok(EncryptionKey::new(key.into(), iv))
+    Ok(EncryptionKey::new(key, iv))
 }
 
 #[cfg(test)]
