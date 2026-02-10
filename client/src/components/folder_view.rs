@@ -62,6 +62,12 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         NodeType::Link => add_toast(String::from("Links have not been implemented")),
     });
 
+    let on_node_created = Callback::new(move |_| {
+        path_res.refetch()
+        // children_res will automatically refetch, because it is
+        // only created within the resource wrapper for path_res
+    });
+
     view! {
         <ResourceWrapper
             resource=path_res
@@ -71,7 +77,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             fallback_spinner=false
             children=move |path| {
                 let current_node = Signal::derive(move || {
-                    path.get().last().expect("Failed due to empty path").clone()
+                    path.get().last().expect("Failed to get current node due to empty path").clone()
                 });
                 let children_res = LocalResource::new(move || {
                     let current_node = current_node.get();
@@ -104,14 +110,11 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                             <Space>
                                 <FileCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
-                                    on_created=Callback::new(move |_| { path_res.refetch() })
+                                    on_created=on_node_created
                                 />
                                 <FolderCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
-                                    on_created=Callback::new(move |_| {
-                                        children_res.refetch();
-                                        path_res.refetch()
-                                    })
+                                    on_created=on_node_created
                                 />
                             </Space>
                         </Space>
