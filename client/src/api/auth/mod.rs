@@ -21,6 +21,7 @@ use crabdrive_common::storage::NodeId;
 
 use anyhow::Result;
 use tracing::debug_span;
+#[cfg(debug_assertions)]
 use wasm_bindgen::prelude::wasm_bindgen;
 
 // The next three functions are used for testing via browser console. They can be accessed via:
