@@ -69,14 +69,14 @@ pub fn encode_key(key: &RawEncryptionKey) -> String {
 pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
     let crypto = get_subtle_crypto()?;
 
+    let usages = Array::new();
+    usages.push(&JsValue::from("encrypt"));
+    usages.push(&JsValue::from("decrypt"));
+
     let params = AesKeyGenParams::new("AES-GCM", 256);
     let key: CryptoKey = future_from_js_promise(
         crypto
-            .generate_key_with_object(
-                &params,
-                true,
-                &Array::new(), // The key is extracted directly, so no key usages are needed.
-            )
+            .generate_key_with_object(&params, true, &usages)
             .map_err(|_| anyhow!("Failed to generate master key"))?,
     )
     .await?;
@@ -98,6 +98,9 @@ pub async fn unwrap_key(
     let derived_key = import_key(&derived_key).await?;
 
     let params = AesGcmParams::new("AES-GCM", &iv_bytes);
+    let usages = Array::new();
+    usages.push(&JsValue::from("encrypt"));
+    usages.push(&JsValue::from("decrypt"));
 
     let key: CryptoKey = future_from_js_promise(
         crypto
@@ -108,7 +111,7 @@ pub async fn unwrap_key(
                 &params,
                 "AES-GCM",
                 true,
-                &Array::new(), // The key is extracted directly, so no key usages are needed.
+                &usages,
             )
             .map_err(|_| anyhow!("Cannot unwrap key!"))?,
     )
