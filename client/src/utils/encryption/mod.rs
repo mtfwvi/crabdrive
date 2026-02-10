@@ -17,6 +17,25 @@ use wasm_bindgen::JsValue;
 use web_sys::js_sys::{Array, Uint8Array};
 use web_sys::{AesGcmParams, AesKeyGenParams, CryptoKey};
 
+/// Create a SHA256 digest from input
+pub async fn sha256_digest(data: &str) -> Result<[u8; 32]> {
+    let _guard = tracing::trace_span!("utils::encryption::sha256Digest").entered();
+
+    let crypto = get_subtle_crypto()?;
+    let data = data.as_bytes();
+
+    let digest_hash = future_from_js_promise(wrap_js_err(
+        crypto.digest_with_str_and_u8_array("SHA-256", data),
+    )?)
+    .await?;
+
+    let mut hash = [0u8; 32];
+    let array = Uint8Array::new(&digest_hash);
+    array.copy_to(&mut hash);
+
+    Ok(hash)
+}
+
 pub async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
     let _guard = tracing::trace_span!("utils::encryption::importKey").entered();
 
@@ -185,6 +204,7 @@ macro_rules! hex_fmt {
 #[cfg(test)]
 mod test {
     use pretty_assertions::assert_eq;
+    use test_case::test_case;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     use crate::model::encryption::RawEncryptionKey;
@@ -201,6 +221,23 @@ mod test {
         utils::encryption::import_key(&RawEncryptionKey::default())
             .await
             .unwrap();
+    }
+
+    #[test_case("", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")]
+    #[test_case(
+        "abc",
+        "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    )]
+    #[test_case(
+        "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+        "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+    )]
+    #[wasm_bindgen_test]
+    async fn test_sha256_digest(value: &str, expected: &str) {
+        assert_eq!(
+            hex_fmt!(utils::encryption::sha256_digest(value).await.unwrap()),
+            expected
+        );
     }
 
     #[wasm_bindgen_test]

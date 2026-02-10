@@ -18,11 +18,11 @@ pub async fn register(username: &str, password: &str) -> Result<()> {
         return Err(anyhow!("Please sign out first and try again"));
     }
 
-    if !utils::auth::password_is_secure(password) {
+    if !utils::auth::is_valid_password(password) {
         return Err(anyhow!("Password does not meet minimum requirements!"));
     }
 
-    let salt = utils::auth::salt_from_username(username);
+    let salt = utils::auth::salt_from_username(username).await;
     let (server_password, derived_key) =
         utils::encryption::auth::derive_from_password(password, &salt)?;
 

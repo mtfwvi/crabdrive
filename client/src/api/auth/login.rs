@@ -20,7 +20,7 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
 
     SessionStorage::clear().context("Failed to clear SessionStore")?;
 
-    let salt = utils::auth::salt_from_username(username);
+    let salt = utils::auth::salt_from_username(username).await;
     let (server_password, derived_key) =
         utils::encryption::auth::derive_from_password(password, &salt)?;
 
