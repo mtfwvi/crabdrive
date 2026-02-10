@@ -3,6 +3,7 @@ pub mod chunk;
 pub mod node;
 pub mod random;
 
+use crate::hex_fmt;
 use crate::model::encryption::{DerivedKey, RawEncryptionKey, WrappedKey};
 use crate::utils::browser::get_subtle_crypto;
 use crate::utils::error::{future_from_js_promise, wrap_js_err};
@@ -16,7 +17,9 @@ use wasm_bindgen::JsValue;
 use web_sys::js_sys::{Array, Uint8Array};
 use web_sys::{AesGcmParams, AesKeyGenParams, CryptoKey};
 
-async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
+pub async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
+    let _guard = tracing::trace_span!("utils::encryption::importKey").entered();
+
     let format = "raw";
     let key_data = Uint8Array::new_from_slice(key);
     let algorithm = "AES-GCM";
@@ -35,11 +38,16 @@ async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
         &key_usage,
     ))?;
 
-    future_from_js_promise(key_promise).await
-}
+    let crypto_key = future_from_js_promise(key_promise).await?;
+    tracing::trace!("Imported key: {}", hex_fmt!(key));
 
+    Ok(crypto_key)
+}
 pub async fn export_key(key: &CryptoKey) -> Result<RawEncryptionKey> {
+    let _guard = tracing::trace_span!("utils::encryption::exportKey").entered();
+
     let format = "raw";
+
     let key_promise = get_subtle_crypto()?
         .export_key(format, key)
         .map_err(|_| anyhow!("Failed to export key!"))?;
@@ -49,6 +57,8 @@ pub async fn export_key(key: &CryptoKey) -> Result<RawEncryptionKey> {
     let raw_key: [u8; 32] = key_vec
         .try_into()
         .map_err(|_| anyhow!("Failed to export key!"))?;
+
+    tracing::trace!("Exported Key: {}", hex_fmt!(raw_key));
 
     Ok(raw_key)
 }
@@ -69,6 +79,8 @@ pub fn encode_key(key: &RawEncryptionKey) -> String {
 
 /// Generates a random AES-GCM 256 key (used for master, root & trash keys)
 pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
+    let _guard = tracing::trace_span!("utils::encryption::generateAes256Key").entered();
+
     let crypto = get_subtle_crypto()?;
 
     let usages = Array::new();
@@ -76,6 +88,7 @@ pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
     usages.push(&JsValue::from("decrypt"));
 
     let params = AesKeyGenParams::new("AES-GCM", 256);
+
     let key: CryptoKey = future_from_js_promise(
         crypto
             .generate_key_with_object(&params, true, &usages)
@@ -84,6 +97,8 @@ pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
     .await?;
 
     let raw_key = export_key(&key).await?;
+    tracing::trace!("Generated key: {}", hex_fmt!(raw_key));
+
     Ok(raw_key)
 }
 
@@ -104,6 +119,8 @@ pub async fn unwrap_key(
     usages.push(&JsValue::from("encrypt"));
     usages.push(&JsValue::from("decrypt"));
 
+    let _guard = tracing::trace_span!("utils::encryption::unwrapKey").entered();
+
     let key: CryptoKey = future_from_js_promise(
         crypto
             .unwrap_key_with_buffer_source_and_object_and_str(
@@ -118,7 +135,9 @@ pub async fn unwrap_key(
             .map_err(|_| anyhow!("Cannot unwrap key!"))?,
     )
     .await?;
+
     let key = export_key(&key).await?;
+    tracing::trace!("Successfully unwrapped key: {}", hex_fmt!(key));
 
     Ok(key)
 }
@@ -128,8 +147,9 @@ pub async fn wrap_key(
     master_key: RawEncryptionKey,
     derived_key: &DerivedKey,
 ) -> Result<WrappedKey> {
-    let crypto = get_subtle_crypto()?;
+    let _guard = tracing::trace_span!("utils::encryption::wrapKey").entered();
 
+    let crypto = get_subtle_crypto()?;
     let iv: IV = random::get_random_iv()?;
     let iv_bytes = Uint8Array::new_from_slice(&iv.get());
 
@@ -146,8 +166,20 @@ pub async fn wrap_key(
     .await?;
 
     let key = Uint8Array::new(&wrapped_key).to_vec();
+    tracing::trace!("Successfully wrapped key: {}", hex_fmt!(key));
 
     Ok(EncryptionKey::new(key, iv))
+}
+
+#[macro_export]
+/// Formats a `[u8]` as hex
+macro_rules! hex_fmt {
+    ($bytes:expr) => {
+        $bytes
+            .iter()
+            .map(|b| format!("{:02x}", b))
+            .collect::<String>()
+    };
 }
 
 #[cfg(test)]

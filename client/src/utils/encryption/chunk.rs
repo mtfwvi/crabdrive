@@ -7,6 +7,7 @@ use crate::utils::error::{future_from_js_promise, wrap_js_err};
 use anyhow::Result;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
+use tracing::debug_span;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
@@ -22,8 +23,12 @@ fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
 }
 
 pub async fn decrypt_chunk(chunk: &EncryptedChunk, file_key: &FileKey) -> Result<DecryptedChunk> {
+    let _guard = debug_span!("utils::encryption::decryptChunk").entered();
+
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::import_key(file_key).await?;
+    let key = encryption::import_key(file_key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 
     let encryption_params = get_encryption_params(
         chunk.first_block,
@@ -34,10 +39,12 @@ pub async fn decrypt_chunk(chunk: &EncryptedChunk, file_key: &FileKey) -> Result
 
     let decrypted_arraybuffer_promise = wrap_js_err(
         subtle_crypto.decrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
-    )?;
+    )
+    .inspect_err(|e| tracing::error!("Failed to decrypt chunk (BP): {}", e))?;
 
-    let decrypted_arraybuffer: ArrayBuffer =
-        future_from_js_promise(decrypted_arraybuffer_promise).await?;
+    let decrypted_arraybuffer: ArrayBuffer = future_from_js_promise(decrypted_arraybuffer_promise)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to decrypt chunk (AP): {}", e))?;
 
     Ok(DecryptedChunk {
         chunk: decrypted_arraybuffer,
@@ -52,18 +59,24 @@ pub async fn encrypt_chunk(
     key: &FileKey,
     iv_prefix: IV,
 ) -> Result<EncryptedChunk> {
+    let _guard = debug_span!("utils::encryption::encryptChunk").entered();
+
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::import_key(key).await?;
+    let key = encryption::import_key(key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 
     let encryption_params =
         get_encryption_params(chunk.first_block, chunk.last_block, chunk.index, iv_prefix);
 
     let encrypted_arraybuffer_promise = wrap_js_err(
         subtle_crypto.encrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
-    )?;
+    )
+    .inspect_err(|e| tracing::error!("Failed to encrypt chunk (BP): {}", e))?;
 
-    let encrypted_arraybuffer: ArrayBuffer =
-        future_from_js_promise(encrypted_arraybuffer_promise).await?;
+    let encrypted_arraybuffer: ArrayBuffer = future_from_js_promise(encrypted_arraybuffer_promise)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to encrypt chunk (AP): {}", e))?;
 
     Ok(EncryptedChunk {
         chunk: Uint8Array::new(&encrypted_arraybuffer),

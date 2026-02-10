@@ -15,6 +15,7 @@ use crabdrive_common::storage::{FileRevision, NodeId, RevisionId};
 
 use anyhow::{Context, Result, anyhow};
 use chrono::Local;
+use tracing::debug_span;
 use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::File;
 
@@ -26,6 +27,7 @@ pub async fn create_file(
     file_name: String,
     file: File,
 ) -> Result<DecryptedNode> {
+    let _guard = debug_span!("api::createFile").entered();
     let token = utils::auth::get_token()?;
 
     // The key which is used for encrypting metadata. This will later be stored inside the encrypted
@@ -49,7 +51,8 @@ pub async fn create_file(
     let encrypted_metadata =
         utils::encryption::node::encrypt_metadata(&file_metadata, &metadata_encryption_key)
             .await
-            .context("Could not encrypt metadata")?;
+            .context("Could not encrypt metadata")
+            .inspect_err(|e| tracing::error!("Failed to encrypt metadata: {}", e))?;
 
     let mut new_parent_metadata = parent.metadata.clone();
 
@@ -62,11 +65,14 @@ pub async fn create_file(
     let encrypted_parent_metadata =
         utils::encryption::node::encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
             .await
-            .context("Could not encrypt metadata")?;
+            .context("Could not encrypt metadata")
+            .inspect_err(|e| tracing::error!("Failed to encrypt parent metadata: {}", e))?;
 
     let chunk_count = (file.size() / CHUNK_SIZE).ceil() as i64;
 
-    let file_iv = utils::encryption::random::get_random_iv()?;
+    let file_iv = utils::encryption::random::get_random_iv()
+        .inspect_err(|e| tracing::error!("Failed to generate random IV: {}", e))?;
+
     let request_body = PostCreateFileRequest {
         parent_metadata_version: parent.change_count,
         parent_metadata: encrypted_parent_metadata.clone(),
@@ -78,6 +84,7 @@ pub async fn create_file(
 
     let response = api::requests::file::post_create_file(parent.id, request_body, &token)
         .await
+        .inspect_err(|e| tracing::error!("Failed to post to create_file: {}", e))
         .map_err(|e| anyhow!("Could not create file: {:?}", e))?;
 
     match response {
@@ -88,6 +95,7 @@ pub async fn create_file(
             let file_revision = new_file.current_revision;
 
             if file_revision.is_none() {
+                tracing::error!("No associated revision found for file.");
                 return Err(anyhow!(
                     "The server did not create a file revision when creating the file"
                 ));
@@ -97,12 +105,14 @@ pub async fn create_file(
 
             // if this fails the server is lying to us
             if file_revision.iv != file_iv {
+                tracing::error!("IV Mismatch!");
                 return Err(anyhow!("The server is lying to us"));
             }
 
             //TODO test this
             upload_file(
                 file,
+                metadata_encryption_key,
                 file_encryption_key,
                 &file_revision,
                 new_node_id,
@@ -121,26 +131,36 @@ pub async fn create_file(
 
 async fn upload_file(
     file: File,
-    key: RawEncryptionKey,
+    metadata_key: MetadataKey,
+    file_key: FileKey,
     revision: &FileRevision,
     node_id: NodeId,
     token: &String,
 ) -> Result<DecryptedNode> {
     //TODO test this
+    let _guard = debug_span!("uploadFile").entered();
+
     utils::file::load_file_by_chunk(file, |chunk| {
         // this does not clone the actual arraybuffer, just the ref to it
         let chunk = chunk.clone();
         async move {
-            encrypt_and_upload_chunk(&chunk, revision.iv, &key, node_id, revision.id, token).await
+            encrypt_and_upload_chunk(&chunk, revision.iv, &file_key, node_id, revision.id, token)
+                .await
         }
     })
-    .await?;
+    .await
+    .inspect_err(|e| tracing::error!("Failed to split file into chunks: {}", e))?;
 
-    let response = api::requests::file::post_commit_file(node_id, revision.id, token).await?;
+    let response = api::requests::file::post_commit_file(node_id, revision.id, token)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to post to commit_file: {}", e))?;
 
     match response {
         PostCommitFileResponse::Ok(encrypted_node) => {
-            let decrypted_node = utils::encryption::node::decrypt_node(encrypted_node, key).await?;
+            let decrypted_node =
+                utils::encryption::node::decrypt_node(encrypted_node, metadata_key)
+                    .await
+                    .inspect_err(|e| tracing::error!("Failed to decrypt node metadata: {}", e))?;
             Ok(decrypted_node)
         }
         PostCommitFileResponse::BadRequest(err) => {
@@ -158,11 +178,16 @@ async fn encrypt_and_upload_chunk(
     revision_id: RevisionId,
     token: &String,
 ) -> Result<()> {
-    let encrypted_chunk = utils::encryption::chunk::encrypt_chunk(chunk, key, iv_prefix).await?;
+    let _guard = debug_span!("encryptAndUploadChunk").entered();
+
+    let encrypted_chunk = utils::encryption::chunk::encrypt_chunk(chunk, key, iv_prefix)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to encrypt chunk: {}", e))?;
     let request_body = Uint8Array::new(&encrypted_chunk.chunk);
     let response =
         api::requests::chunk::post_chunk(node_id, revision_id, chunk.index, request_body, token)
-            .await?;
+            .await
+            .inspect_err(|e| tracing::error!("Failed to post to create_file: {}", e))?;
 
     //TODO error handling
     match response {

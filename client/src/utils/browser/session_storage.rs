@@ -44,7 +44,15 @@ impl SessionStorage {
         }
     }
 
-    /// Clears all data inside the session storage.
+    pub fn exists(key: &str) -> Result<bool> {
+        let storage = Self::get_storage()?;
+
+        Ok(storage
+            .get_item(key)
+            .map_err(|_| anyhow!("Cannot read from session storage"))?
+            .is_some())
+    }
+
     pub fn clear() -> Result<()> {
         let storage = Self::get_storage()?;
         storage

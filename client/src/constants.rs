@@ -1,8 +1,6 @@
-use crate::model::encryption::RawEncryptionKey;
 use crabdrive_common::da;
 use std::time::Duration;
 
-pub const EMPTY_KEY: RawEncryptionKey = [0; 32];
 pub const AES_GCM: &str = "AES-GCM";
 
 /// chunk size in bytes when uploading files

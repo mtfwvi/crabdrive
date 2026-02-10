@@ -1,4 +1,4 @@
-mod auth;
+pub(crate) mod auth;
 mod create_file;
 mod create_folder;
 mod download_file;

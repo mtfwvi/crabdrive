@@ -119,7 +119,7 @@ pub async fn post_login(
             StatusCode::OK,
             Json(PostLoginResponse::Ok(LoginSuccess::new(
                 jwt,
-                "/".to_string(),
+                format!("/{}", &user_entity.root_node.unwrap()),
                 user_entity.root_node.unwrap(),
                 user_entity.trash_node.unwrap(),
                 user_entity.encryption_uninitialized,
@@ -169,6 +169,13 @@ pub async fn post_register(
         .create_user(username, password_hash, da!(15 GB))
         .expect("db error when creating user");
 
+    debug!("Master Key: {:?}", &payload.keys.root_key);
+    debug!("Trash Key: {:?}", &payload.keys.trash_key);
+    debug!("Root Key: {:?}", &payload.keys.root_key);
+    debug!("Public Key: {:?}", &payload.keys.public_key);
+    debug!("Private Key: {:?}", &payload.keys.private_key);
+
+    created_user.encryption_uninitialized = false;
     created_user.root_key = payload.keys.root_key;
     created_user.trash_key = payload.keys.trash_key;
     created_user.public_key = payload.keys.public_key;

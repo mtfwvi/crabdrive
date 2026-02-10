@@ -6,12 +6,15 @@ use chrono::Local;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
+use tracing::debug_span;
 
 /// Create a new folder node. Returns `Err` if called unauthenticated.
 ///
 /// Returns the freshly created node.
 pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result<DecryptedNode> {
-    let token = utils::auth::get_token()?;
+    let _guard = debug_span!("api::createFile").entered();
+    let token = utils::auth::get_token()
+        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
 
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
@@ -23,12 +26,16 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
         children_key: vec![],
     });
 
-    let metadata_encryption_key = utils::encryption::generate_aes256_key().await?;
+    let metadata_encryption_key = utils::encryption::generate_aes256_key()
+        .await
+        .inspect_err(|e| tracing::error!("Failed to generate AES256 key: {}", e))?;
+
     let new_node_id = NodeId::random();
 
     let encrypted_metadata =
         utils::encryption::node::encrypt_metadata(&folder_metadata, &metadata_encryption_key)
-            .await?;
+            .await
+            .inspect_err(|e| tracing::error!("Failed to encrypt metadata: {}", e))?;
 
     let mut new_parent_metadata = parent.metadata.clone();
 
@@ -40,7 +47,8 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
 
     let encrypted_parent_metadata =
         utils::encryption::node::encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
-            .await?;
+            .await
+            .inspect_err(|e| tracing::error!("Failed to encrypt parent metadata: {}", e))?;
 
     let request_body = PostCreateFolderRequest {
         parent_metadata_version: parent.change_count,
@@ -49,15 +57,17 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
         node_id: new_node_id,
     };
 
-    let response =
-        api::requests::folder::post_create_folder(parent.id, request_body, &token).await?;
+    let response = api::requests::folder::post_create_folder(parent.id, request_body, &token)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to post to create_folder: {}", e))?;
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
             let decrypted_node =
                 utils::encryption::node::decrypt_node(new_folder, metadata_encryption_key)
                     .await
-                    .context("Failed to decrypt node")?;
+                    .context("Failed to decrypt node")
+                    .inspect_err(|e| tracing::error!("Failed to decrypt node metadata: {}", e))?;
 
             Ok(decrypted_node)
         }

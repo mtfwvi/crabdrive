@@ -19,7 +19,7 @@ pub async fn post_login(body: PostLoginRequest) -> Result<PostLoginResponse> {
 }
 
 pub async fn post_register(body: PostRegisterRequest) -> Result<PostRegisterResponse> {
-    let url = crabdrive_common::routes::auth::login();
+    let url = crabdrive_common::routes::auth::register();
     let body = RequestBody::Json(serde_json::to_string(&body).unwrap());
 
     let response = request(url, RequestMethod::POST, body, vec![], None, true).await?;

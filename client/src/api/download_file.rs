@@ -6,28 +6,44 @@ use crate::utils::error::wrap_js_err;
 use crate::{api, utils};
 use anyhow::{Result, anyhow};
 use crabdrive_common::storage::{ChunkIndex, FileRevision, NodeId};
+use tracing::debug_span;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::{Blob, Url};
 
 pub async fn download_file(node: DecryptedNode) -> Result<()> {
-    // TODO support chunked downloads in chrom(e/ium)
-    let token = utils::auth::get_token()?;
+    let _guard = debug_span!("api::downloadFile").entered();
+    let token = utils::auth::get_token()
+        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
+
+    // TODO: Support chunked downloads in chrom(e/ium)
 
     let file_key = match &node.metadata {
         NodeMetadata::V1(n) => n.file_key,
     }
-    .ok_or(anyhow!("Cannot download folders/symlinks"))?;
+    .ok_or(anyhow!("Cannot download folders or symlinks"))
+    .inspect_err(|_| tracing::error!("Cannot download folders or symlinks."))?;
 
     let current_revision = node
         .current_revision
-        .ok_or(anyhow!("This node does not have any file contents"))?;
+        .ok_or(anyhow!("This node does not have any file contents"))
+        .inspect_err(|_| tracing::error!("Node has no revision associated with it."))?;
+
+    if current_revision.upload_ended_on.is_none() {
+        // Revision has not finished uploading
+        tracing::error!("Cannot download file, which is still uploading.");
+        return Err(anyhow!(
+            "The file is still uploading. Please try again later"
+        ));
+    }
 
     let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
 
     for i in 1..=current_revision.chunk_count {
         let decrypted_chunk_result =
-            download_chunk_and_decrypt(node.id, &current_revision, &file_key, i, &token).await?;
+            download_chunk_and_decrypt(node.id, &current_revision, &file_key, i, &token)
+                .await
+                .inspect_err(|e| tracing::error!("Failed to download chunks: {}", e))?;
         chunks.push(decrypted_chunk_result);
     }
 
@@ -35,7 +51,12 @@ pub async fn download_file(node: DecryptedNode) -> Result<()> {
         NodeMetadata::V1(n) => &n.name,
     };
 
-    save_file(utils::file::combine_chunks(chunks)?, name).await
+    save_file(
+        utils::file::combine_chunks(chunks)
+            .inspect_err(|e| tracing::error!("Failed to combine decrypted file chunks: {}", e))?,
+        name,
+    )
+    .await
 }
 
 async fn download_chunk_and_decrypt(
@@ -45,8 +66,11 @@ async fn download_chunk_and_decrypt(
     index: ChunkIndex,
     token: &String,
 ) -> Result<Uint8Array> {
-    let chunk_response =
-        api::requests::chunk::get_chunk(node_id, revision.id, index, token).await?;
+    let _guard = debug_span!("downloadChunkAndDecrypt").entered();
+
+    let chunk_response = api::requests::chunk::get_chunk(node_id, revision.id, index, token)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to get chunk from server: {}", e))?;
 
     match chunk_response {
         GetChunkResponse::Ok(encrypted_chunk_buffer) => {
@@ -58,8 +82,9 @@ async fn download_chunk_and_decrypt(
                 iv_prefix: revision.iv,
             };
 
-            let decrypted_chunk =
-                utils::encryption::chunk::decrypt_chunk(&encrypted_chunk, key).await?;
+            let decrypted_chunk = utils::encryption::chunk::decrypt_chunk(&encrypted_chunk, key)
+                .await
+                .inspect_err(|e| tracing::error!("Failed to decrypt chunk contents: {}", e))?;
 
             Ok(Uint8Array::new(&decrypted_chunk.chunk))
         }
