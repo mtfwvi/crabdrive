@@ -1,5 +1,6 @@
 use crate::api::requests::node::get_path_between_nodes;
 use crate::model::node::DecryptedNode;
+use crate::utils;
 use crate::utils::encryption::node::decrypt_node_with_parent;
 use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetPathBetweenNodesResponse;
@@ -9,8 +10,11 @@ pub async fn path_between_nodes(
     from_node: DecryptedNode,
     to_node_id: NodeId,
 ) -> Result<Vec<DecryptedNode>> {
-    let path_response = get_path_between_nodes(from_node.id, to_node_id, &"".to_string()).await?;
+    let token = utils::auth::get_token()?;
+
+    let path_response = get_path_between_nodes(from_node.id, to_node_id, &token).await?;
     match path_response {
+        // TODO: Check encryption
         GetPathBetweenNodesResponse::Ok(encrypted_nodes) => {
             // we need to decrypt all nodes with their parent
             let mut decrypted_nodes: Vec<DecryptedNode> = Vec::with_capacity(encrypted_nodes.len());
@@ -29,9 +33,7 @@ pub async fn path_between_nodes(
 
             Ok(decrypted_nodes)
         }
-        GetPathBetweenNodesResponse::NoContent => {
-            Err(anyhow!("the path between the nodes does not exist"))
-        }
-        GetPathBetweenNodesResponse::NotFound => Err(anyhow!("one of the nodes does not exist")),
+        GetPathBetweenNodesResponse::NoContent => Err(anyhow!("Path between nodes does not exist")),
+        GetPathBetweenNodesResponse::NotFound => Err(anyhow!("One of the nodes does not exist")),
     }
 }

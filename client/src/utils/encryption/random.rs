@@ -1,4 +1,4 @@
-use crate::model::encryption::EncryptionKey;
+use crate::model::encryption::RawEncryptionKey;
 use crate::utils::browser::get_crypto;
 use crate::utils::error::{dyn_into, wrap_js_err};
 use anyhow::Result;
@@ -28,7 +28,7 @@ pub fn get_random_iv() -> Result<IV> {
     Ok(IV::new(iv_bytes))
 }
 
-pub fn get_random_encryption_key() -> Result<EncryptionKey> {
+pub fn get_random_encryption_key() -> Result<RawEncryptionKey> {
     // unwrap seems safe
     Ok(get_random_bytes(32)?
         .try_into()

@@ -1,14 +1,18 @@
-use crate::api::requests::folder::post_create_folder;
-use crate::constants::EMPTY_KEY;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-use crate::utils::encryption::node::{decrypt_node, encrypt_metadata};
+use crate::{api, utils};
+
 use anyhow::{Context, Result, anyhow};
 use chrono::Local;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::NodeId;
 
+/// Create a new folder node. Returns `Err` if called unauthenticated.
+///
+/// Returns the freshly created node.
 pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result<DecryptedNode> {
+    let token = utils::auth::get_token()?;
+
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
         last_modified: Local::now().naive_local(),
@@ -19,24 +23,24 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
         children_key: vec![],
     });
 
-    //TODO actually generate encryption key
-    //let new_encryption_key = get_random_encryption_key();
-
-    let new_node_encryption_key = EMPTY_KEY;
+    let metadata_encryption_key = utils::encryption::generate_aes256_key().await?;
     let new_node_id = NodeId::random();
 
-    let encrypted_metadata = encrypt_metadata(&folder_metadata, &new_node_encryption_key).await?;
+    let encrypted_metadata =
+        utils::encryption::node::encrypt_metadata(&folder_metadata, &metadata_encryption_key)
+            .await?;
 
     let mut new_parent_metadata = parent.metadata.clone();
 
     match new_parent_metadata {
         NodeMetadata::V1(ref mut metadata) => metadata
             .children_key
-            .push((new_node_id, new_node_encryption_key)),
+            .push((new_node_id, metadata_encryption_key)),
     }
 
     let encrypted_parent_metadata =
-        encrypt_metadata(&new_parent_metadata, &parent.encryption_key).await?;
+        utils::encryption::node::encrypt_metadata(&new_parent_metadata, &parent.encryption_key)
+            .await?;
 
     let request_body = PostCreateFolderRequest {
         parent_metadata_version: parent.change_count,
@@ -45,21 +49,23 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
         node_id: new_node_id,
     };
 
-    let response = post_create_folder(parent.id, request_body, &"".to_string()).await?;
+    let response =
+        api::requests::folder::post_create_folder(parent.id, request_body, &token).await?;
 
     match response {
         PostCreateFolderResponse::Created(new_folder) => {
-            let decrypted_node = decrypt_node(new_folder, new_node_encryption_key)
-                .await
-                .context("failed to decrypt node")?;
+            let decrypted_node =
+                utils::encryption::node::decrypt_node(new_folder, metadata_encryption_key)
+                    .await
+                    .context("Failed to decrypt node")?;
 
             Ok(decrypted_node)
         }
         PostCreateFolderResponse::NotFound => Err(anyhow!(
-            "no such node: {}. Check if you have permission to access it",
+            "No such node: {}. Check if you have permission to access it",
             parent.id
         )),
-        PostCreateFolderResponse::BadRequest => Err(anyhow!("bad request")),
+        PostCreateFolderResponse::BadRequest => Err(anyhow!("Bad Request")),
         PostCreateFolderResponse::Conflict => Err(anyhow!("Please try again")),
     }
 }

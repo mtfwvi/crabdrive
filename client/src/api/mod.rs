@@ -1,8 +1,10 @@
+mod auth;
 mod create_file;
 mod create_folder;
 mod download_file;
 mod get_children;
 mod get_root_node;
+mod get_trash_node;
 mod path_between_nodes;
 mod path_to_root;
 mod requests;
@@ -18,6 +20,8 @@ pub use download_file::download_file;
 pub use get_children::get_children;
 #[allow(unused_imports)]
 pub use get_root_node::get_root_node;
+#[allow(unused_imports)]
+pub use get_trash_node::get_trash_node;
 #[allow(unused_imports)]
 pub use path_between_nodes::path_between_nodes;
 #[allow(unused_imports)]

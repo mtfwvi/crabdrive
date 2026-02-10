@@ -1,6 +1,6 @@
 use crate::constants::AES_GCM;
 use crate::model::chunk::{DecryptedChunk, EncryptedChunk};
-use crate::model::encryption::EncryptionKey;
+use crate::model::encryption::FileKey;
 use crate::utils::browser::get_subtle_crypto;
 use crate::utils::encryption;
 use crate::utils::error::{future_from_js_promise, wrap_js_err};
@@ -21,9 +21,9 @@ fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
     }
 }
 
-pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Result<DecryptedChunk> {
+pub async fn decrypt_chunk(chunk: &EncryptedChunk, file_key: &FileKey) -> Result<DecryptedChunk> {
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::get_key_from_bytes(key).await?;
+    let key = encryption::import_key(file_key).await?;
 
     let encryption_params = get_encryption_params(
         chunk.first_block,
@@ -49,11 +49,11 @@ pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Resul
 
 pub async fn encrypt_chunk(
     chunk: &DecryptedChunk,
-    key: &EncryptionKey,
+    key: &FileKey,
     iv_prefix: IV,
 ) -> Result<EncryptedChunk> {
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::get_key_from_bytes(key).await?;
+    let key = encryption::import_key(key).await?;
 
     let encryption_params =
         get_encryption_params(chunk.first_block, chunk.last_block, chunk.index, iv_prefix);

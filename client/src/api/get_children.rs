@@ -1,23 +1,23 @@
-use crate::api::requests::node::get_node_children;
 use crate::constants::EMPTY_KEY;
 use crate::model::node::DecryptedNode;
 use crate::utils::encryption::node::decrypt_node;
+use crate::{api, utils};
 use anyhow::{Context, Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetNodeChildrenResponse;
 
 pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>> {
-    let response_result = get_node_children(parent.id, &"".to_string()).await;
+    let token = utils::auth::get_token()?;
 
-    if let Err(err) = response_result {
-        return Err(anyhow!("Could not query children: {:?}", err));
-    }
+    let response = api::requests::node::get_node_children(parent.id, &token)
+        .await
+        .context("Failed to get children")?;
 
-    let response = response_result?;
     match response {
         GetNodeChildrenResponse::Ok(children) => {
             let mut decrypted_children = Vec::with_capacity(children.len());
 
             for child in children {
+                // TODO: Decrypt nodes
                 let decrypted_child = decrypt_node(child, EMPTY_KEY)
                     .await
                     .context("Could not decrypt node")?;

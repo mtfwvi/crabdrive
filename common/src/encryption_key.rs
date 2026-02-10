@@ -9,16 +9,29 @@ use diesel::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "server", derive(FromSqlRow, AsExpression))]
 #[cfg_attr(feature = "server", diesel(sql_type = Binary))]
 pub struct EncryptionKey {
     key: Vec<u8>,
     iv: IV,
 }
+
 impl EncryptionKey {
     pub fn new(key: Vec<u8>, iv: IV) -> Self {
         Self { key, iv }
+    }
+
+    pub fn key_slice(&self) -> &[u8] {
+        self.key.as_slice()
+    }
+
+    pub fn key(&self) -> &Vec<u8> {
+        &self.key
+    }
+
+    pub fn iv(&self) -> &IV {
+        &self.iv
     }
 
     pub fn nil() -> Self {

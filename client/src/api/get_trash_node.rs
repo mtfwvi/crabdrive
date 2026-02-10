@@ -7,17 +7,17 @@ use crabdrive_common::uuid::UUID;
 
 use anyhow::{Context, Result, anyhow};
 
-/// Get the root node of the currently authenticated user. Returns `Err` if called unauthenticated.
-pub async fn get_root_node() -> Result<DecryptedNode> {
+/// Get the trash node of the currently authenticated user. Returns `Err` if called unauthenticated.
+pub async fn get_trash_node() -> Result<DecryptedNode> {
     let token = utils::auth::get_token()?;
-    let root_id: UUID = SessionStorage::get("root_id")
+    let trash_id: UUID = SessionStorage::get("trash_id")
         // Currently there is no way to retrieve the root node / trash node ID, and they are only
         // transmitted during login.
         .context("Failed to retrieve root node. Please check if local storage is enabled and re-authenticate")?
         // The user is an idiot and cleared session storage
         .ok_or(anyhow!("Root node not found. Please stop tampering with session storage and re-authenticate"))?;
 
-    let get_node_response = api::requests::node::get_node(root_id, &token).await?;
+    let get_node_response = api::requests::node::get_node(trash_id, &token).await?;
 
     match get_node_response {
         GetNodeResponse::Ok(encrypted_node) => {
@@ -34,6 +34,6 @@ pub async fn get_root_node() -> Result<DecryptedNode> {
             let decrypted_node = decrypted_node_result?;
             Ok(decrypted_node)
         }
-        GetNodeResponse::NotFound => Err(anyhow!("No root node found. Please re-authenticate")),
+        GetNodeResponse::NotFound => Err(anyhow!("No trash node found. Please re-authenticate")),
     }
 }

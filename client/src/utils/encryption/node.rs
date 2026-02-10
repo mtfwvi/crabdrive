@@ -1,20 +1,25 @@
 use crate::constants::AES_GCM;
-use crate::model::encryption::EncryptionKey;
+use crate::model::encryption::MetadataKey;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::browser::get_subtle_crypto;
-use crate::utils::encryption::{get_key_from_bytes, random};
+use crate::utils::encryption::{import_key, random};
 use crate::utils::error::wrap_js_err;
-use anyhow::{Error, anyhow};
+
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
+
+use anyhow::{Error, anyhow};
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
-pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<DecryptedNode, Error> {
-    let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &key).await?;
+pub async fn decrypt_node(
+    node: EncryptedNode,
+    metadata_key: MetadataKey,
+) -> Result<DecryptedNode, Error> {
+    let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &metadata_key).await?;
 
     let decrypted_node = DecryptedNode {
         id: node.id,
@@ -25,7 +30,7 @@ pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<Dec
         node_type: node.node_type,
         current_revision: node.current_revision,
         metadata: decrypted_metadata,
-        encryption_key: key,
+        encryption_key: metadata_key,
     };
 
     Ok(decrypted_node)
@@ -33,12 +38,12 @@ pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<Dec
 
 pub async fn decrypt_metadata(
     metadata: &EncryptedMetadata,
-    key: &EncryptionKey,
+    metadata_key: &MetadataKey,
 ) -> Result<NodeMetadata, Error> {
     let encrypted_metadata = Uint8Array::new_from_slice(metadata.metadata());
 
     let subtle_crypto = get_subtle_crypto()?;
-    let crypto_key = get_key_from_bytes(key).await?;
+    let crypto_key = import_key(metadata_key).await?;
 
     let iv_bytes = metadata.iv();
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
@@ -50,6 +55,7 @@ pub async fn decrypt_metadata(
             &crypto_key,
             &encrypted_metadata,
         ))?;
+
     let decrypted_arraybuffer_value =
         wrap_js_err(JsFuture::from(decrypted_arraybuffer_promise).await)?;
 
@@ -64,16 +70,16 @@ pub async fn decrypt_metadata(
 
 pub async fn encrypt_metadata(
     metadata: &NodeMetadata,
-    key: &EncryptionKey,
+    metadata_key: &MetadataKey,
 ) -> Result<EncryptedMetadata, Error> {
     let decrypted_metadata = serde_json::to_vec(metadata)?;
     let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
 
-    let iv: IV = random::get_random_iv()?;
-
     let subtle_crypto = get_subtle_crypto()?;
-    let key = get_key_from_bytes(key).await?;
 
+    let key = import_key(metadata_key).await?;
+
+    let iv: IV = random::get_random_iv()?;
     let iv_bytes_array = Uint8Array::new_from_slice(&iv.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
 
@@ -98,7 +104,7 @@ pub async fn decrypt_node_with_parent(
     parent: &DecryptedNode,
     child: EncryptedNode,
 ) -> Result<DecryptedNode, Error> {
-    let key = match parent.metadata {
+    let metadata_child_key = match parent.metadata {
         NodeMetadata::V1(ref metadata_v1) => {
             // find the key in the list of keys
             metadata_v1
@@ -108,10 +114,7 @@ pub async fn decrypt_node_with_parent(
         }
     };
 
-    if key.is_none() {
-        return Err(anyhow!("key not found"));
-    }
-    let key = key.unwrap();
+    let key = metadata_child_key.ok_or(anyhow!("Key not found"))?;
     decrypt_node(child, key.1).await
 }
 
