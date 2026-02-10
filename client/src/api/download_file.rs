@@ -62,7 +62,7 @@ pub async fn download_file(node: DecryptedNode) -> Result<()> {
 async fn download_chunk_and_decrypt(
     node_id: NodeId,
     revision: &FileRevision,
-    key: &FileKey,
+    file_key: &FileKey,
     index: ChunkIndex,
     token: &String,
 ) -> Result<Uint8Array> {
@@ -82,9 +82,10 @@ async fn download_chunk_and_decrypt(
                 iv_prefix: revision.iv,
             };
 
-            let decrypted_chunk = utils::encryption::chunk::decrypt_chunk(&encrypted_chunk, key)
-                .await
-                .inspect_err(|e| tracing::error!("Failed to decrypt chunk contents: {}", e))?;
+            let decrypted_chunk =
+                utils::encryption::chunk::decrypt_chunk(&encrypted_chunk, file_key)
+                    .await
+                    .inspect_err(|e| tracing::error!("Failed to decrypt chunk contents: {}", e))?;
 
             Ok(Uint8Array::new(&decrypted_chunk.chunk))
         }

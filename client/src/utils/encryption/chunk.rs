@@ -56,13 +56,13 @@ pub async fn decrypt_chunk(chunk: &EncryptedChunk, file_key: &FileKey) -> Result
 
 pub async fn encrypt_chunk(
     chunk: &DecryptedChunk,
-    key: &FileKey,
+    file_key: &FileKey,
     iv_prefix: IV,
 ) -> Result<EncryptedChunk> {
     let _guard = debug_span!("utils::encryption::encryptChunk").entered();
 
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::import_key(key)
+    let key = encryption::import_key(file_key)
         .await
         .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 

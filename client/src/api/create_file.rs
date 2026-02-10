@@ -1,7 +1,7 @@
 use crate::api::requests::chunk::PostChunkResponse;
 use crate::constants::CHUNK_SIZE;
 use crate::model::chunk::DecryptedChunk;
-use crate::model::encryption::{FileKey, MetadataKey, RawEncryptionKey};
+use crate::model::encryption::{FileKey, MetadataKey};
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
 use crate::{api, utils};
 
@@ -173,14 +173,14 @@ async fn upload_file(
 async fn encrypt_and_upload_chunk(
     chunk: &DecryptedChunk,
     iv_prefix: IV,
-    key: &RawEncryptionKey,
+    file_key: &FileKey,
     node_id: NodeId,
     revision_id: RevisionId,
     token: &String,
 ) -> Result<()> {
     let _guard = debug_span!("encryptAndUploadChunk").entered();
 
-    let encrypted_chunk = utils::encryption::chunk::encrypt_chunk(chunk, key, iv_prefix)
+    let encrypted_chunk = utils::encryption::chunk::encrypt_chunk(chunk, file_key, iv_prefix)
         .await
         .inspect_err(|e| tracing::error!("Failed to encrypt chunk: {}", e))?;
     let request_body = Uint8Array::new(&encrypted_chunk.chunk);
