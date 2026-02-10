@@ -10,7 +10,7 @@ pub async fn logout() -> Result<()> {
 
     if !utils::auth::is_authenticated()? {
         tracing::error!("Cannot sign out, because you are not signed in.");
-        return Err(anyhow!("Unable to sign out at the momemt"));
+        return Err(anyhow!("Unable to sign out at the moment"));
     }
 
     SessionStorage::clear().context("Failed to clear session storage!")?;
