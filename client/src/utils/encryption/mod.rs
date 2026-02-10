@@ -20,7 +20,7 @@ async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
     let format = "raw";
     let key_data = Uint8Array::new_from_slice(key);
     let algorithm = "AES-GCM";
-    let extractable = false;
+    let extractable = true;
     let key_usage = Array::new();
     key_usage.push(&JsValue::from("encrypt"));
     key_usage.push(&JsValue::from("decrypt"));
