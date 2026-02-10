@@ -26,34 +26,9 @@ pub fn get_last_used_username() -> Result<Option<String>> {
 
 /// Checks if a password has the minimum requirements.
 /// Currently:
-/// - Minimum 8 Characters
-/// - At least one uppercase letter
-/// - At least one number
-/// - At least one special character
+/// - Minimum 12 Characters
 pub fn password_is_secure(password: &str) -> bool {
-    if password.len() < 8 {
-        return false;
-    }
-
-    let mut has_uppercase = false;
-    let mut has_number = false;
-    let mut has_special = false;
-
-    for c in password.chars() {
-        if c.is_uppercase() {
-            has_uppercase = true;
-        } else if c.is_numeric() {
-            has_number = true;
-        } else if !c.is_alphanumeric() {
-            has_special = true;
-        }
-
-        if has_uppercase && has_number && has_special {
-            return true;
-        }
-    }
-
-    false
+    password.len() >= 12
 }
 
 /// Creates a Base64 encoded
@@ -75,10 +50,10 @@ mod tests {
 
     use crate::utils;
 
-    #[test_case("Crabdrive", false; "Only letters")]
-    #[test_case("crabdrive123", false; "Only lowercase letters and numbers")]
-    #[test_case("Crabdrive123", false; "Only letters and numbers")]
-    #[test_case("CrAbDrIvE456!", true; "Letters, Numbers and Symbols")]
+    #[test_case("", false; "0 Characters")]
+    #[test_case("Crabdrive", false; "9 Characters")]
+    #[test_case("Crabdrive123", true; "12 Characters")]
+    #[test_case("CrAbDrIvE456!", true; "13 Characters")]
     fn check_password_is_secure(password: &str, expected: bool) {
         assert_eq!(utils::auth::password_is_secure(password), expected);
     }
