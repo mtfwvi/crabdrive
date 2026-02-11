@@ -58,8 +58,10 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    let mut conn = state.db_pool.get().unwrap();
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
+    {
+        let mut conn = state.db_pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS).unwrap();
+    }
 
     // HACK: Create a root node with a zeroed UUID, if it's not already existing.
     // TODO: Remove when adding auth!
