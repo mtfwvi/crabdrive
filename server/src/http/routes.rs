@@ -13,7 +13,7 @@ use crabdrive_common::routes;
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post};
-
+use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
 pub fn routes() -> Router<AppState> {
@@ -22,6 +22,7 @@ pub fn routes() -> Router<AppState> {
 
     Router::new()
         .fallback_service(frontend_build)
+        .layer(CompressionLayer::new())
         .merge(nodes_routes())
         .merge(admin_routes())
         .merge(auth_routes())
