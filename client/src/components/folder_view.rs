@@ -1,4 +1,4 @@
-use crate::api::{get_children, path_to_root};
+use crate::api::{get_children, get_trash_node, path_to_root};
 use crate::components::file_creation_button::FileCreationButton;
 use crate::components::file_details::FileDetails;
 use crate::components::folder_creation_button::FolderCreationButton;
@@ -15,7 +15,10 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView {
+pub(crate) fn FolderView(
+    #[prop(into)] node_id: Signal<NodeId>,
+    is_trash: Signal<bool>,
+) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
     let navigate = use_navigate();
 
@@ -36,7 +39,14 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
 
     let path_res = LocalResource::new(move || {
         let node_id = node_id.get();
-        async move { path_to_root(node_id).await.map_err(|err| err.to_string()) }
+        async move {
+            if is_trash.get() {
+                let trash_node = get_trash_node().await.map_err(|err| err.to_string())?;
+                Ok(vec![trash_node])
+            } else {
+                path_to_root(node_id).await.map_err(|err| err.to_string())
+            }
+        }
     });
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
@@ -62,6 +72,12 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
         NodeType::Link => add_toast(String::from("Links have not been implemented")),
     });
 
+    let on_node_created = Callback::new(move |_| {
+        path_res.refetch()
+        // children_res will automatically refetch, because it is
+        // only created within the resource wrapper for path_res
+    });
+
     view! {
         <ResourceWrapper
             resource=path_res
@@ -71,7 +87,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
             fallback_spinner=false
             children=move |path| {
                 let current_node = Signal::derive(move || {
-                    path.get().last().expect("Failed due to empty path").clone()
+                    path.get().last().expect("Failed to get current node due to empty path").clone()
                 });
                 let children_res = LocalResource::new(move || {
                     let current_node = current_node.get();
@@ -81,7 +97,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                 view! {
                     <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                         <Space vertical=true>
-                            <PathBreadcrumb path on_select=navigate_to_node />
+                            <PathBreadcrumb path is_trash on_select=navigate_to_node />
                             <Divider class="mb-3" />
 
                             <ResourceWrapper
@@ -104,14 +120,11 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                             <Space>
                                 <FileCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
-                                    on_created=Callback::new(move |_| { path_res.refetch() })
+                                    on_created=on_node_created
                                 />
                                 <FolderCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
-                                    on_created=Callback::new(move |_| {
-                                        children_res.refetch();
-                                        path_res.refetch()
-                                    })
+                                    on_created=on_node_created
                                 />
                             </Space>
                         </Space>

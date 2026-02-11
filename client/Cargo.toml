@@ -22,22 +22,23 @@ tracing-web = { workspace = true }
 wasm-bindgen = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 web-sys = { workspace = true, features = [
-    "DomException",
-    "Window",
-    "Request",
-    "RequestInit",
-    "RequestMode",
-    "Response",
-    "Crypto",
-    "CryptoKey",
-    "SubtleCrypto",
     "AesGcmParams",
     "AesKeyGenParams",
     "Blob",
+    "Crypto",
+    "CryptoKey",
+    "DomException",
     "File",
     "FileList",
     "Location",
+    "Response",
+    "Request",
+    "RequestInit",
+    "RequestMode",
+    "SubmitEvent",
+    "SubtleCrypto",
     "Url",
+    "Window"
 ] }
 
 crabdrive-common = { workspace = true }
