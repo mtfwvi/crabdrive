@@ -17,8 +17,8 @@ pub(crate) fn FileCreationButton(
     on_created: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
-    let upload_progress_toast_id = UUID::random();
-    let add_upload_progress_toast = move |file_count| {
+    let upload_in_progress_toast_id = UUID::random();
+    let add_upload_in_progress_toast = move |file_count| {
         toaster.dispatch_toast(
             move || {
                 view! {
@@ -38,7 +38,7 @@ pub(crate) fn FileCreationButton(
                 }
             },
             ToastOptions::default()
-                .with_id(upload_progress_toast_id.into())
+                .with_id(upload_in_progress_toast_id.into())
                 .with_intent(ToastIntent::Info)
                 .with_timeout(INFINITE_TOAST_TIMEOUT),
         )
@@ -64,14 +64,14 @@ pub(crate) fn FileCreationButton(
         let files = input.to_owned();
         let file_count = files.len();
 
-        add_upload_progress_toast(file_count);
+        add_upload_in_progress_toast(file_count);
 
         async move {
             let mut parent = parent_node.get();
             for (i, file) in files.into_iter().enumerate() {
                 let result = create_file(&mut parent, file.name(), file).await;
                 if result.is_err() {
-                    toaster.dismiss_toast(upload_progress_toast_id.into());
+                    toaster.dismiss_toast(upload_in_progress_toast_id.into());
                     return Err(format!(
                         "Error on the {} file: {}; aborted upload.",
                         format_number_as_ordinal(i + 1),
@@ -86,7 +86,7 @@ pub(crate) fn FileCreationButton(
     Effect::new(move || {
         let status = creation_action.value().get();
         if status.is_some() {
-            toaster.dismiss_toast(upload_progress_toast_id.into());
+            toaster.dismiss_toast(upload_in_progress_toast_id.into());
             match status.unwrap() {
                 Ok(_) => add_toast("Upload complete".to_string(), ToastIntent::Success),
                 Err(e) => add_toast(format!("Failed to create file: {}", e), ToastIntent::Error),
