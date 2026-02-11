@@ -8,8 +8,8 @@ use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use thaw::{
-    Button, ButtonAppearance, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign, Text,
-    Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
+    Button, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign,
+    Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
@@ -20,7 +20,12 @@ pub(crate) fn HomePage() -> impl IntoView {
     });
 
     let navigate = use_navigate();
-    let navigate_to_login = Callback::new(move |_| navigate("/login", Default::default()));
+    let navigate_to_login = navigate.clone();
+    let navigate_to_login = Callback::new(move |_| navigate_to_login("/login", Default::default()));
+
+    let navigate_to_node = Callback::new(move |node_id: NodeId| {
+        navigate(&format!("/{}", node_id), Default::default())
+    });
 
     Effect::new(move || {
         let is_logged_in = is_authenticated().unwrap_or_default();
@@ -60,6 +65,13 @@ pub(crate) fn HomePage() -> impl IntoView {
         }
     });
 
+    let on_go_to_node = move |storage_field: &'static str| {
+        let node_id: Option<UUID> = SessionStorage::get(storage_field).unwrap_or_default();
+        if let Some(node_id) = node_id {
+            navigate_to_node.run(node_id);
+        }
+    };
+
     let username = Signal::derive(move || {
         let storage_result = SessionStorage::get("username").unwrap_or_default();
         storage_result.unwrap_or(String::from("current user"))
@@ -74,17 +86,32 @@ pub(crate) fn HomePage() -> impl IntoView {
                         <Text class="!text-3xl !font-bold">"crabdrive"</Text>
                     </Space>
                     <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
+                    <Divider class="mt-2 mb-4" />
+                    <ButtonGroup class="w-full">
+                        <Button
+                            on_click=move |_| on_go_to_node("root_id")
+                            icon=icondata::MdiFolderStarOutline
+                            class="flex-1"
+                        >
+                            "Root"
+                        </Button>
+                        <Button
+                            on_click=move |_| on_go_to_node("trash_id")
+                            icon=icondata::MdiTrashCanOutline
+                            class="flex-1"
+                        >
+                            Trash
+                        </Button>
+                    </ButtonGroup>
                     <Button
-                        appearance=ButtonAppearance::Transparent
-                        class="!p-0"
                         on_click=move |_| {
                             logout_action.dispatch(());
                         }
+                        block=true
+                        icon=icondata::MdiLogout
                     >
-                        {format!("Log out from {}", username.get())}
+                        {move || format!("Log out ({})", username.get())}
                     </Button>
-
-                // TODO: Add links to root and trash
                 </Flex>
             </LayoutSider>
 
@@ -96,7 +123,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                     when=move || node_id.get().is_some()
                     fallback=|| view! { <Text>No node selected.</Text> }
                 >
-                    <FolderView node_id=Signal::derive(move || node_id.get().unwrap()) />
+                    <FolderView
+                        node_id=Signal::derive(move || node_id.get().unwrap())
+                        is_trash=Signal::derive(move || {
+                            let trash_id: Option<UUID> = SessionStorage::get("trash_id")
+                                .unwrap_or_default();
+                            trash_id == node_id.get()
+                        })
+                    />
                 </Show>
             </Layout>
         </Layout>
