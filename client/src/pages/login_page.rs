@@ -1,4 +1,4 @@
-use crate::api::auth::register;
+use crate::api::auth::{login, register};
 use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::utils::auth::is_valid_password;
 use crabdrive_common::uuid::UUID;
@@ -82,10 +82,28 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     );
                     navigate_to_login.run(())
                 }
-                Err(e) => add_toast(
-                    format!("Failed to register account: {}", e),
-                    ToastIntent::Error,
-                ),
+                Err(e) => add_toast(format!("Registration failed: {}", e), ToastIntent::Error),
+            }
+        }
+    });
+
+    let login_action = Action::new_local(move |input: &(String, String)| {
+        let (username, password) = input.to_owned();
+        async move {
+            add_auth_in_progress_toast("Login");
+            login(&username, &password, true)
+                .await
+                .map_err(|err| err.to_string())
+        }
+    });
+
+    Effect::new(move || {
+        let status = login_action.value().get();
+        if status.is_some() {
+            toaster.dismiss_toast(auth_in_progress_toast_id.into());
+            match status.unwrap() {
+                Ok(_) => {} // Login redirects instead of returning on success
+                Err(e) => add_toast(format!("Login failed: {}", e), ToastIntent::Error),
             }
         }
     });
@@ -101,7 +119,9 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
 
         if register_new_account {
             register_action.dispatch((username, password));
-        } // TODO Add login
+        } else {
+            login_action.dispatch((username, password));
+        }
     });
 
     view! {
@@ -141,7 +161,7 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                         "current-password"
                     }
                 />
-                <Show when=move || !is_password_valid.get()>
+                <Show when=move || !is_password_valid.get() && !register_new_account>
                     <MessageBar intent=MessageBarIntent::Error layout=MessageBarLayout::Multiline>
                         <MessageBarBody class="mb-2">
                             <MessageBarTitle>"Invalid password"</MessageBarTitle>
@@ -153,15 +173,25 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     {move || if register_new_account { "Register" } else { "Login" }}
                 </Button>
 
-                <Show when=move || !register_new_account>
-                    <Button
-                        appearance=ButtonAppearance::Transparent
-                        block=true
-                        on_click=move |_| navigate_to_register.run(())
-                    >
-                        "Have no account yet? Register now"
-                    </Button>
-                </Show>
+                <Button
+                    appearance=ButtonAppearance::Transparent
+                    block=true
+                    on_click=move |_| {
+                        if register_new_account {
+                            navigate_to_login.run(())
+                        } else {
+                            navigate_to_register.run(())
+                        }
+                    }
+                >
+                    {move || {
+                        if register_new_account {
+                            "Already have an account? Login now"
+                        } else {
+                            "Have no account yet? Register now"
+                        }
+                    }}
+                </Button>
             </form>
         </Space>
     }

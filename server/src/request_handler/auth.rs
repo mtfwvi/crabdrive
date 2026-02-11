@@ -202,7 +202,6 @@ pub async fn get_user_info(
 
 pub async fn post_logout() -> StatusCode {
     //TODO implement (token blacklisting?)
-    //StatusCode::OK
 
-    unimplemented!()
+    StatusCode::OK
 }

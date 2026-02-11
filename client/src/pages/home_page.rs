@@ -1,9 +1,16 @@
+use crate::api::auth::logout;
 use crate::components::folder_view::FolderView;
+use crate::constants::DEFAULT_TOAST_TIMEOUT;
+use crate::utils::auth::is_authenticated;
+use crate::utils::browser::SessionStorage;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
-use leptos_router::hooks::use_params_map;
-use thaw::{Image, Layout, LayoutSider, Space, SpaceAlign, Text};
+use leptos_router::hooks::{use_navigate, use_params_map};
+use thaw::{
+    Button, ButtonAppearance, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign, Text,
+    Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
+};
 
 #[component]
 pub(crate) fn HomePage() -> impl IntoView {
@@ -12,14 +19,73 @@ pub(crate) fn HomePage() -> impl IntoView {
         UUID::parse_string(parameter)
     });
 
+    let navigate = use_navigate();
+    let navigate_to_login = Callback::new(move |_| navigate("/login", Default::default()));
+
+    Effect::new(move || {
+        let is_logged_in = is_authenticated().unwrap_or_default();
+        if !is_logged_in {
+            navigate_to_login.run(());
+        }
+    });
+
+    let toaster = ToasterInjection::expect_context();
+    let add_toast = move |text: String| {
+        toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>{text}</ToastTitle>
+                    </Toast>
+                }
+            },
+            ToastOptions::default()
+                .with_intent(ToastIntent::Error)
+                .with_timeout(DEFAULT_TOAST_TIMEOUT),
+        )
+    };
+
+    let logout_action =
+        Action::new_local(
+            move |_: &()| async move { logout().await.map_err(|err| err.to_string()) },
+        );
+
+    Effect::new(move || {
+        let status = logout_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => navigate_to_login.run(()),
+                Err(e) => add_toast(format!("Logout failed: {}", e)),
+            }
+        }
+    });
+
+    let username = Signal::derive(move || {
+        let storage_result = SessionStorage::get("username").unwrap_or_default();
+        storage_result.unwrap_or(String::from("current user"))
+    });
+
     view! {
         <Layout content_style="padding: 30px 40px; height: 100vh" has_sider=true>
             <LayoutSider class="!min-w-73">
-                <Space align=SpaceAlign::Center>
-                    <Image src="/logo.svg" attr:width=50 />
-                    <Text class="!text-3xl !font-bold">"crabdrive"</Text>
-                </Space>
-                <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
+                <Flex vertical=true class="w-fit" align=FlexAlign::Start>
+                    <Space align=SpaceAlign::Center>
+                        <Image src="/logo.svg" attr:width=50 />
+                        <Text class="!text-3xl !font-bold">"crabdrive"</Text>
+                    </Space>
+                    <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
+                    <Button
+                        appearance=ButtonAppearance::Transparent
+                        class="!p-0"
+                        on_click=move |_| {
+                            logout_action.dispatch(());
+                        }
+                    >
+                        {format!("Log out from {}", username.get())}
+                    </Button>
+
+                // TODO: Add links to root and trash
+                </Flex>
             </LayoutSider>
 
             <Layout
