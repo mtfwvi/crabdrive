@@ -190,7 +190,7 @@ impl NodeRepository for NodeState {
 
         conn.transaction(|conn| {
             use crate::db::schema::Node::dsl as NodeDsl;
-            let now = chrono::Utc::now().naive_utc();
+            let now = chrono::Local::now().naive_local();
 
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(from))
