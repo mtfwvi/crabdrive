@@ -450,8 +450,10 @@ pub async fn get_server() -> TestServer {
 // copied from server.rs/start
 fn prepare_db(state: &AppState) {
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    let mut conn = state.db_pool.get().unwrap();
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
+    {
+        let mut conn = state.db_pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS).unwrap();
+    }
 }
 
 pub async fn login(server: &TestServer) -> (String, NodeId) {

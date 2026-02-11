@@ -81,7 +81,7 @@ pub async fn patch_node(
 
     let updated_node = NodeEntity {
         metadata: payload.node_metadata,
-        metadata_change_counter: node_entity.metadata_change_counter + 1,
+        metadata_change_counter: node_entity.metadata_change_counter,
         ..node_entity
     };
 

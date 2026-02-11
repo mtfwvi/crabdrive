@@ -54,7 +54,7 @@ pub async fn post_create_folder(
         .node_repository
         .update_node(&NodeEntity {
             metadata: payload.parent_metadata,
-            metadata_change_counter: 0,
+            metadata_change_counter: parent_node.metadata_change_counter,
             ..parent_node
         })
         .expect("db error");
