@@ -123,15 +123,15 @@ pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
 
 /// Unwraps a key from the wrapped key
 pub async fn unwrap_key(
-    wrapped_key: WrappedKey,
-    derived_key: DerivedKey,
+    wrapped_key: &WrappedKey,
+    derived_key: &DerivedKey,
 ) -> Result<RawEncryptionKey> {
     let crypto = get_subtle_crypto()?;
 
     let iv_bytes = Uint8Array::new_from_slice(&wrapped_key.iv().get());
     // Import both keys
     let wrapped_key = Uint8Array::from(wrapped_key.key_slice()).buffer();
-    let derived_key = import_key(&derived_key).await?;
+    let derived_key = import_key(derived_key).await?;
 
     let params = AesGcmParams::new("AES-GCM", &iv_bytes);
     let usages = Array::new();
@@ -163,7 +163,7 @@ pub async fn unwrap_key(
 
 /// Wraps the master / root / trash / private key into a key.
 pub async fn wrap_key(
-    master_key: RawEncryptionKey,
+    master_key: &RawEncryptionKey,
     derived_key: &DerivedKey,
 ) -> Result<WrappedKey> {
     let _guard = tracing::trace_span!("utils::encryption::wrapKey").entered();
@@ -172,7 +172,7 @@ pub async fn wrap_key(
     let iv: IV = random::get_random_iv()?;
     let iv_bytes = Uint8Array::new_from_slice(&iv.get());
 
-    let master_key = import_key(&master_key).await?;
+    let master_key = import_key(master_key).await?;
     let derived_key = import_key(derived_key).await?;
 
     let params = AesGcmParams::new("AES-GCM", &iv_bytes);
@@ -282,10 +282,10 @@ mod test {
         let master_key_raw = get_random_test_key().await;
         let derived_key_raw = get_random_test_key().await;
 
-        let wrapped_struct = utils::encryption::wrap_key(master_key_raw, &derived_key_raw)
+        let wrapped_struct = utils::encryption::wrap_key(&master_key_raw, &derived_key_raw)
             .await
             .expect("Should wrap key successfully");
-        let unwrapped_key_raw = utils::encryption::unwrap_key(wrapped_struct, derived_key_raw)
+        let unwrapped_key_raw = utils::encryption::unwrap_key(&wrapped_struct, &derived_key_raw)
             .await
             .expect("Should unwrap key successfully");
 
