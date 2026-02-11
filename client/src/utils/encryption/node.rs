@@ -1,20 +1,30 @@
 use crate::constants::AES_GCM;
-use crate::model::encryption::EncryptionKey;
+use crate::model::encryption::MetadataKey;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::browser::get_subtle_crypto;
-use crate::utils::encryption::{get_key_from_bytes, random};
+use crate::utils::encryption::{import_key, random};
 use crate::utils::error::wrap_js_err;
-use anyhow::{Error, anyhow};
+
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
+
+use anyhow::{Error, anyhow};
+use tracing::debug_span;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
-pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<DecryptedNode, Error> {
-    let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &key).await?;
+pub async fn decrypt_node(
+    node: EncryptedNode,
+    metadata_key: MetadataKey,
+) -> Result<DecryptedNode, Error> {
+    let _guard = debug_span!("utils::encryption::decryptNode").entered();
+
+    let decrypted_metadata = decrypt_metadata(&node.encrypted_metadata, &metadata_key)
+        .await
+        .inspect_err(|_| tracing::error!("Failed to decrypt metadata ({})!", node.id))?;
 
     let decrypted_node = DecryptedNode {
         id: node.id,
@@ -25,7 +35,7 @@ pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<Dec
         node_type: node.node_type,
         current_revision: node.current_revision,
         metadata: decrypted_metadata,
-        encryption_key: key,
+        encryption_key: metadata_key,
     };
 
     Ok(decrypted_node)
@@ -33,12 +43,16 @@ pub async fn decrypt_node(node: EncryptedNode, key: EncryptionKey) -> Result<Dec
 
 pub async fn decrypt_metadata(
     metadata: &EncryptedMetadata,
-    key: &EncryptionKey,
+    metadata_key: &MetadataKey,
 ) -> Result<NodeMetadata, Error> {
+    let _guard = debug_span!("utils::encryption::decryptNodeMetadata").entered();
+
     let encrypted_metadata = Uint8Array::new_from_slice(metadata.metadata());
 
     let subtle_crypto = get_subtle_crypto()?;
-    let crypto_key = get_key_from_bytes(key).await?;
+    let crypto_key = import_key(metadata_key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 
     let iv_bytes = metadata.iv();
     let iv_bytes_array = Uint8Array::new_from_slice(&iv_bytes.get());
@@ -49,31 +63,39 @@ pub async fn decrypt_metadata(
             &algorithm,
             &crypto_key,
             &encrypted_metadata,
-        ))?;
+        ))
+        .inspect_err(|e| tracing::error!("Failed to decrypt node metadata (BP): {}", e))?;
+
     let decrypted_arraybuffer_value =
-        wrap_js_err(JsFuture::from(decrypted_arraybuffer_promise).await)?;
+        wrap_js_err(JsFuture::from(decrypted_arraybuffer_promise).await)
+            .inspect_err(|e| tracing::error!("Failed to decrypt node metadata (AP): {}", e))?;
 
     let decrypted_arraybuffer = wrap_js_err(decrypted_arraybuffer_value.dyn_into())?;
     let decrypted_array = Uint8Array::new(&decrypted_arraybuffer);
     let decrypted_metadata = decrypted_array.to_vec();
 
-    let metadata = serde_json::from_slice(&decrypted_metadata)?;
+    let metadata = serde_json::from_slice(&decrypted_metadata)
+        .inspect_err(|e| tracing::error!("Failed to serialize node metadata: {}", e))?;
 
     Ok(metadata)
 }
 
 pub async fn encrypt_metadata(
     metadata: &NodeMetadata,
-    key: &EncryptionKey,
+    metadata_key: &MetadataKey,
 ) -> Result<EncryptedMetadata, Error> {
+    let _guard = debug_span!("utils::encryption::encryptNodeMetadata").entered();
+
     let decrypted_metadata = serde_json::to_vec(metadata)?;
     let decrypted_metadata_array = Uint8Array::new_from_slice(&decrypted_metadata);
 
-    let iv: IV = random::get_random_iv()?;
-
     let subtle_crypto = get_subtle_crypto()?;
-    let key = get_key_from_bytes(key).await?;
 
+    let key = import_key(metadata_key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
+
+    let iv: IV = random::get_random_iv()?;
     let iv_bytes_array = Uint8Array::new_from_slice(&iv.get());
     let algorithm = AesGcmParams::new(AES_GCM, &iv_bytes_array);
 
@@ -82,9 +104,12 @@ pub async fn encrypt_metadata(
             &algorithm,
             &key,
             &decrypted_metadata_array,
-        ))?;
+        ))
+        .inspect_err(|e| tracing::error!("Failed to encrypt node metadata (BP): {}", e))?;
+
     let encrypted_arraybuffer_value =
-        wrap_js_err(JsFuture::from(encrypted_arraybuffer_promise).await)?;
+        wrap_js_err(JsFuture::from(encrypted_arraybuffer_promise).await)
+            .inspect_err(|e| tracing::error!("Failed to encrypt node metadata (AP): {}", e))?;
 
     let encrypted_arraybuffer = wrap_js_err(encrypted_arraybuffer_value.dyn_into::<ArrayBuffer>())?;
 
@@ -98,7 +123,9 @@ pub async fn decrypt_node_with_parent(
     parent: &DecryptedNode,
     child: EncryptedNode,
 ) -> Result<DecryptedNode, Error> {
-    let key = match parent.metadata {
+    let _guard = debug_span!("utils::encryption::decryptNodeWithParent").entered();
+
+    let metadata_child_key = match parent.metadata {
         NodeMetadata::V1(ref metadata_v1) => {
             // find the key in the list of keys
             metadata_v1
@@ -108,38 +135,45 @@ pub async fn decrypt_node_with_parent(
         }
     };
 
-    if key.is_none() {
-        return Err(anyhow!("key not found"));
-    }
-    let key = key.unwrap();
+    let key = metadata_child_key
+        .ok_or(anyhow!("Key not found"))
+        .inspect_err(|e| tracing::error!("Failed to get metadata child key: {}", e))?;
     decrypt_node(child, key.1).await
 }
 
 #[cfg(test)]
 mod test {
-    use crate::constants::EMPTY_KEY;
     use crate::model::node::{MetadataV1, NodeMetadata};
+    use crate::utils::encryption::generate_aes256_key;
     use crate::utils::encryption::node::{decrypt_metadata, encrypt_metadata};
     use chrono::NaiveDateTime;
+    use crabdrive_common::uuid::UUID;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_metadata() {
+        let key = generate_aes256_key().await.unwrap();
+        let file_key = generate_aes256_key().await.unwrap();
+
         let example_metadata = NodeMetadata::V1(MetadataV1 {
             name: "hello.txt".to_string(),
             last_modified: NaiveDateTime::default(),
             created: NaiveDateTime::default(),
             size: None,
             mime_type: Some("txt".to_string()),
-            file_key: None,
-            children_key: vec![],
+            file_key: Some(file_key),
+            children_key: vec![
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+                (UUID::random(), generate_aes256_key().await.unwrap()),
+            ],
         });
 
-        let encrypted_metadata = encrypt_metadata(&example_metadata, &EMPTY_KEY)
+        let encrypted_metadata = encrypt_metadata(&example_metadata, &key)
             .await
             .expect("could not encrypt node");
 
-        let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &EMPTY_KEY)
+        let decrypted_metadata = decrypt_metadata(&encrypted_metadata, &key)
             .await
             .expect("could not decrypt node");
 

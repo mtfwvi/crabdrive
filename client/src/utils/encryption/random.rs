@@ -1,4 +1,3 @@
-use crate::model::encryption::EncryptionKey;
 use crate::utils::browser::get_crypto;
 use crate::utils::error::{dyn_into, wrap_js_err};
 use anyhow::Result;
@@ -9,7 +8,7 @@ use web_sys::js_sys::{Object, Uint8Array};
 pub fn get_random_bytes(count: u32) -> Result<Vec<u8>> {
     let array = Uint8Array::new_with_length(count);
 
-    // this should be a uint8array according to mdn
+    // This should be a Uint8Array according to MDN
     let random_bytes_object: Object =
         wrap_js_err(get_crypto()?.get_random_values_with_js_u8_array(&array))?;
 
@@ -28,18 +27,9 @@ pub fn get_random_iv() -> Result<IV> {
     Ok(IV::new(iv_bytes))
 }
 
-pub fn get_random_encryption_key() -> Result<EncryptionKey> {
-    // unwrap seems safe
-    Ok(get_random_bytes(32)?
-        .try_into()
-        .expect("vec has wrong size"))
-}
-
 #[cfg(test)]
 mod test {
-    use crate::utils::encryption::random::{
-        get_random_bytes, get_random_encryption_key, get_random_iv,
-    };
+    use crate::utils::encryption::random::{get_random_bytes, get_random_iv};
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
@@ -53,11 +43,5 @@ mod test {
     fn test_get_random_iv() {
         let iv = get_random_iv().unwrap();
         assert!(!iv.get().eq(&[0; 12]));
-    }
-
-    #[wasm_bindgen_test]
-    fn test_get_random_encryption_key() {
-        let iv = get_random_encryption_key().unwrap();
-        assert!(!iv.eq(&[0; 32]));
     }
 }

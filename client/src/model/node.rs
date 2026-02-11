@@ -1,4 +1,4 @@
-use crate::model::encryption::{ChildKey, EncryptionKey};
+use crate::model::encryption::{ChildKey, FileKey, MetadataKey};
 use chrono::NaiveDateTime;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{FileRevision, NodeId, NodeType};
@@ -19,10 +19,32 @@ pub struct MetadataV1 {
     pub mime_type: Option<String>,
 
     /// used to encrypt chunks
-    pub file_key: Option<EncryptionKey>,
+    pub file_key: Option<FileKey>,
 
     /// used to encrypt children
     pub children_key: Vec<ChildKey>,
+}
+
+impl NodeMetadata {
+    pub(crate) fn v1(
+        name: String,
+        last_modified: NaiveDateTime,
+        created: NaiveDateTime,
+        size: Option<DataAmount>,
+        mime_type: Option<String>,
+        file_key: Option<FileKey>,
+        children_key: Vec<ChildKey>,
+    ) -> Self {
+        NodeMetadata::V1(MetadataV1 {
+            name,
+            last_modified,
+            created,
+            size,
+            mime_type,
+            file_key,
+            children_key,
+        })
+    }
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone, PartialEq, Eq)]
@@ -35,5 +57,6 @@ pub struct DecryptedNode {
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
     pub metadata: NodeMetadata,
-    pub encryption_key: EncryptionKey,
+    /// The metadata encryption key for this node
+    pub encryption_key: MetadataKey,
 }

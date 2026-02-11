@@ -104,10 +104,7 @@ pub(crate) fn FolderView(#[prop(into)] node_id: Signal<NodeId>) -> impl IntoView
                             <Space>
                                 <FileCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
-                                    on_created=Callback::new(move |_| {
-                                        children_res.refetch();
-                                        path_res.refetch()
-                                    })
+                                    on_created=Callback::new(move |_| { path_res.refetch() })
                                 />
                                 <FolderCreationButton
                                     parent_node=Signal::derive(move || current_node.get())
