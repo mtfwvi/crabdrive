@@ -2,6 +2,7 @@ use crate::db::connection::DbPool;
 use crate::db::operations;
 use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
+use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use anyhow::{Context, Ok, Result};
 use chrono::NaiveDateTime;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
@@ -10,6 +11,7 @@ use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
 use diesel::Connection;
 use diesel::ExpressionMethods;
+use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use std::sync::Arc;
 
@@ -27,13 +29,8 @@ pub(crate) trait NodeRepository {
 
     fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity>;
 
-    /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
     fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
 
-    /// Move a node from one parent to another. Requires:
-    /// - the id of the node to move
-    /// - the metadata of the old parent (remove the encryption key of the node we are moving)
-    /// - the metadata of the new parent (add the encryption key of the node we are moving)
     fn move_node(
         &self,
         id: NodeId,
@@ -62,6 +59,14 @@ pub(crate) trait NodeRepository {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()>;
+
+    fn purge_tree_from_trash(&self, id: NodeId) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)>;
+
+    fn empty_trash(
+        &self,
+        trash_node_id: NodeId,
+        older_than_days: i64,
+    ) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)>;
 }
 
 pub struct NodeState {
@@ -274,5 +279,121 @@ impl NodeRepository for NodeState {
         })?;
 
         Ok(())
+    }
+
+    fn purge_tree_from_trash(&self, id: NodeId) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)> {
+        use crate::db::schema::Node::dsl as NodeDsl;
+        use crate::db::schema::Revision::dsl as RevisionDsl;
+
+        let mut conn = self
+            .db_pool
+            .get()
+            .context("Failed to get database connection")?;
+
+        conn.transaction(|conn| {
+            let mut all_nodes = Vec::new();
+            let mut all_revisions = Vec::new();
+
+            fn collect_tree_nodes(
+                conn: &mut diesel::SqliteConnection,
+                node_id: NodeId,
+                nodes: &mut Vec<NodeEntity>,
+            ) -> Result<()> {
+                let node = NodeDsl::Node
+                    .filter(NodeDsl::id.eq(node_id))
+                    .first::<NodeEntity>(conn)
+                    .context("Node not found")?;
+
+                if node.deleted_on.is_none() {
+                    anyhow::bail!("Cannot purge node tree that is not in trash");
+                }
+
+                let children = NodeDsl::Node
+                    .filter(NodeDsl::parent_id.eq(node_id))
+                    .load::<NodeEntity>(conn)
+                    .context("Failed to load children")?;
+
+                for child in children {
+                    collect_tree_nodes(conn, child.id, nodes)?;
+                }
+
+                nodes.push(node);
+
+                Ok(())
+            }
+
+            collect_tree_nodes(conn, id, &mut all_nodes)?;
+
+            for node in &all_nodes {
+                let revisions = RevisionDsl::Revision
+                    .filter(RevisionDsl::file_id.eq(node.id))
+                    .load::<RevisionEntity>(conn)
+                    .context("Failed to load revisions")?;
+
+                all_revisions.extend(revisions);
+
+                diesel::delete(RevisionDsl::Revision)
+                    .filter(RevisionDsl::file_id.eq(node.id))
+                    .execute(conn)
+                    .context("Failed to delete revisions")?;
+
+                diesel::delete(NodeDsl::Node)
+                    .filter(NodeDsl::id.eq(node.id))
+                    .execute(conn)
+                    .context("Failed to delete node")?;
+            }
+
+            if let Some(root_node) = all_nodes.last() {
+                if let Some(parent_id) = root_node.parent_id {
+                    diesel::update(NodeDsl::Node)
+                        .filter(NodeDsl::id.eq(parent_id))
+                        .set(
+                            NodeDsl::metadata_change_counter
+                                .eq(NodeDsl::metadata_change_counter + 1),
+                        )
+                        .execute(conn)
+                        .context("Failed to update parent metadata counter")?;
+                }
+            }
+
+            Ok((all_nodes, all_revisions))
+        })
+    }
+
+    fn empty_trash(
+        &self,
+        trash_node_id: NodeId,
+        older_than_days: i64,
+    ) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)> {
+        use crate::db::schema::Node::dsl as NodeDsl;
+        use chrono::Utc;
+
+        let mut conn = self
+            .db_pool
+            .get()
+            .context("Failed to get database connection")?;
+
+        let cutoff_date = Utc::now().naive_utc() - chrono::Duration::days(older_than_days);
+
+        let nodes_to_delete = conn
+            .transaction(|conn| {
+                NodeDsl::Node
+                    .filter(NodeDsl::parent_id.eq(trash_node_id))
+                    .filter(NodeDsl::deleted_on.is_not_null())
+                    .filter(NodeDsl::deleted_on.lt(cutoff_date))
+                    .load::<NodeEntity>(conn)
+            })
+            .context("Failed to load trash nodes")?;
+
+        let mut all_nodes = Vec::new();
+        let mut all_revisions = Vec::new();
+
+        for node in nodes_to_delete {
+            let (nodes, revisions) = self.purge_tree_from_trash(node.id)?;
+            all_nodes.extend(nodes);
+            all_revisions.extend(revisions);
+        }
+
+        Ok((all_nodes, all_revisions))
     }
 }
