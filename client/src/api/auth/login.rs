@@ -53,13 +53,13 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
 
     let keys = login_response.user_keys.unwrap();
 
-    let master_key = utils::encryption::unwrap_key(keys.master_key, derived_key)
+    let master_key = utils::encryption::unwrap_key(&keys.master_key, &derived_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to unwrap master key"))?;
-    let root_key = utils::encryption::unwrap_key(keys.root_key, derived_key)
+    let root_key = utils::encryption::unwrap_key(&keys.root_key, &master_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to unwrap root key"))?;
-    let trash_key = utils::encryption::unwrap_key(keys.trash_key, derived_key)
+    let trash_key = utils::encryption::unwrap_key(&keys.trash_key, &master_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to unwrap trash key"))?;
 

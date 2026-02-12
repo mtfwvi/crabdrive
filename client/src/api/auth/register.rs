@@ -31,13 +31,13 @@ pub async fn register(username: &str, password: &str) -> Result<()> {
     let root_key = utils::encryption::generate_aes256_key().await?;
     let trash_key = utils::encryption::generate_aes256_key().await?;
 
-    let wrapped_master_key = utils::encryption::wrap_key(master_key, &derived_key)
+    let wrapped_master_key = utils::encryption::wrap_key(&master_key, &derived_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to wrap master key"))?;
-    let wrapped_root_key = utils::encryption::wrap_key(root_key, &derived_key)
+    let wrapped_root_key = utils::encryption::wrap_key(&root_key, &master_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to wrap root key"))?;
-    let wrapped_trash_key = utils::encryption::wrap_key(trash_key, &derived_key)
+    let wrapped_trash_key = utils::encryption::wrap_key(&trash_key, &master_key)
         .await
         .inspect_err(|_| tracing::error!("Failed to wrap trash key"))?;
 
