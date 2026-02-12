@@ -53,6 +53,11 @@ pub async fn post_create_file(
 
     //TODO this is not thread safe
     if parent_node.metadata_change_counter != payload.parent_metadata_version {
+        tracing::warn!(
+            "Parent metadata mismatch (got {}, expected {})",
+            payload.parent_metadata_version,
+            parent_node.metadata_change_counter
+        );
         return (StatusCode::CONFLICT, Json(PostCreateFileResponse::Conflict));
     }
 
