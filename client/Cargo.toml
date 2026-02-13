@@ -11,7 +11,6 @@ chrono = { workspace = true, features = ["serde"] }
 console_error_panic_hook = { workspace = true }
 icondata_core = {workspace = true}
 icondata_mdi = {workspace = true}
-formatx = { workspace = true }
 leptos = { workspace = true, features = ["csr"] }
 leptos_router = { workspace = true }
 leptos-use = { workspace = true, features = ["use_preferred_dark"] }

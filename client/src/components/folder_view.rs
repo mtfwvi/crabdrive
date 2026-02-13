@@ -16,23 +16,7 @@ pub(crate) fn FolderView(
     #[prop(into)] node_id: Signal<NodeId>,
     is_trash: Signal<bool>,
 ) -> impl IntoView {
-    let toaster = ToasterInjection::expect_context();
     let navigate = use_navigate();
-
-    let add_toast = move |text: String| {
-        toaster.dispatch_toast(
-            move || {
-                view! {
-                    <Toast>
-                        <ToastTitle>{text}</ToastTitle>
-                    </Toast>
-                }
-            },
-            ToastOptions::default()
-                .with_intent(ToastIntent::Info)
-                .with_timeout(DEFAULT_TOAST_TIMEOUT),
-        )
-    };
 
     let path_res = LocalResource::new(move || {
         let node_id = node_id.get();
@@ -132,7 +116,7 @@ pub(crate) fn FolderView(
                                 <Divider vertical=true />
                                 <FileDetails
                                     node=Signal::derive(move || selection.get().unwrap())
-                                    parent_id=node_id
+                                    parent=current_node
                                     on_close=Callback::new(move |_| selection.set(None))
                                     on_modified=Callback::new(move |_| {
                                         children_res.refetch();

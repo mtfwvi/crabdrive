@@ -18,7 +18,10 @@ pub(crate) fn FolderSelectionDialog(
     current_node: Signal<NodeId>,
 ) -> impl IntoView {
     let currently_open = RwSignal::new_local(current_node.get_untracked());
-    let path_res = LocalResource::new(move || path_to_root(currently_open.get()));
+    let path_res = LocalResource::new(move || async move {
+        let node_id = currently_open.get();
+        path_to_root(node_id).await.map_err(|err| err.to_string())
+    });
 
     Effect::new(move || {
         if open.get() {
@@ -53,9 +56,14 @@ pub(crate) fn FolderSelectionDialog(
                                     let current_node = Signal::derive(move || {
                                         path.get().last().expect("Failed due to empty path").clone()
                                     });
-                                    let children_res = LocalResource::new(move || get_children(
-                                        current_node.get(),
-                                    ));
+                                    let children_res = LocalResource::new(move || {
+                                        let current_node = current_node.get();
+                                        async move {
+                                            get_children(current_node)
+                                                .await
+                                                .map_err(|err| err.to_string())
+                                        }
+                                    });
 
                                     view! {
                                         <ResourceWrapper

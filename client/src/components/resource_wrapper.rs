@@ -1,3 +1,4 @@
+use anyhow::Result;
 use leptos::prelude::*;
 use std::fmt::Debug;
 use thaw::{Spinner, Text};
@@ -15,7 +16,7 @@ where
     V: IntoView + 'static,
 {
     let render_error =
-        move |e| view! { <Text>{format!("{}: {}", error_text.get(), e)}</Text> }.into_any();
+        move |e| view! { <Text>{format!("{}: {:?}", error_text.get(), e)}</Text> }.into_any();
 
     view! {
         <Transition fallback=move || {

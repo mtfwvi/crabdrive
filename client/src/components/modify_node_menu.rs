@@ -5,7 +5,7 @@ use crate::components::input_dialog::InputDialog;
 use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
-use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{
     Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Toast, ToastIntent, ToastOptions,
@@ -16,7 +16,7 @@ use web_sys::File;
 #[component]
 pub(crate) fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] parent_id: Signal<NodeId>,
+    #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -53,7 +53,11 @@ pub(crate) fn ModifyNodeMenu(
 
     let rename_action = Action::new_local(move |input: &String| {
         let new_name = input.to_owned();
-        async move { rename_node(node.get(), new_name).await }
+        async move {
+            rename_node(node.get(), parent.get(), new_name)
+                .await
+                .map_err(|err| err.to_string())
+        }
     });
     Effect::new(move || {
         let status = rename_action.value().get();
@@ -117,7 +121,7 @@ pub(crate) fn ModifyNodeMenu(
                 format!("Select destination for '{}'", shorten_file_name(metadata.get().name))
             })
             confirm_label="Move here"
-            current_node=parent_id
+            current_node=Signal::derive(move || parent.get().id)
         />
     }
 }

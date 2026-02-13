@@ -8,14 +8,12 @@ use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use thaw::{
-    Button, ButtonAppearance, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign,
-    Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
+    Button, ButtonAppearance, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider,
+    Space, SpaceAlign, Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
 pub(crate) fn HomePage() -> impl IntoView {
-    let toaster = ToasterInjection::expect_context();
-
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
         let parameter = use_params_map().get().get("id")?;
         UUID::parse_string(parameter)
@@ -92,14 +90,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                     <ButtonGroup class="w-full">
                         <Button
                             on_click=move |_| on_go_to_node("root_id")
-                            icon=icondata::MdiFolderStarOutline
+                            icon=icondata_mdi::MdiFolderStarOutline
                             class="flex-1"
                         >
                             "Root"
                         </Button>
                         <Button
                             on_click=move |_| on_go_to_node("trash_id")
-                            icon=icondata::MdiTrashCanOutline
+                            icon=icondata_mdi::MdiTrashCanOutline
                             class="flex-1"
                         >
                             Trash
@@ -110,7 +108,7 @@ pub(crate) fn HomePage() -> impl IntoView {
                             logout_action.dispatch(());
                         }
                         block=true
-                        icon=icondata::MdiLogout
+                        icon=icondata_mdi::MdiLogout
                     >
                         {move || format!("Log out ({})", username.get())}
                     </Button>

@@ -6,7 +6,7 @@ use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Icon
 #[component]
 pub(crate) fn PathBreadcrumb(
     #[prop(into)] path: Signal<Vec<DecryptedNode>>,
-    is_trash: Signal<bool>,
+    #[prop(into, optional, default = false.into())] is_trash: Signal<bool>,
     on_select: Callback<NodeId>,
     #[prop(optional, default = false)] compact: bool,
 ) -> impl IntoView {
@@ -58,7 +58,13 @@ fn PathBreadcrumbItem(
         metadata.name
     });
 
-    let text_style = Signal::derive(move || if is_last.get() { leaf_node_style } else { inner_node_style });
+    let text_style = Signal::derive(move || {
+        if is_last.get() {
+            leaf_node_style
+        } else {
+            inner_node_style
+        }
+    });
 
     view! {
         <BreadcrumbItem>
@@ -66,7 +72,7 @@ fn PathBreadcrumbItem(
                 <Show when=move || is_trash.get()>
                     <Icon
                         class=format!("{} mr-1", text_style.get())
-                        icon=icondata::MdiTrashCanOutline
+                        icon=icondata_mdi::MdiTrashCanOutline
                     />
                 </Show>
                 <Text class=format!("{} !font-bold", text_style.get())>{name}</Text>
