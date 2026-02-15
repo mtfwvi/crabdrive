@@ -164,7 +164,7 @@ impl AppConfig {
                 Some(Environment::Prod)
             },
             server: ServerConfigLayer {
-                address: Some("127.0.0.1".parse().unwrap()),
+                address: Some("0.0.0.0".parse().unwrap()),
                 port: Some(2722),
             },
             db: DatabaseConfigLayer {

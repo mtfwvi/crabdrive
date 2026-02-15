@@ -19,11 +19,33 @@ use std::any::Any;
 use std::io::ErrorKind;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
+use tokio::signal;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
-    let _ = tokio::signal::ctrl_c().await;
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
     shutdown(state).await;
 }
 
