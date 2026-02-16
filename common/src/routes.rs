@@ -25,15 +25,23 @@ pub mod node {
         ROUTE_MOVE_OUT_OF_TRASH.replace("{id}", &id.to_string())
     }
 
-    pub const SHARE_NODE: &str = "/api/node/{id}/share/";
-    /// `/api/node/{id}/share/`
-    pub fn share(id: NodeId) -> String {
-        SHARE_NODE.replace("{id}", &id.to_string())
-    }
-
     pub mod shared {
-        use crate::storage::ShareId;
+        use crate::storage::{NodeId, ShareId};
 
+        pub const SHARE_NODE: &str = "/api/node/{id}/share/";
+        /// `/api/node/{id}/share/`
+        pub fn share(id: NodeId) -> String {
+            SHARE_NODE.replace("{id}", &id.to_string())
+        }
+
+        // used to see who has access to the file
+        pub const NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
+        /// `/api/node/{id}/shared_info//`
+        pub fn get_node_share_info(id: NodeId) -> String {
+            NODE_SHARE_INFO.replace("{id}", &id.to_string())
+        }
+
+        // used to get information about a share link to be accepted
         pub const GET_SHARE_INFO: &str = "/api/shared/{share_id}/";
         /// `/api/shared/{share_id}/`
         pub fn get_share_info(id: ShareId) -> String {
@@ -46,9 +54,9 @@ pub mod node {
             ACCEPT_SHARE.replace("{share_id}", &id.to_string())
         }
 
-        pub const GET_OWN_SHARES: &str = "/api/shared/";
+        pub const GET_ACCEPTED_SHARED: &str = "/api/shared/";
         pub fn get_own_shares() -> String {
-            GET_OWN_SHARES.to_string()
+            GET_ACCEPTED_SHARED.to_string()
         }
     }
 
