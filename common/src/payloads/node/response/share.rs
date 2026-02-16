@@ -14,7 +14,7 @@ pub struct SharedUserInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum PostShareFileResponse {
+pub enum PostShareNodeResponse {
     NotFound,
     Ok(ShareId),
 }

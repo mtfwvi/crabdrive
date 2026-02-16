@@ -45,12 +45,12 @@ CREATE TABLE Revision(
 
 CREATE TABLE Share
 (
-    share_id                TEXT      NOT NULL PRIMARY KEY,
+    id                      TEXT      NOT NULL PRIMARY KEY,
     node_id                 TEXT      NOT NULL REFERENCES Node (id),
-    shared_by               TEXT      NULL REFERENCES User (id),
-    accepted_by             TEXT      NULL REFERENCES User (id),
+    shared_by               TEXT REFERENCES User (id),
+    accepted_by             TEXT REFERENCES User (id),
     time_shared             TIMESTAMP NOT NULL,
-    time_accepted           TIMESTAMP NULL,
+    time_accepted           TIMESTAMP,
     shared_encryption_key   BLOB,
     accepted_encryption_key BLOB
 );

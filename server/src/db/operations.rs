@@ -21,7 +21,10 @@ use crate::{
     user::persistence::model::user_entity::UserEntity,
 };
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-
+use crabdrive_common::routes::node::shared::share;
+use crabdrive_common::storage::ShareId;
+use crate::db::ShareDsl;
+use crate::storage::share::persistence::model::share_entity::ShareEntity;
 // User Ops
 
 pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntity>> {
@@ -279,5 +282,74 @@ pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Ve
             .filter(RevisionDsl::file_id.eq(node_id))
             .load::<RevisionEntity>(conn)?;
         Ok(revisions)
+    })
+}
+
+
+pub fn select_share(
+    db_pool: &DbPool,
+    share_id: ShareId,
+) -> Result<Option<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = ShareDsl::Share
+            .filter(ShareDsl::id.eq(share_id))
+            .first::<ShareEntity>(conn)
+            .optional()?;
+        Ok(share)
+    })
+}
+
+pub fn insert_share(db_pool: &DbPool, share: &ShareEntity) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share: ShareEntity = diesel::insert_into(ShareDsl::Share)
+            .values(share)
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn update_share(db_pool: &DbPool, share: &ShareEntity) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = diesel::update(ShareDsl::Share)
+            .filter(ShareDsl::id.eq(share.id))
+            .set(share)
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn delete_share(db_pool: &DbPool, share_id: ShareId) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share: ShareEntity = diesel::delete(ShareDsl::Share)
+            .filter(ShareDsl::id.eq(share_id))
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn get_all_shares_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let shares = ShareDsl::Share
+            .filter(ShareDsl::node_id.eq(node_id))
+            .load::<ShareEntity>(conn)?;
+        Ok(shares)
+    })
+}
+
+pub fn get_all_shares_by_user(db_pool: &DbPool, user_id: UserId) -> Result<Vec<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let shares = ShareDsl::Share
+            .filter(ShareDsl::accepted_by.eq(user_id))
+            .load::<ShareEntity>(conn)?;
+        Ok(shares)
     })
 }
