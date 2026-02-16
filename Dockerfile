@@ -18,8 +18,6 @@ RUN mkdir client/src && echo "fn main() {}" > client/src/main.rs
 RUN mkdir common/src && echo "" > common/src/lib.rs
 RUN cargo check --release
 
-RUN rustup target add wasm32-unknown-unknown
-
 RUN rm client server common Cargo.toml Cargo.lock -rf
 
 #add wasm target for client
