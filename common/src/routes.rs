@@ -25,6 +25,33 @@ pub mod node {
         ROUTE_MOVE_OUT_OF_TRASH.replace("{id}", &id.to_string())
     }
 
+    pub const SHARE_NODE: &str = "/api/node/{id}/share/";
+    /// `/api/node/{id}/share/`
+    pub fn share(id: NodeId) -> String {
+        SHARE_NODE.replace("{id}", &id.to_string())
+    }
+
+    pub mod shared {
+        use crate::storage::ShareId;
+
+        pub const GET_SHARE_INFO: &str = "/api/shared/{share_id}/";
+        /// `/api/shared/{share_id}/`
+        pub fn get_share_info(id: ShareId) -> String {
+            GET_SHARE_INFO.replace("{share_id}", &id.to_string())
+        }
+
+        pub const ACCEPT_SHARE: &str = "/api/shared/{share_id}/accept";
+        /// `/api/shared/{share_id}/`
+        pub fn accept_share(id: ShareId) -> String {
+            ACCEPT_SHARE.replace("{share_id}", &id.to_string())
+        }
+
+        pub const GET_OWN_SHARES: &str = "/api/shared/";
+        pub fn get_own_shares() -> String {
+            GET_OWN_SHARES.to_string()
+        }
+    }
+
     pub mod file {
         use super::*;
 
