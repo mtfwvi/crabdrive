@@ -39,8 +39,12 @@ use std::sync::Arc;
 
 use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crabdrive_common::encryption_key::EncryptionKey;
-use crabdrive_common::payloads::node::request::share::{PostAcceptShareRequest, PostShareNodeRequest};
-use crabdrive_common::payloads::node::response::share::{GetAcceptedSharedResponse, GetShareInfoResponse, PostAcceptShareResponse, PostShareNodeResponse};
+use crabdrive_common::payloads::node::request::share::{
+    PostAcceptShareRequest, PostShareNodeRequest,
+};
+use crabdrive_common::payloads::node::response::share::{
+    GetAcceptedSharedResponse, GetShareInfoResponse, PostAcceptShareResponse, PostShareNodeResponse,
+};
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use pretty_assertions::assert_eq;
@@ -52,7 +56,6 @@ const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
 
 const TEST_USERNAME2: &str = "admin2";
-
 
 pub fn random_metadata() -> EncryptedMetadata {
     let mut data = vec![0; 6403];
@@ -268,10 +271,10 @@ pub async fn test_path_between_nodes() {
 pub async fn test_share() {
     let server = get_server().await;
     let (jwt1, root_node_id1) = login1(&server).await;
-    let (jwt2, root_node_id2) = login2(&server).await;
+    let (jwt2, _root_node_id2) = login2(&server).await;
 
     // user 1 creates a folder
-    let folder1_id = {
+    let (folder1_id, metadata1) = {
         let id = NodeId::random();
         let node_metadata = random_metadata();
 
@@ -294,15 +297,21 @@ pub async fn test_share() {
             StatusCode::CREATED
         );
 
-        id
+        (id, node_metadata)
     };
 
     // user2 should have zero shared nodes
     {
-        let get_accepted_shared_nodes_url = API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
-        let accepted_shared_node_response= auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
-        let accepted_shared_node_response_body: GetAcceptedSharedResponse = accepted_shared_node_response.json();
-        assert_eq!(accepted_shared_node_response_body, GetAcceptedSharedResponse::Ok(vec![]));
+        let get_accepted_shared_nodes_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
+        let accepted_shared_node_response =
+            auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
+        let accepted_shared_node_response_body: GetAcceptedSharedResponse =
+            accepted_shared_node_response.json();
+        assert_eq!(
+            accepted_shared_node_response_body,
+            GetAcceptedSharedResponse::Ok(vec![])
+        );
     }
 
     // create the share "url"
@@ -311,8 +320,11 @@ pub async fn test_share() {
         let post_share_node_request = PostShareNodeRequest {
             wrapped_metadata_key: EncryptionKey::nil(),
         };
-        let create_share_node_response = auth(server.post(&share_node_url), &jwt1).json(&post_share_node_request).await;
-        let create_share_node_response_body: PostShareNodeResponse = create_share_node_response.json();
+        let create_share_node_response = auth(server.post(&share_node_url), &jwt1)
+            .json(&post_share_node_request)
+            .await;
+        let create_share_node_response_body: PostShareNodeResponse =
+            create_share_node_response.json();
 
         if let PostShareNodeResponse::Ok(share_id) = create_share_node_response_body {
             share_id
@@ -323,7 +335,8 @@ pub async fn test_share() {
 
     // get share url info
     {
-        let get_share_info_url = API_BASE_PATH.to_owned() + &routes::node::share::get_share_info(share_id);
+        let get_share_info_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_share_info(share_id);
         let get_share_info_response = auth(server.get(&get_share_info_url), &jwt2).await;
         let get_share_info_response_body: GetShareInfoResponse = get_share_info_response.json();
 
@@ -336,11 +349,14 @@ pub async fn test_share() {
 
     // accept share
     {
-        let accept_share_url = API_BASE_PATH.to_owned() + &routes::node::share::accept_share(share_id);
+        let accept_share_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::accept_share(share_id);
         let accept_share_body = PostAcceptShareRequest {
             new_wrapped_metadata_key: EncryptionKey::nil(),
         };
-        let accept_share_response = auth(server.post(&accept_share_url), &jwt2).json(&accept_share_body).await;
+        let accept_share_response = auth(server.post(&accept_share_url), &jwt2)
+            .json(&accept_share_body)
+            .await;
         let accept_share_response_body: PostAcceptShareResponse = accept_share_response.json();
 
         assert_eq!(PostAcceptShareResponse::Ok, accept_share_response_body);
@@ -348,17 +364,51 @@ pub async fn test_share() {
 
     // user 2 should have one shared item
     {
-        let get_accepted_shared_nodes_url = API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
-        let accepted_shared_node_response= auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
-        let accepted_shared_node_response_body: GetAcceptedSharedResponse = accepted_shared_node_response.json();
+        let get_accepted_shared_nodes_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
+        let accepted_shared_node_response =
+            auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
+        let accepted_shared_node_response_body: GetAcceptedSharedResponse =
+            accepted_shared_node_response.json();
         let GetAcceptedSharedResponse::Ok(accepted_nodes) = accepted_shared_node_response_body;
         assert_eq!(accepted_nodes.len(), 1);
         assert_eq!(accepted_nodes[0].1.id, folder1_id);
     }
 
-    // user 2 should be able to access the shared item
+    // user 2 should be able to read the shared folder
     {
+        let url = API_BASE_PATH.to_owned() + &routes::node::by_id(folder1_id);
 
+        let test_request = auth(server.get(&url), &jwt2).await;
+
+        assert_eq!(test_request.status_code(), StatusCode::OK);
+        let response: GetNodeResponse = test_request.json();
+
+        if let GetNodeResponse::Ok(node) = response {
+            assert_eq!(node.encrypted_metadata, metadata1)
+        } else {
+            panic!("unexpected response: {:?}", response);
+        }
+    }
+
+    // user 2 should be able to add a folder to the shared folder
+    {
+        let folder2_id = NodeId::random();
+        let create_node_request = PostCreateFolderRequest {
+            parent_metadata_version: 0,
+            parent_metadata: random_metadata(),
+            node_metadata: random_metadata(),
+            node_id: folder2_id,
+        };
+
+        let url = API_BASE_PATH.to_owned() + &routes::node::folder::create(folder1_id);
+
+        let test_request = auth(server.post(&url), &jwt2)
+            .json(&create_node_request)
+            .await;
+
+        assert_eq!(test_request.status_code(), StatusCode::CREATED);
+        let _create_folder_response: PostCreateFolderResponse = test_request.json();
     }
 }
 
@@ -520,7 +570,16 @@ pub async fn get_server() -> TestServer {
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
-    let state = AppState::new(config.clone(), pool, vfs, node_repository, revision_repository, user_repository,share_repository,  keys);
+    let state = AppState::new(
+        config.clone(),
+        pool,
+        vfs,
+        node_repository,
+        revision_repository,
+        user_repository,
+        share_repository,
+        keys,
+    );
 
     prepare_db(&state);
 
