@@ -27,13 +27,13 @@ pub enum GetNodeSharedWithResponse {
     NotFound
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum PostAcceptShareResponse {
     Ok,
     NotFound
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum GetAcceptedSharedResponse {
     Ok(Vec<(EncryptionKey, EncryptedNode)>)
 }

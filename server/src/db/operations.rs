@@ -1,8 +1,10 @@
+use crate::db::ShareDsl;
+use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crate::{
     db::{
-        NodeDsl, RevisionDsl,
+        connection::DbPool, NodeDsl,
+        RevisionDsl,
         UserDsl::{self},
-        connection::DbPool,
     },
     storage::{
         node::persistence::model::node_entity::NodeEntity,
@@ -12,12 +14,7 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::routes::node::path_between_nodes;
-use crabdrive_common::routes::node::share::share;
 use crabdrive_common::storage::ShareId;
-use crate::db::ShareDsl;
-use crate::request_handler::node::get_node;
-use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crabdrive_common::{
     storage::{NodeId, RevisionId},
     user::UserId,
@@ -25,8 +22,8 @@ use crabdrive_common::{
 };
 use diesel::sql_types::Text;
 use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
-    sql_query,
+    sql_query, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl,
+    SelectableHelper,
 };
 // User Ops
 

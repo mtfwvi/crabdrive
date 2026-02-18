@@ -27,6 +27,7 @@ pub fn routes() -> Router<AppState> {
         .merge(nodes_routes())
         .merge(admin_routes())
         .merge(auth_routes())
+        .merge(share_routes())
 }
 
 pub fn nodes_routes() -> Router<AppState> {

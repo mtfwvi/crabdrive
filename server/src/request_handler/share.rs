@@ -39,7 +39,7 @@ pub async fn post_share_node(
 
     let share_entity = ShareEntity {
         id: ShareId::random(),
-        node_id,
+        node_id: node.id,
         shared_by: current_user.id,
         accepted_by: None,
         time_shared: Utc::now().naive_utc(),
@@ -71,7 +71,7 @@ pub async fn get_share_info(
     }
 
     let response = GetShareInfoResponse::Ok(ShareEncryptionInfo {
-        node_id: share_entity.id,
+        node_id: share_entity.node_id,
         wrapped_metadata_key: share_entity.shared_encryption_key.expect("share entity that has not been accepted is missing encryption key"),
     });
 
