@@ -25,7 +25,7 @@ pub mod node {
         ROUTE_MOVE_OUT_OF_TRASH.replace("{id}", &id.to_string())
     }
 
-    pub mod shared {
+    pub mod share {
         use crate::storage::{NodeId, ShareId};
 
         pub const SHARE_NODE: &str = "/api/node/{id}/share/";
@@ -55,7 +55,7 @@ pub mod node {
         }
 
         pub const GET_ACCEPTED_SHARED: &str = "/api/shared/";
-        pub fn get_own_shares() -> String {
+        pub fn get_accepted_shared() -> String {
             GET_ACCEPTED_SHARED.to_string()
         }
     }

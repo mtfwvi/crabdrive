@@ -11,7 +11,7 @@ use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
 use crate::request_handler::node::entity_to_encrypted_node;
 use crate::storage::share::persistence::model::share_entity::ShareEntity;
 
-pub fn post_share_node(
+pub async fn post_share_node(
     current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
@@ -53,7 +53,7 @@ pub fn post_share_node(
     (StatusCode::OK, Json(PostShareNodeResponse::Ok(share_entity.id)))
 }
 
-pub fn get_share_info(
+pub async fn get_share_info(
     _current_user: UserEntity,
     State(state): State<AppState>,
     Path(share_id): Path<ShareId>
@@ -78,7 +78,7 @@ pub fn get_share_info(
     (StatusCode::OK, Json(response))
 }
 
-pub fn get_node_shared_with(
+pub async  fn get_node_shared_with(
     current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>
@@ -105,7 +105,7 @@ pub fn get_node_shared_with(
     (StatusCode::OK, Json(GetNodeSharedWithResponse::Ok(usernames)))
 }
 
-pub fn post_accept_share(
+pub async fn post_accept_share(
     current_user: UserEntity,
     State(state): State<AppState>,
     Path(share_id): Path<ShareId>,
@@ -134,10 +134,10 @@ pub fn post_accept_share(
     (StatusCode::OK, Json(PostAcceptShareResponse::Ok))
 }
 
-pub fn get_accepted_shared_nodes(
+pub async fn get_accepted_shared_nodes(
     current_user: UserEntity,
     State(state): State<AppState>,
-) -> (StatusCode, GetAcceptedSharedResponse) {
+) -> (StatusCode, Json<GetAcceptedSharedResponse>) {
     let accepted_shares = state.share_repository.get_shares_by_user(current_user.id).expect("db error");
 
     let nodes: Vec<(EncryptionKey, EncryptedNode)> = accepted_shares.iter().map(|share_entity| {
@@ -155,5 +155,5 @@ pub fn get_accepted_shared_nodes(
         (share_entity.accepted_encryption_key.clone().unwrap(), node)
     }).collect();
 
-    (StatusCode::OK, GetAcceptedSharedResponse::Ok(nodes))
+    (StatusCode::OK, Json(GetAcceptedSharedResponse::Ok(nodes)))
 }

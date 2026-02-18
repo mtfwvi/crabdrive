@@ -13,7 +13,7 @@ use crate::{
 use anyhow::{Context, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::routes::node::path_between_nodes;
-use crabdrive_common::routes::node::shared::share;
+use crabdrive_common::routes::node::share::share;
 use crabdrive_common::storage::ShareId;
 use crate::db::ShareDsl;
 use crate::request_handler::node::get_node;

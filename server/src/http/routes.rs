@@ -15,6 +15,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post};
 use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
+use crate::request_handler::share::{get_accepted_shared_nodes, get_node_shared_with, get_share_info, post_accept_share, post_share_node};
 
 pub fn routes() -> Router<AppState> {
     let frontend_build =
@@ -76,4 +77,13 @@ pub fn admin_routes() -> Router<AppState> {
             get(get_user).delete(delete_user),
         )
         .route(routes::admin::ROUTE_USER, post(post_user))
+}
+
+pub fn share_routes() -> Router<AppState> {
+    Router::new()
+        .route(routes::node::share::SHARE_NODE, post(post_share_node))
+        .route(routes::node::share::NODE_SHARE_INFO, get(get_node_shared_with))
+        .route(routes::node::share::GET_SHARE_INFO, get(get_share_info))
+        .route(routes::node::share::GET_ACCEPTED_SHARED, get(get_accepted_shared_nodes))
+        .route(routes::node::share::ACCEPT_SHARE, post(post_accept_share))
 }
