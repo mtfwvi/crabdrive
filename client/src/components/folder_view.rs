@@ -1,6 +1,6 @@
 use crate::api::{get_children, get_trash_node, path_to_root};
-use crate::components::file_details::FileDetails;
 use crate::components::folder_bottom_bar::FolderBottomBar;
+use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
@@ -16,6 +16,13 @@ pub(crate) fn FolderView(
     is_trash: Signal<bool>,
 ) -> impl IntoView {
     let navigate = use_navigate();
+    let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
+
+    let _reset_selection_effect = Effect::watch(
+        move || node_id.get(),
+        move |_, _, _| selection.set(None),
+        false,
+    );
 
     let path_res = LocalResource::new(move || {
         let node_id = node_id.get();
@@ -28,11 +35,9 @@ pub(crate) fn FolderView(
             }
         }
     });
-    let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let navigate_to_node = Callback::new(move |node_id| {
         navigate(&format!("/{}", node_id), Default::default());
-        selection.set(None);
     });
 
     let toggle_selection = Callback::new(move |file: DecryptedNode| {
@@ -97,7 +102,7 @@ pub(crate) fn FolderView(
                     </Space>
 
                     <Show when=move || selection.get().is_some()>
-                        <FileDetails
+                        <NodeDetails
                             node=Signal::derive(move || selection.get().unwrap())
                             parent=current_node
                             on_close=Callback::new(move |_| selection.set(None))

@@ -8,7 +8,7 @@ use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
 #[component]
-pub(crate) fn FileDetails(
+pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,
