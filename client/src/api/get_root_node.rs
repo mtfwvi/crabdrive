@@ -1,60 +1,43 @@
-use crate::api::requests::node::get_node;
-use crate::constants::EMPTY_KEY;
-use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-use crate::utils::encryption::node::decrypt_node;
-use anyhow::{Result, anyhow};
-use crabdrive_common::payloads::node::response::node::GetNodeResponse;
-use crabdrive_common::storage::NodeId;
+use crate::model::node::DecryptedNode;
+use crate::utils::browser::SessionStorage;
+use crate::{api, utils};
 
+use crabdrive_common::payloads::node::response::node::GetNodeResponse;
+use crabdrive_common::uuid::UUID;
+
+use anyhow::{Context, Result, anyhow};
+use tracing::debug_span;
+
+/// Get the root node of the currently authenticated user. Returns `Err` if called unauthenticated.
 pub async fn get_root_node() -> Result<DecryptedNode> {
-    let get_node_response = get_node(NodeId::nil(), &"".to_string()).await?;
+    let _guard = debug_span!("api::getRootNode").entered();
+    let token = utils::auth::get_token()
+        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
+
+    let root_id: UUID = SessionStorage::get("root_id")
+        // Currently there is no way to retrieve the root node / trash node ID, and they are only
+        // transmitted during login.
+        .context("Failed to retrieve root node. Please check if local storage is enabled and re-authenticate")?
+        // The user is an idiot and cleared session storage
+        .ok_or(anyhow!("Root node not found. Please stop tampering with session storage and re-authenticate"))?;
+
+    let get_node_response = api::requests::node::get_node(root_id, &token)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to get root node: {}", e))?;
 
     match get_node_response {
         GetNodeResponse::Ok(encrypted_node) => {
-            if encrypted_node
-                .encrypted_metadata
-                .metadata()
-                .eq(&[0, 0, 0, 0])
-            {
-                // TODO remove when actually implementing users, as each user should have a root
+            let decrypted_node = utils::encryption::node::decrypt_node(
+                encrypted_node,
+                utils::encryption::auth::get_root_key()
+                    .inspect_err(|_| tracing::error!("Failed to get root encryption key."))?,
+            )
+            .await
+            .inspect_err(|e| tracing::error!("Failed to get decrypt root node: {}", e))
+            .context("Failed to decrypt root node")?;
 
-                // this is the empty node the server created on start => cannot be decrypted
-
-                // metadata will be uploaded to the server during the next update (e.g. adding children)
-                let root_node_metadata = NodeMetadata::V1(MetadataV1 {
-                    name: "root".to_string(),
-                    last_modified: Default::default(),
-                    created: Default::default(),
-                    size: None,
-                    mime_type: None,
-                    file_key: None,
-                    children_key: vec![],
-                });
-
-                let decrypted_node = DecryptedNode {
-                    id: encrypted_node.id,
-                    change_count: 0,
-                    parent_id: encrypted_node.parent_id,
-                    owner_id: encrypted_node.owner_id,
-                    deleted_on: encrypted_node.deleted_on,
-                    node_type: encrypted_node.node_type,
-                    current_revision: encrypted_node.current_revision,
-                    metadata: root_node_metadata,
-                    encryption_key: EMPTY_KEY,
-                };
-
-                Ok(decrypted_node)
-            } else {
-                let decrypted_node_result = decrypt_node(encrypted_node, EMPTY_KEY).await;
-
-                if let Err(js_error) = decrypted_node_result {
-                    return Err(anyhow!("could not decrypt node: {:?}", js_error));
-                }
-
-                let decrypted_node = decrypted_node_result?;
-                Ok(decrypted_node)
-            }
+            Ok(decrypted_node)
         }
-        GetNodeResponse::NotFound => Err(anyhow!("root node returned 404")),
+        GetNodeResponse::NotFound => Err(anyhow!("No root node found. Please re-authenticate")),
     }
 }

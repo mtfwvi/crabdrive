@@ -3,12 +3,16 @@ use wasm_bindgen::{JsCast, JsValue};
 use wasm_bindgen_futures::JsFuture;
 use web_sys::js_sys::Promise;
 
-/// Wrap a js value (should be an error) into an anyhow::Error type
+/// Wrap a js value (should be an error) into `anyhow::Error` type. The function attempts to
+/// automatically cast to `DomException` and only falls back to standard error handling.
 pub fn wrap_js_err<T>(result: Result<T, JsValue>) -> Result<T, Error> {
-    match result {
-        Ok(value) => Ok(value),
-        Err(err) => Err(anyhow!("{:?}", err)),
-    }
+    result.map_err(|js_value| {
+        if let Some(dom_exception) = js_value.dyn_ref::<web_sys::DomException>() {
+            return anyhow!("{}: {}", dom_exception.name(), dom_exception.message());
+        }
+
+        anyhow!("{:?}", js_value)
+    })
 }
 
 pub async fn future_from_js_promise<T: JsCast>(promise: Promise) -> Result<T, Error> {

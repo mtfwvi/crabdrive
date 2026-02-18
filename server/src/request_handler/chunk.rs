@@ -1,13 +1,17 @@
 use crate::http::AppState;
 use crate::storage::vfs::FileChunk;
 use crate::storage::vfs::model::{FileError, new_filekey};
+use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
+use axum::body::Body;
 use axum::extract::{Path, State};
-use axum::http::StatusCode;
+use axum::http::{Response, StatusCode};
+use axum::response::IntoResponse;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 
 pub async fn post_chunk(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
     chunk: axum::body::Bytes,
@@ -17,18 +21,22 @@ pub async fn post_chunk(
         data: chunk,
     };
 
-    let revision = state
+    let node_entity = state.node_repository.get_node(node_id).expect("db error");
+    let revision_entity = state
         .revision_repository
         .get_revision(revision_id)
         .expect("db error");
-
-    if revision.is_none() {
+    if revision_entity.is_none() || node_entity.is_none() {
         return (StatusCode::NOT_FOUND, Json(()));
     }
 
-    let revision = revision.unwrap();
+    let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if revision.chunk_count < chunk_index || chunk_index <= 0 {
+    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    if revision_entity.chunk_count < chunk_index || chunk_index <= 0 {
         return (StatusCode::BAD_REQUEST, Json(()));
     }
 
@@ -55,9 +63,25 @@ pub async fn post_chunk(
 }
 
 pub async fn get_chunk(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
-) -> (StatusCode, Vec<u8>) {
+) -> Response<Body> {
+    let node_entity = state.node_repository.get_node(node_id).expect("db error");
+    let revision_entity = state
+        .revision_repository
+        .get_revision(revision_id)
+        .expect("db error");
+    if revision_entity.is_none() || node_entity.is_none() {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
+
+    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
     let file_key = new_filekey(node_id, revision_id);
 
     let chunk_size = DataAmount::zero(); // Inferred from actual file for now, may be set manually later
@@ -69,13 +93,13 @@ pub async fn get_chunk(
         .get_chunk(file_key, chunk_index, chunk_size);
 
     if let Ok(data) = result {
-        return (StatusCode::OK, data.data.to_vec());
+        return (StatusCode::OK, data.data).into_response();
     }
 
     match result.err().unwrap() {
-        FileError::InvalidLength => (StatusCode::BAD_REQUEST, vec![]),
-        FileError::InvalidSession => (StatusCode::BAD_REQUEST, vec![]),
-        FileError::Io(_err) => (StatusCode::INTERNAL_SERVER_ERROR, vec![]),
-        FileError::KeyNotFound => (StatusCode::NOT_FOUND, vec![]),
+        FileError::InvalidLength => StatusCode::BAD_REQUEST.into_response(),
+        FileError::InvalidSession => StatusCode::BAD_REQUEST.into_response(),
+        FileError::Io(_err) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        FileError::KeyNotFound => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

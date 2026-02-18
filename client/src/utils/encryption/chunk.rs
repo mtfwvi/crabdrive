@@ -1,12 +1,13 @@
 use crate::constants::AES_GCM;
 use crate::model::chunk::{DecryptedChunk, EncryptedChunk};
-use crate::model::encryption::EncryptionKey;
+use crate::model::encryption::FileKey;
 use crate::utils::browser::get_subtle_crypto;
 use crate::utils::encryption;
 use crate::utils::error::{future_from_js_promise, wrap_js_err};
 use anyhow::Result;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
+use tracing::debug_span;
 use wasm_bindgen_futures::js_sys::{ArrayBuffer, Uint8Array};
 use web_sys::AesGcmParams;
 
@@ -21,9 +22,13 @@ fn get_additional_byte(first_chunk: bool, last_chunk: bool) -> u8 {
     }
 }
 
-pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Result<DecryptedChunk> {
+pub async fn decrypt_chunk(chunk: &EncryptedChunk, file_key: &FileKey) -> Result<DecryptedChunk> {
+    let _guard = debug_span!("utils::encryption::decryptChunk").entered();
+
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::get_key_from_bytes(key).await?;
+    let key = encryption::import_key(file_key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 
     let encryption_params = get_encryption_params(
         chunk.first_block,
@@ -34,10 +39,12 @@ pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Resul
 
     let decrypted_arraybuffer_promise = wrap_js_err(
         subtle_crypto.decrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
-    )?;
+    )
+    .inspect_err(|e| tracing::error!("Failed to decrypt chunk (BP): {}", e))?;
 
-    let decrypted_arraybuffer: ArrayBuffer =
-        future_from_js_promise(decrypted_arraybuffer_promise).await?;
+    let decrypted_arraybuffer: ArrayBuffer = future_from_js_promise(decrypted_arraybuffer_promise)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to decrypt chunk (AP): {}", e))?;
 
     Ok(DecryptedChunk {
         chunk: decrypted_arraybuffer,
@@ -49,21 +56,27 @@ pub async fn decrypt_chunk(chunk: &EncryptedChunk, key: &EncryptionKey) -> Resul
 
 pub async fn encrypt_chunk(
     chunk: &DecryptedChunk,
-    key: &EncryptionKey,
+    file_key: &FileKey,
     iv_prefix: IV,
 ) -> Result<EncryptedChunk> {
+    let _guard = debug_span!("utils::encryption::encryptChunk").entered();
+
     let subtle_crypto = get_subtle_crypto()?;
-    let key = encryption::get_key_from_bytes(key).await?;
+    let key = encryption::import_key(file_key)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to import key: {}", e))?;
 
     let encryption_params =
         get_encryption_params(chunk.first_block, chunk.last_block, chunk.index, iv_prefix);
 
     let encrypted_arraybuffer_promise = wrap_js_err(
         subtle_crypto.encrypt_with_object_and_buffer_source(&encryption_params, &key, &chunk.chunk),
-    )?;
+    )
+    .inspect_err(|e| tracing::error!("Failed to encrypt chunk (BP): {}", e))?;
 
-    let encrypted_arraybuffer: ArrayBuffer =
-        future_from_js_promise(encrypted_arraybuffer_promise).await?;
+    let encrypted_arraybuffer: ArrayBuffer = future_from_js_promise(encrypted_arraybuffer_promise)
+        .await
+        .inspect_err(|e| tracing::error!("Failed to encrypt chunk (AP): {}", e))?;
 
     Ok(EncryptedChunk {
         chunk: Uint8Array::new(&encrypted_arraybuffer),
@@ -92,15 +105,16 @@ fn get_encryption_params(
 
 #[cfg(test)]
 mod test {
-    use crate::constants::EMPTY_KEY;
     use crate::model::chunk::DecryptedChunk;
     use crate::utils::encryption::chunk::{decrypt_chunk, encrypt_chunk};
+    use crate::utils::encryption::generate_aes256_key;
     use crabdrive_common::iv::IV;
     use wasm_bindgen_futures::js_sys::Uint8Array;
     use wasm_bindgen_test::wasm_bindgen_test;
 
     #[wasm_bindgen_test]
     async fn test_encrypt_decrypt_chunk() {
+        let key = generate_aes256_key().await.unwrap();
         let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
@@ -112,13 +126,13 @@ mod test {
 
         let encrypted_chunk = encrypt_chunk(
             &chunk,
-            &EMPTY_KEY,
+            &key,
             IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
         )
         .await
         .expect("encrypt chunk");
 
-        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY)
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &key)
             .await
             .expect("decrypt chunk");
 
@@ -129,6 +143,7 @@ mod test {
 
     #[wasm_bindgen_test]
     async fn test_detect_chunk_removal() {
+        let key = generate_aes256_key().await.unwrap();
         let example_buffer = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
 
         let chunk = DecryptedChunk {
@@ -140,7 +155,7 @@ mod test {
 
         let mut encrypted_chunk = encrypt_chunk(
             &chunk,
-            &EMPTY_KEY,
+            &key,
             IV::new([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]),
         )
         .await
@@ -150,7 +165,7 @@ mod test {
         encrypted_chunk.index = 1;
         encrypted_chunk.first_block = true;
 
-        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &EMPTY_KEY).await;
+        let decrypted_chunk = decrypt_chunk(&encrypted_chunk, &key).await;
 
         assert!(decrypted_chunk.is_err())
     }
