@@ -59,6 +59,8 @@ pub fn nodes_routes() -> Router<AppState> {
                 .layer(DefaultBodyLimit::max(da!(18 MB).as_bytes() as usize))
                 .get(get_chunk),
         )
+        .route(routes::node::ROUTE_PURGE_TREE, delete(delete_purge_tree))
+        .route(routes::node::ROUTE_EMPTY_TRASH, post(post_empty_trash))
 }
 
 pub fn auth_routes() -> Router<AppState> {

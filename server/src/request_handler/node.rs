@@ -17,6 +17,10 @@ use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
+use crabdrive_common::payloads::node::request::node::EmptyTrashRequest;
+use crabdrive_common::payloads::node::response::node::{
+    EmptyTrashResponse, PurgeStats, PurgeTreeResponse,
+};
 use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
 
@@ -144,27 +148,213 @@ pub async fn post_move_node(
 }
 
 pub async fn post_move_node_to_trash(
-    State(_state): State<AppState>,
-    Path(_node_id): Path<NodeId>,
-    Json(_payload): Json<PostMoveNodeToTrashRequest>,
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+    Json(payload): Json<PostMoveNodeToTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeToTrashResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostMoveNodeToTrashResponse::NotFound))
-    //(StatusCode::CONFLICT, Json(PostMoveNodeToTrashResponse::Conflict))
+    let node = match state.node_repository.get_node(node_id) {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+    };
 
-    //TODO implement
-    (StatusCode::OK, Json(PostMoveNodeToTrashResponse::Ok))
+    if node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        );
+    }
+
+    let from_node = match state
+        .node_repository
+        .get_node(node.parent_id.unwrap_or(node_id))
+    {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+    };
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
+
+    let trash_node_id = match current_user.trash_node {
+        Some(id) => id,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+    };
+
+    let trash_node = match state.node_repository.get_node(trash_node_id) {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeToTrashResponse::NotFound),
+            );
+        }
+    };
+
+    if trash_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
+
+    match state.node_repository.move_node_to_trash(
+        node_id,
+        from_node.id,
+        payload.from_node_metadata,
+        trash_node_id,
+        payload.to_node_metadata,
+    ) {
+        Ok(_) => (StatusCode::OK, Json(PostMoveNodeToTrashResponse::Ok)),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        ),
+    }
 }
 
 pub async fn post_move_node_out_of_trash(
-    State(_state): State<AppState>,
-    Path(_node_id): Path<NodeId>,
-    Json(_payload): Json<PostMoveNodeOutOfTrashRequest>,
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+    Json(payload): Json<PostMoveNodeOutOfTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeOutOfTrashResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostMoveNodeOutOfTrashResponse::NotFound))
-    //(StatusCode::CONFLICT, Json(PostMoveNodeOutOfTrashResponse::Conflict))
+    let node = match state.node_repository.get_node(node_id) {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+    };
 
-    //TODO implement
-    (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok))
+    if node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    if node.deleted_on.is_none() {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    let trash_node_id = match current_user.trash_node {
+        Some(id) => id,
+        None => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+    };
+
+    let trash_node = match state.node_repository.get_node(trash_node_id) {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+    };
+
+    if trash_node.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    let to_node = match state.node_repository.get_node(payload.to_node_id) {
+        Ok(Some(n)) => n,
+        Ok(None) => {
+            return (
+                StatusCode::NOT_FOUND,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+        Err(_) => {
+            return (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(PostMoveNodeOutOfTrashResponse::NotFound),
+            );
+        }
+    };
+
+    if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    match state.node_repository.move_node_out_of_trash(
+        node_id,
+        trash_node_id,
+        payload.from_node_metadata,
+        payload.to_node_id,
+        payload.to_node_metadata,
+    ) {
+        Ok(_) => (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok)),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        ),
+    }
 }
 
 pub async fn get_path_between_nodes(
@@ -287,4 +477,91 @@ pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {
         iv: revision.iv,
         chunk_count: revision.chunk_count,
     }
+}
+
+pub async fn delete_purge_tree(
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(id): Path<NodeId>,
+) -> Result<(StatusCode, Json<PurgeTreeResponse>), StatusCode> {
+    let node = state
+        .node_repository
+        .get_node(id)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let node = match node {
+        Some(n) => n,
+        None => return Ok((StatusCode::NOT_FOUND, Json(PurgeTreeResponse::NotFound))),
+    };
+
+    if node.owner_id != current_user.id {
+        return Err(StatusCode::FORBIDDEN);
+    }
+
+    if node.deleted_on.is_none() {
+        return Ok((StatusCode::BAD_REQUEST, Json(PurgeTreeResponse::BadRequest)));
+    }
+
+    let (deleted_nodes, deleted_revisions) = state
+        .node_repository
+        .purge_tree_from_trash(id)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut deleted_chunks = 0;
+    let vfs = state.vfs.write().unwrap();
+
+    for revision in &deleted_revisions {
+        for chunk_index in 0..revision.chunk_count {
+            if vfs.delete_chunk(revision.id, chunk_index).is_ok() {
+                deleted_chunks += 1;
+            }
+        }
+    }
+
+    let stats = PurgeStats {
+        deleted_nodes: deleted_nodes.len(),
+        deleted_revisions: deleted_revisions.len(),
+        deleted_chunks,
+    };
+
+    Ok((StatusCode::OK, Json(PurgeTreeResponse::Ok(stats))))
+}
+
+pub async fn post_empty_trash(
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Json(req): Json<EmptyTrashRequest>,
+) -> Result<(StatusCode, Json<EmptyTrashResponse>), StatusCode> {
+    if req.older_than_days < 0 {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(EmptyTrashResponse::BadRequest),
+        ));
+    }
+
+    let trash_node_id = current_user.trash_node.ok_or(StatusCode::BAD_REQUEST)?;
+
+    let (deleted_nodes, deleted_revisions) = state
+        .node_repository
+        .empty_trash(trash_node_id, req.older_than_days)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let mut deleted_chunks = 0;
+    let vfs = state.vfs.write().unwrap();
+
+    for revision in &deleted_revisions {
+        for chunk_index in 0..revision.chunk_count {
+            if vfs.delete_chunk(revision.id, chunk_index).is_ok() {
+                deleted_chunks += 1;
+            }
+        }
+    }
+
+    let stats = PurgeStats {
+        deleted_nodes: deleted_nodes.len(),
+        deleted_revisions: deleted_revisions.len(),
+        deleted_chunks,
+    };
+
+    Ok((StatusCode::OK, Json(EmptyTrashResponse::Ok(stats))))
 }

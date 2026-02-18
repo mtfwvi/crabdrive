@@ -33,3 +33,8 @@ pub struct MoveNodeData {
 pub type PostMoveNodeRequest = MoveNodeData;
 pub type PostMoveNodeToTrashRequest = MoveNodeData;
 pub type PostMoveNodeOutOfTrashRequest = MoveNodeData;
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct EmptyTrashRequest {
+    pub older_than_days: i64,
+}

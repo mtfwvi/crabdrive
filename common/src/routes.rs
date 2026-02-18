@@ -25,6 +25,16 @@ pub mod node {
         ROUTE_MOVE_OUT_OF_TRASH.replace("{id}", &id.to_string())
     }
 
+    pub const ROUTE_PURGE_TREE: &str = "/api/node/{id}/purge_tree/";
+    pub fn purge_tree(id: NodeId) -> String {
+        ROUTE_PURGE_TREE.replace("{id}", &id.to_string())
+    }
+
+    pub const ROUTE_EMPTY_TRASH: &str = "/api/trash/empty/";
+    pub fn empty_trash() -> String {
+        ROUTE_EMPTY_TRASH.to_string()
+    }
+
     pub mod file {
         use super::*;
 

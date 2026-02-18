@@ -1,6 +1,7 @@
 use crate::storage::vfs::model::{FileChunk, FileError, FileKey, TransferSessionId};
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::ChunkIndex;
+use crabdrive_common::storage::RevisionId;
 
 // TODO: Async, Streams?
 pub(crate) trait FileRepository {
@@ -51,4 +52,6 @@ pub(crate) trait FileRepository {
         chunk_index: ChunkIndex,
         chunk_size: DataAmount,
     ) -> Result<FileChunk, FileError>;
+
+    fn delete_chunk(&self, revision_id: RevisionId, chunk_index: ChunkIndex) -> anyhow::Result<()>;
 }

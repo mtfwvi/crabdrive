@@ -54,3 +54,23 @@ pub enum GetNodeChildrenResponse {
     Ok(Vec<EncryptedNode>),
     NotFound,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum PurgeTreeResponse {
+    Ok(PurgeStats),
+    NotFound,
+    BadRequest,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum EmptyTrashResponse {
+    Ok(PurgeStats),
+    BadRequest,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct PurgeStats {
+    pub deleted_nodes: usize,
+    pub deleted_revisions: usize,
+    pub deleted_chunks: usize,
+}

@@ -185,4 +185,50 @@ impl FileRepository for Sfs {
             data: bytes.freeze(),
         })
     }
+
+    fn delete_chunk(
+        &self,
+        revision_id: crabdrive_common::storage::RevisionId,
+        chunk_index: ChunkIndex,
+    ) -> anyhow::Result<()> {
+        use anyhow::Context;
+
+        let _s = debug_span!(
+            "DeleteChunk",
+            revision_id = revision_id.to_string(),
+            chunk_index = chunk_index
+        )
+        .entered();
+
+        let key = revision_id.to_string();
+
+        let mut chunk_path = self.storage_dir.clone();
+        chunk_path.push(&key);
+        chunk_path.push(chunk_index.to_string());
+        chunk_path.set_extension("bin");
+
+        if chunk_path.exists() {
+            std::fs::remove_file(&chunk_path)
+                .context(format!("Failed to delete chunk at {:?}", chunk_path))?;
+            debug!("Deleted chunk {} at {}", chunk_index, chunk_path.display());
+        }
+
+        let revision_dir = self.storage_dir.clone().join(&key);
+        if revision_dir.exists() {
+            if let Ok(mut entries) = std::fs::read_dir(&revision_dir) {
+                if entries.next().is_none() {
+                    std::fs::remove_dir(&revision_dir).context(format!(
+                        "Failed to remove empty revision directory {:?}",
+                        revision_dir
+                    ))?;
+                    debug!(
+                        "Removed empty revision directory {}",
+                        revision_dir.display()
+                    );
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
