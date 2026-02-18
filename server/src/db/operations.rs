@@ -1,13 +1,3 @@
-use anyhow::{Context, Result};
-use crabdrive_common::{
-    storage::{NodeId, RevisionId},
-    user::UserId,
-    uuid::UUID,
-};
-use diesel::{
-    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
-};
-
 use crate::{
     db::{
         NodeDsl, RevisionDsl,
@@ -20,11 +10,22 @@ use crate::{
     },
     user::persistence::model::user_entity::UserEntity,
 };
+use anyhow::{Context, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::routes::node::shared::share;
 use crabdrive_common::storage::ShareId;
 use crate::db::ShareDsl;
 use crate::storage::share::persistence::model::share_entity::ShareEntity;
+use crabdrive_common::{
+    storage::{NodeId, RevisionId},
+    user::UserId,
+    uuid::UUID,
+};
+use diesel::sql_types::Text;
+use diesel::{
+    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
+    sql_query,
+};
 // User Ops
 
 pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntity>> {
@@ -83,6 +84,30 @@ pub fn delete_user(db_pool: &DbPool, user_id: UserId) -> Result<UserEntity> {
 }
 
 // Node Ops
+
+/// return a list of nodes from the to_node to the from_node or a root node if not path exists.
+/// **Check that the first node in the list is really the node you want and not a root node**
+// Query that finds the path between the nodes in the tree
+// It should stop as soon as it cannot discover a new node (reached a root node) or if the desired node was reached
+pub fn get_path_between_nodes(
+    db_pool: &DbPool,
+    from: NodeId,
+    to: NodeId,
+) -> Result<Vec<NodeEntity>> {
+    let query = sql_query("\
+        WITH RECURSIVE path_between_nodes AS ( \
+            SELECT *,1 as _count FROM Node s1 \
+            WHERE s1.id = $1 \
+        UNION ALL \
+            SELECT s2.*,_count+1 as _count FROM Node s2 \
+            JOIN path_between_nodes s1 ON s1.parent_id = s2.id WHERE NOT s1.id = $2
+        ) \
+        SELECT id, parent_id, owner_id, metadata, deleted_on, metadata_change_counter, current_revision, node_type \
+        FROM path_between_nodes \
+        ORDER BY _count DESC \
+    ").bind::<Text, _>(to.to_string()).bind::<Text, _>(from.to_string());
+    Ok(query.load(&mut db_pool.get()?)?)
+}
 
 pub fn get_all_children(db_pool: &DbPool, node_id: UserId) -> Result<Vec<NodeEntity>> {
     let mut conn = db_pool.get()?;

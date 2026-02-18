@@ -1,6 +1,8 @@
 use crate::db::connection::DbPool;
 use crate::db::operations;
-use crate::db::operations::{delete_node, get_all_children, insert_node, select_node, update_node};
+use crate::db::operations::{
+    delete_node, get_all_children, get_path_between_nodes, insert_node, select_node, update_node,
+};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use anyhow::{Context, Ok, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
@@ -40,6 +42,8 @@ pub(crate) trait NodeRepository {
     ) -> Result<()>;
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>>;
+
+    fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>>;
 }
 
 pub struct NodeState {
@@ -151,5 +155,15 @@ impl NodeRepository for NodeState {
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
         get_all_children(&self.db_pool, parent_id).context("Failed to get children")
+    }
+
+    fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>> {
+        let path: Vec<NodeEntity> = get_path_between_nodes(&self.db_pool, from, to)?;
+
+        if path[0].id != from {
+            Ok(None)
+        } else {
+            Ok(Some(path))
+        }
     }
 }
