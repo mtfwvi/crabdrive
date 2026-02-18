@@ -1,10 +1,13 @@
 use crate::db::connection::DbPool;
+use crate::db::operations::{
+    delete_share, get_all_shares_by_node, get_all_shares_by_user, insert_share, select_share,
+    update_share,
+};
 use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use anyhow::Result;
 use crabdrive_common::storage::{NodeId, ShareId};
 use crabdrive_common::user::UserId;
 use std::sync::Arc;
-use crate::db::operations::{delete_share, get_all_shares_by_node, get_all_shares_by_user, insert_share, select_share, update_share};
 
 pub trait ShareRepository {
     fn get_share(&self, share_id: ShareId) -> Result<Option<ShareEntity>>;

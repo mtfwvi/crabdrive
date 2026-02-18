@@ -8,6 +8,7 @@ use crate::storage::vfs::backend::Sfs;
 use http_body_util::Full;
 
 use crate::auth::secrets::Keys;
+use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
@@ -21,7 +22,6 @@ use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
-use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;

@@ -7,7 +7,7 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
-use axum::{middleware, Router};
+use axum::{Router, middleware};
 use axum_test::{TestRequest, TestServer};
 use bytes::Bytes;
 
@@ -46,7 +46,7 @@ use crabdrive_common::payloads::node::response::share::{
     GetAcceptedSharedResponse, GetShareInfoResponse, PostAcceptShareResponse, PostShareNodeResponse,
 };
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};

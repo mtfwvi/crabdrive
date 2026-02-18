@@ -2,9 +2,9 @@ use crate::db::ShareDsl;
 use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crate::{
     db::{
-        connection::DbPool, NodeDsl,
-        RevisionDsl,
+        NodeDsl, RevisionDsl,
         UserDsl::{self},
+        connection::DbPool,
     },
     storage::{
         node::persistence::model::node_entity::NodeEntity,
@@ -22,8 +22,8 @@ use crabdrive_common::{
 };
 use diesel::sql_types::Text;
 use diesel::{
-    sql_query, Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl,
-    SelectableHelper,
+    Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
+    sql_query,
 };
 // User Ops
 
@@ -248,11 +248,7 @@ pub fn move_node(
     Ok(())
 }
 
-pub fn has_access(
-    db_pool: &DbPool,
-    node_id: NodeId,
-    user_id: UserId,
-) -> Result<bool> {
+pub fn has_access(db_pool: &DbPool, node_id: NodeId, user_id: UserId) -> Result<bool> {
     let node = if let Some(node) = select_node(db_pool, node_id)? {
         node
     } else {
@@ -274,7 +270,10 @@ pub fn has_access(
             return Ok(false);
         }
 
-        let matching_nodes = shared_with_user.iter().filter(|share_entity| share_entity.node_id == node.id).collect::<Vec<&ShareEntity>>();
+        let matching_nodes = shared_with_user
+            .iter()
+            .filter(|share_entity| share_entity.node_id == node.id)
+            .collect::<Vec<&ShareEntity>>();
 
         if !matching_nodes.is_empty() {
             return Ok(true);
@@ -346,10 +345,7 @@ pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Ve
 
 //Share ops
 
-pub fn select_share(
-    db_pool: &DbPool,
-    share_id: ShareId,
-) -> Result<Option<ShareEntity>> {
+pub fn select_share(db_pool: &DbPool, share_id: ShareId) -> Result<Option<ShareEntity>> {
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let share = ShareDsl::Share

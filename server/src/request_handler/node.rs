@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
-use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -236,7 +236,11 @@ pub async fn get_node_children(
         );
     }
 
-    if !state.node_repository.has_access(node.unwrap().id, current_user.id).expect("db error") {
+    if !state
+        .node_repository
+        .has_access(node.unwrap().id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(GetNodeChildrenResponse::NotFound),

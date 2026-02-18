@@ -5,36 +5,35 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ShareEncryptionInfo {
     pub node_id: NodeId,
-    pub wrapped_metadata_key: EncryptionKey
+    pub wrapped_metadata_key: EncryptionKey,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostShareNodeResponse {
     NotFound,
     Ok(ShareId),
-    BadRequest(String)
+    BadRequest(String),
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum  GetShareInfoResponse {
+pub enum GetShareInfoResponse {
     Ok(ShareEncryptionInfo),
-    NotFound
+    NotFound,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GetNodeSharedWithResponse {
     Ok(Vec<String>),
-    NotFound
+    NotFound,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum PostAcceptShareResponse {
     Ok,
-    NotFound
+    NotFound,
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum GetAcceptedSharedResponse {
-    Ok(Vec<(EncryptionKey, EncryptedNode)>)
+    Ok(Vec<(EncryptionKey, EncryptedNode)>),
 }
-

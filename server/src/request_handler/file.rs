@@ -36,7 +36,11 @@ pub async fn post_create_file(
 
     let parent_node = parent_node.unwrap();
 
-    if !state.node_repository.has_access(parent_node.id, current_user.id).expect("db error") {
+    if !state
+        .node_repository
+        .has_access(parent_node.id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFileResponse::NotFound),
@@ -138,7 +142,11 @@ pub async fn post_update_file(
 
     let node_entity = node_entity.unwrap();
 
-    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostUpdateFileResponse::NotFound),
@@ -200,7 +208,12 @@ pub async fn post_commit_file(
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
 
     // check if node belongs to user and if the revision belongs to the node
-    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") || revision.file_id != node_entity.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+        || revision.file_id != node_entity.id
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCommitFileResponse::NotFound),
@@ -270,7 +283,11 @@ pub async fn get_file_versions(
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 
-    if !state.node_repository.has_access(node_entity.unwrap().id, current_user.id).expect("db error") {
+    if !state
+        .node_repository
+        .has_access(node_entity.unwrap().id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 

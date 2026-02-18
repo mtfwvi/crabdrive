@@ -5,9 +5,7 @@ use crabdrive_common::user::UserId;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone,
-)]
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
 #[diesel(table_name = crate::db::schema::Share)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct ShareEntity {
@@ -18,5 +16,5 @@ pub struct ShareEntity {
     pub time_shared: NaiveDateTime,
     pub time_accepted: Option<NaiveDateTime>,
     pub shared_encryption_key: Option<EncryptionKey>,
-    pub accepted_encryption_key: Option<EncryptionKey>
+    pub accepted_encryption_key: Option<EncryptionKey>,
 }
