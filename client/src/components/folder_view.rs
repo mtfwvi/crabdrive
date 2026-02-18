@@ -105,6 +105,7 @@ pub(crate) fn FolderView(
                         <NodeDetails
                             node=Signal::derive(move || selection.get().unwrap())
                             parent=current_node
+                            is_trash
                             on_close=Callback::new(move |_| selection.set(None))
                             on_modified=Callback::new(move |_| {
                                 children_res.refetch();

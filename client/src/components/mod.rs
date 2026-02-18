@@ -12,3 +12,4 @@ mod node_details;
 mod node_list;
 mod path_breadcrumb;
 mod resource_wrapper;
+mod trash_empty_button;

@@ -11,6 +11,7 @@ use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] parent: Signal<DecryptedNode>,
+    is_trash: Signal<bool>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -58,13 +59,33 @@ pub(crate) fn NodeDetails(
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
 
-                    <Space vertical=true class="mt-4">
-                        <Show when=move || node.get().node_type == NodeType::File>
-                            <FileDownloadButton node />
-                        </Show>
+                    <Show
+                        when=move || !is_trash.get()
+                        fallback=move || {
+                            view! {
+                                <Space vertical=true class="mt-4">
+                                    <Button
+                                        block=true
+                                        icon=icondata_mdi::MdiRestore
+                                        appearance=ButtonAppearance::Primary
+                                    >
+                                        "Restore"
+                                    </Button>
+                                    <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
+                                        "Delete forever"
+                                    </Button>
+                                </Space>
+                            }
+                        }
+                    >
+                        <Space vertical=true class="mt-4">
+                            <Show when=move || node.get().node_type == NodeType::File>
+                                <FileDownloadButton node />
+                            </Show>
 
-                        <ModifyNodeMenu node parent on_modified />
-                    </Space>
+                            <ModifyNodeMenu node parent on_modified />
+                        </Space>
+                    </Show>
                 </Space>
             </Space>
         </LayoutSider>
