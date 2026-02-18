@@ -9,11 +9,6 @@ pub struct ShareEncryptionInfo {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct SharedUserInfo {
-    pub username: String
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub enum PostShareNodeResponse {
     NotFound,
     Ok(ShareId),
@@ -26,8 +21,8 @@ pub enum  GetShareInfoResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GetNodeShareInfoResponse {
-    Ok(Vec<SharedUserInfo>),
+pub enum GetNodeSharedWithResponse {
+    Ok(Vec<String>),
     NotFound
 }
 

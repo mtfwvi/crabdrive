@@ -50,7 +50,7 @@ diesel::table! {
         id -> Text,
         node_id -> Text,
         shared_by -> Text,
-        accepted_by -> Text,
+        accepted_by -> Nullable<Text>,
         time_shared -> Timestamp,
         time_accepted -> Nullable<Timestamp>,
         shared_encryption_key -> Nullable<Binary>,

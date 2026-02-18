@@ -8,7 +8,7 @@ pub struct PostShareNodeRequest {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct PostAcceptShare {
+pub struct PostAcceptShareRequest {
     /// the metadata key encrypted with the users master key
     pub new_wrapped_metadata_key: EncryptionKey
 }

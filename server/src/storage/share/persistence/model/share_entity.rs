@@ -14,7 +14,7 @@ pub struct ShareEntity {
     pub id: ShareId,
     pub node_id: NodeId,
     pub shared_by: UserId,
-    pub accepted_by: UserId,
+    pub accepted_by: Option<UserId>,
     pub time_shared: NaiveDateTime,
     pub time_accepted: Option<NaiveDateTime>,
     pub shared_encryption_key: Option<EncryptionKey>,

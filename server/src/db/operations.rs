@@ -12,9 +12,11 @@ use crate::{
 };
 use anyhow::{Context, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::routes::node::path_between_nodes;
 use crabdrive_common::routes::node::shared::share;
 use crabdrive_common::storage::ShareId;
 use crate::db::ShareDsl;
+use crate::request_handler::node::get_node;
 use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crabdrive_common::{
     storage::{NodeId, RevisionId},
@@ -249,6 +251,36 @@ pub fn move_node(
     Ok(())
 }
 
+pub fn has_access(
+    db_pool: &DbPool,
+    node_id: NodeId,
+    user_id: UserId,
+) -> Result<bool> {
+    let node = if let Some(node) = select_node(db_pool, node_id)? {
+        node
+    } else {
+        return Ok(false);
+    };
+
+    if node.owner_id == user_id {
+        return Ok(true);
+    }
+
+    // this will return the path to between a root node and the current node as the nil node does not exist (probably)
+    let path_to_root = get_path_between_nodes(db_pool, NodeId::nil(), node_id)?;
+
+    let shared_with_user = get_all_shares_by_user(db_pool, user_id)?;
+
+    for node in path_to_root.iter().rev() {
+        let matching_nodes = shared_with_user.iter().filter(|share_entity| share_entity.node_id == node.id).collect::<Vec<&ShareEntity>>();
+
+        if !matching_nodes.is_empty() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 // Revision Ops
 
 pub fn select_revision(
@@ -310,6 +342,7 @@ pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Ve
     })
 }
 
+//Share ops
 
 pub fn select_share(
     db_pool: &DbPool,
