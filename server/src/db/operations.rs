@@ -272,6 +272,11 @@ pub fn has_access(
     let shared_with_user = get_all_shares_by_user(db_pool, user_id)?;
 
     for node in path_to_root.iter().rev() {
+        // if the subtree containing the node was moved to the trash it should not be accessible anymore
+        if node.deleted_on.is_some() {
+            return Ok(false);
+        }
+
         let matching_nodes = shared_with_user.iter().filter(|share_entity| share_entity.node_id == node.id).collect::<Vec<&ShareEntity>>();
 
         if !matching_nodes.is_empty() {

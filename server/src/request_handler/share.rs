@@ -29,6 +29,14 @@ pub fn post_share_node(
         return (StatusCode::NOT_FOUND, Json(PostShareNodeResponse::NotFound))
     }
 
+    if node.parent_id.is_none() {
+        return (StatusCode::BAD_REQUEST, Json(PostShareNodeResponse::BadRequest("Cannot share a root node".to_string())));
+    }
+
+    if node.deleted_on.is_some() {
+        return (StatusCode::BAD_REQUEST, Json(PostShareNodeResponse::BadRequest("Cannot share a node that is in the trash".to_string())));
+    }
+
     let share_entity = ShareEntity {
         id: ShareId::random(),
         node_id,

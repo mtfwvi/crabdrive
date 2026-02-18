@@ -12,6 +12,7 @@ pub struct ShareEncryptionInfo {
 pub enum PostShareNodeResponse {
     NotFound,
     Ok(ShareId),
+    BadRequest(String)
 }
 
 #[derive(Serialize, Deserialize, Debug)]
