@@ -26,7 +26,7 @@ pub async fn post_create_folder(
 
     let parent_node = parent_node.unwrap();
 
-    if parent_node.owner_id != current_user.id {
+    if !state.node_repository.has_access(parent_node.id, current_user.id).expect("db error") {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFolderResponse::NotFound),

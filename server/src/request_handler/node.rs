@@ -1,6 +1,6 @@
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
@@ -42,7 +42,11 @@ pub async fn get_node(
     }
     let node_entity = node_entity.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
 
@@ -67,7 +71,11 @@ pub async fn patch_node(
 
     let node_entity = node.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(PatchNodeResponse::NotFound));
     }
 
@@ -104,7 +112,11 @@ pub async fn post_move_node(
     }
     let node = node.unwrap();
 
-    if node.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
@@ -185,8 +197,14 @@ pub async fn get_path_between_nodes(
             Json(GetPathBetweenNodesResponse::NoContent),
         ),
         Some(path_entites) => {
-            if path_entites[0].owner_id != current_user.id
-                || path_entites.last().unwrap().owner_id != current_user.id
+            if !state
+                .node_repository
+                .has_access(path_entites[0].id, current_user.id)
+                .expect("db error")
+                || !state
+                    .node_repository
+                    .has_access(path_entites.last().unwrap().id, current_user.id)
+                    .expect("db error")
             {
                 return (
                     StatusCode::NOT_FOUND,
@@ -211,7 +229,14 @@ pub async fn get_node_children(
 ) -> (StatusCode, Json<GetNodeChildrenResponse>) {
     let node = state.node_repository.get_node(parent_id).expect("db error");
 
-    if node.as_ref().is_none() || node.unwrap().owner_id != current_user.id {
+    if node.as_ref().is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetNodeChildrenResponse::NotFound),
+        );
+    }
+
+    if !state.node_repository.has_access(node.unwrap().id, current_user.id).expect("db error") {
         return (
             StatusCode::NOT_FOUND,
             Json(GetNodeChildrenResponse::NotFound),

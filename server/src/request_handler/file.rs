@@ -36,7 +36,7 @@ pub async fn post_create_file(
 
     let parent_node = parent_node.unwrap();
 
-    if parent_node.owner_id != current_user.id {
+    if !state.node_repository.has_access(parent_node.id, current_user.id).expect("db error") {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFileResponse::NotFound),
@@ -77,7 +77,8 @@ pub async fn post_create_file(
         .create_node(
             Some(parent_id),
             payload.node_metadata,
-            current_user.id,
+            // a node should always have the same owner as its parent
+            parent_node.owner_id,
             NodeType::File,
             payload.node_id,
         )
@@ -137,7 +138,7 @@ pub async fn post_update_file(
 
     let node_entity = node_entity.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") {
         return (
             StatusCode::NOT_FOUND,
             Json(PostUpdateFileResponse::NotFound),
@@ -199,7 +200,7 @@ pub async fn post_commit_file(
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
 
     // check if node belongs to user and if the revision belongs to the node
-    if node_entity.owner_id != current_user.id || revision.file_id != node_entity.id {
+    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") || revision.file_id != node_entity.id {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCommitFileResponse::NotFound),
@@ -265,7 +266,11 @@ pub async fn get_file_versions(
 ) -> (StatusCode, Json<GetVersionsResponse>) {
     let node_entity = state.node_repository.get_node(file_id).expect("db error");
 
-    if node_entity.is_none() || node_entity.unwrap().owner_id != current_user.id {
+    if node_entity.is_none() {
+        return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
+    }
+
+    if !state.node_repository.has_access(node_entity.unwrap().id, current_user.id).expect("db error") {
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 

@@ -1,12 +1,12 @@
 use crate::http::AppState;
+use crate::storage::vfs::model::{new_filekey, FileError};
 use crate::storage::vfs::FileChunk;
-use crate::storage::vfs::model::{FileError, new_filekey};
 use crate::user::persistence::model::user_entity::UserEntity;
-use axum::Json;
 use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
+use axum::Json;
 use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 
@@ -32,7 +32,11 @@ pub async fn post_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") {
         return (StatusCode::NOT_FOUND, Json(()));
     }
 
@@ -78,7 +82,11 @@ pub async fn get_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    if !state.node_repository.has_access(node_entity.id, current_user.id).expect("db error") {
         return StatusCode::NOT_FOUND.into_response();
     }
 
