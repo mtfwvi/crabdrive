@@ -1,11 +1,14 @@
+pub(crate) mod folder_view;
+
 mod file_creation_button;
-pub(crate) mod file_details;
-pub(crate) mod file_selection_dialog;
+mod file_details;
+mod file_download_button;
+mod file_selection_dialog;
+mod folder_bottom_bar;
 mod folder_creation_button;
 mod folder_selection_dialog;
-pub(crate) mod folder_view;
-pub(crate) mod input_dialog;
+mod input_dialog;
 mod modify_node_menu;
-pub(crate) mod node_list;
-pub(crate) mod path_breadcrumb;
-pub(crate) mod resource_wrapper;
+mod node_list;
+mod path_breadcrumb;
+mod resource_wrapper;

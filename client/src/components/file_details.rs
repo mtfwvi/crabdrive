@@ -1,15 +1,11 @@
-use crate::api::download_file;
+use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
-use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{format_date_time, shorten_file_name};
 use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
-use thaw::{
-    Button, ButtonAppearance, Space, Text, Toast, ToastIntent, ToastOptions, ToastTitle,
-    ToasterInjection,
-};
+use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
 #[component]
 pub(crate) fn FileDetails(
@@ -18,90 +14,79 @@ pub(crate) fn FileDetails(
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
-    let toaster = ToasterInjection::expect_context();
-
-    let add_toast = move |text: String| {
-        toaster.dispatch_toast(
-            move || {
-                view! {
-                    <Toast>
-                        <ToastTitle>{text}</ToastTitle>
-                    </Toast>
-                }
-            },
-            ToastOptions::default()
-                .with_intent(ToastIntent::Error)
-                .with_timeout(DEFAULT_TOAST_TIMEOUT),
-        )
-    };
-
     let metadata = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = node.get().metadata;
         metadata
     });
 
-    let download_action = Action::new_local(|input: &DecryptedNode| {
-        let node = input.to_owned();
-        async move { download_file(node).await.map_err(|err| err.to_string()) }
-    });
-    let handle_download = move |_| {
-        download_action.dispatch(node.get().clone());
-    };
-
-    Effect::new(move || {
-        let status = download_action.value().get();
-        if status.is_some() {
-            let response = status.unwrap();
-            if response.is_err() {
-                add_toast(format!(
-                    "Failed to download {}: {}",
-                    metadata.get().name,
-                    response.err().unwrap()
-                ))
-            }
-        }
-    });
-
     view! {
-        <Space vertical=true class="p-8 !max-w-[35vw]">
-            <Space class="my-3 content-center justify-between">
-                <Text class="!text-2xl !font-bold">
-                    {move || shorten_file_name(metadata.get().name)}
-                </Text>
-                <Button
-                    appearance=ButtonAppearance::Subtle
-                    class="!min-w-0 ml-2"
-                    on_click=move |_| on_close.run(())
-                    icon=icondata_mdi::MdiClose
-                />
-            </Space>
+        <LayoutSider content_style="height: 100%">
+            <Space class="!gap-0 h-full">
+                <Divider vertical=true />
 
-            <Show when=move || metadata.get().mime_type.is_some()>
-                <Text>{move || format!("Type: {}", metadata.get().mime_type.unwrap())}</Text>
-            </Show>
-            <Show when=move || metadata.get().size.is_some()>
-                <Text>{move || format!("Size: {}", metadata.get().size.unwrap())}</Text>
-            </Show>
-            <Text>
-                {move || {
-                    format!("Last modified: {}", format_date_time(metadata.get().last_modified))
-                }}
-            </Text>
-            <Text>{move || format!("Created: {}", format_date_time(metadata.get().created))}</Text>
+                <Space vertical=true class="p-8 !max-w-[35vw]">
+                    <Space class="my-3 content-center justify-between">
+                        <Text class="!text-2xl !font-bold">
+                            {move || shorten_file_name(metadata.get().name)}
+                        </Text>
+                        <Button
+                            appearance=ButtonAppearance::Subtle
+                            class="!min-w-0 ml-2"
+                            on_click=move |_| on_close.run(())
+                            icon=icondata_mdi::MdiClose
+                        />
+                    </Space>
 
-            <Space vertical=true class="mt-4">
-                <Show when=move || node.get().node_type == NodeType::File>
-                    <Button
-                        on_click=handle_download
-                        appearance=ButtonAppearance::Primary
-                        icon=icondata_mdi::MdiDownload
-                        block=true
-                    >
-                        "Download"
-                    </Button>
-                </Show>
-                <ModifyNodeMenu node parent on_modified />
+                    <OptionalNodeAttribute
+                        name="Type"
+                        value=Signal::derive(move || {
+                            metadata.get().mime_type.map(|size| size.to_string())
+                        })
+                    />
+                    <OptionalNodeAttribute
+                        name="Size"
+                        value=Signal::derive(move || {
+                            metadata.get().size.map(|size| size.to_string())
+                        })
+                    />
+                    <NodeAttribute
+                        name="Last modified"
+                        value=Signal::derive(move || format_date_time(metadata.get().last_modified))
+                    />
+                    <NodeAttribute
+                        name="Created"
+                        value=Signal::derive(move || format_date_time(metadata.get().created))
+                    />
+
+                    <Space vertical=true class="mt-4">
+                        <Show when=move || node.get().node_type == NodeType::File>
+                            <FileDownloadButton node />
+                        </Show>
+
+                        <ModifyNodeMenu node parent on_modified />
+                    </Space>
+                </Space>
             </Space>
-        </Space>
+        </LayoutSider>
     }
+}
+
+#[component]
+fn OptionalNodeAttribute(
+    #[prop(into)] name: Signal<String>,
+    #[prop(into)] value: Signal<Option<String>>,
+) -> impl IntoView {
+    view! {
+        <Show when=move || value.get().is_some()>
+            <NodeAttribute name value=Signal::derive(move || value.get().unwrap()) />
+        </Show>
+    }
+}
+
+#[component]
+fn NodeAttribute(
+    #[prop(into)] name: Signal<String>,
+    #[prop(into)] value: Signal<String>,
+) -> impl IntoView {
+    view! { <Text>{move || format!("{}: {}", name.get(), value.get())}</Text> }
 }

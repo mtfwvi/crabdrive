@@ -1,7 +1,6 @@
 use crate::api::{get_children, get_trash_node, path_to_root};
-use crate::components::file_creation_button::FileCreationButton;
 use crate::components::file_details::FileDetails;
-use crate::components::folder_creation_button::FolderCreationButton;
+use crate::components::folder_bottom_bar::FolderBottomBar;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
@@ -9,7 +8,7 @@ use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{Divider, LayoutSider, Space};
+use thaw::{Divider, Space};
 
 #[component]
 pub(crate) fn FolderView(
@@ -47,7 +46,7 @@ pub(crate) fn FolderView(
         });
     });
 
-    let on_node_created = Callback::new(move |_| {
+    let on_children_changed = Callback::new(move |_| {
         path_res.refetch()
         // children_res will automatically refetch, because it is
         // only created within the resource wrapper for path_res
@@ -94,37 +93,19 @@ pub(crate) fn FolderView(
                             </ResourceWrapper>
                         </Space>
 
-                        <Space vertical=true>
-                            <Divider class="my-3" />
-
-                            <Space>
-                                <FileCreationButton
-                                    parent_node=Signal::derive(move || current_node.get())
-                                    on_created=on_node_created
-                                />
-                                <FolderCreationButton
-                                    parent_node=Signal::derive(move || current_node.get())
-                                    on_created=on_node_created
-                                />
-                            </Space>
-                        </Space>
+                        <FolderBottomBar current_node is_trash on_children_changed />
                     </Space>
 
                     <Show when=move || selection.get().is_some()>
-                        <LayoutSider content_style="height: 100%">
-                            <Space class="!gap-0 h-full">
-                                <Divider vertical=true />
-                                <FileDetails
-                                    node=Signal::derive(move || selection.get().unwrap())
-                                    parent=current_node
-                                    on_close=Callback::new(move |_| selection.set(None))
-                                    on_modified=Callback::new(move |_| {
-                                        children_res.refetch();
-                                        selection.set(None);
-                                    })
-                                />
-                            </Space>
-                        </LayoutSider>
+                        <FileDetails
+                            node=Signal::derive(move || selection.get().unwrap())
+                            parent=current_node
+                            on_close=Callback::new(move |_| selection.set(None))
+                            on_modified=Callback::new(move |_| {
+                                children_res.refetch();
+                                selection.set(None);
+                            })
+                        />
                     </Show>
                 }
             }
