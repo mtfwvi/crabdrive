@@ -54,7 +54,7 @@ pub(crate) fn ModifyNodeMenu(
     let rename_action = Action::new_local(move |input: &String| {
         let new_name = input.to_owned();
         async move {
-            rename_node(node.get(), parent.get(), new_name)
+            rename_node(node.get_untracked(), parent.get_untracked(), new_name)
                 .await
                 .map_err(|err| err.to_string())
         }

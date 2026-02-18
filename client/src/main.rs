@@ -32,9 +32,9 @@ fn main() {
     console_error_panic_hook::set_once();
 
     let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(true)
+        .with_ansi(false)
         .with_target(false)
-        .with_line_number(false)
+        .with_line_number(true)
         .without_time()
         .with_writer(MakeWebConsoleWriter::new());
     let perf_layer = performance_layer().with_details_from_fields(DefaultFields::default());
