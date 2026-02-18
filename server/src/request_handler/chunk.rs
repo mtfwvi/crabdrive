@@ -57,7 +57,7 @@ pub async fn post_chunk(
         .await;
 
     match result {
-        Ok(_) => (StatusCode::OK, Json(())),
+        Ok(_) => (StatusCode::CREATED, Json(())),
         Err(FileSystemError::AlreadyCommitted) => (StatusCode::BAD_REQUEST, Json(())),
         Err(FileSystemError::NotFound) => (StatusCode::NOT_FOUND, Json(())),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
