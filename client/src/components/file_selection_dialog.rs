@@ -45,8 +45,10 @@ pub(crate) fn FileSelectionDialog(
                             <style>".thaw-upload__trigger { width: 100% } "</style>
 
                             <UploadDragger>
-                                "Click or drag a file to this area"
-                                <Show when=move || !selection.get().is_empty()>
+                                {format!(
+                                    "Click or drag {} to this area",
+                                    if allow_multiple { "files" } else { "a file" },
+                                )} <Show when=move || !selection.get().is_empty()>
                                     <Space vertical=true>
                                         <Divider class="py-4" />
                                         <Text>

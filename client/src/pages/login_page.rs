@@ -161,7 +161,7 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                         "current-password"
                     }
                 />
-                <Show when=move || !is_password_valid.get() && !register_new_account>
+                <Show when=move || !is_password_valid.get() && register_new_account>
                     <MessageBar intent=MessageBarIntent::Error layout=MessageBarLayout::Multiline>
                         <MessageBarBody class="mb-2">
                             <MessageBarTitle>"Invalid password"</MessageBarTitle>

@@ -104,7 +104,7 @@ pub(crate) fn FileCreationButton(
         <Button
             on_click=move |_| file_selection_dialog_open.set(true)
             appearance=ButtonAppearance::Primary
-            icon=icondata::MdiPlus
+            icon=icondata_mdi::MdiPlus
         >
             "Upload file"
         </Button>

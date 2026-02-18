@@ -1,14 +1,41 @@
+use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
-use crabdrive_common::storage::NodeType;
+use crate::utils::ui::get_node_icon;
+use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
-use thaw::{Button, ButtonAppearance, Flex, FlexGap, FlexJustify, Text};
+use thaw::{
+    Button, ButtonAppearance, ButtonSize, Flex, FlexGap, FlexJustify, Text, Toast, ToastIntent,
+    ToastOptions, ToastTitle, ToasterInjection,
+};
 
 #[component]
 pub(crate) fn NodeList(
     #[prop(into)] nodes: Signal<Vec<DecryptedNode>>,
-    on_select: Callback<DecryptedNode>,
+    #[prop(into)] folders_only: Signal<bool>,
+    on_node_click: Callback<DecryptedNode>,
+    on_folder_dblclick: Callback<NodeId>,
 ) -> impl IntoView {
-    let on_click = move |node: DecryptedNode| on_select.run(node);
+    let toaster = ToasterInjection::expect_context();
+
+    let add_toast = move |text: String| {
+        toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>{text}</ToastTitle>
+                    </Toast>
+                }
+            },
+            ToastOptions::default()
+                .with_intent(ToastIntent::Info)
+                .with_timeout(DEFAULT_TOAST_TIMEOUT),
+        )
+    };
+    let on_dblclick = move |node: DecryptedNode| match node.node_type {
+        NodeType::File => {}
+        NodeType::Folder => on_folder_dblclick.run(node.id),
+        NodeType::Link => add_toast(String::from("Links have not been implemented")),
+    };
 
     let sorted_nodes = move |node_type: NodeType| {
         let all_nodes = nodes.get();
@@ -25,14 +52,28 @@ pub(crate) fn NodeList(
         filtered_nodes
     };
 
+    let is_empty = move || {
+        if folders_only.get() {
+            !nodes
+                .get()
+                .iter()
+                .any(|node| node.node_type == NodeType::Folder)
+        } else {
+            nodes.get().is_empty()
+        }
+    };
+
     view! {
-        <Show
-            when=move || !nodes.get().is_empty()
-            fallback=|| view! { <Text>"Folder is empty"</Text> }
-        >
-            <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::SpaceBetween>
+        <Show when=move || !is_empty() fallback=|| view! { <Text>"Folder is empty"</Text> }>
+            <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::FlexStart>
                 <For
-                    each=move || vec![NodeType::Folder, NodeType::File, NodeType::Link]
+                    each=move || {
+                        if folders_only.get() {
+                            vec![NodeType::Folder]
+                        } else {
+                            vec![NodeType::Folder, NodeType::File, NodeType::Link]
+                        }
+                    }
                     key=|node_type| *node_type
                     let:node_type
                 >
@@ -50,7 +91,11 @@ pub(crate) fn NodeList(
                                             metadata.name
                                         })
                                         node_type=Signal::derive(move || node.get().node_type)
-                                        on:click=move |_| on_click(node.get())
+                                        on:click=move |_| on_node_click.run(node.get())
+                                        on:dblclick=move |e| {
+                                            e.prevent_default();
+                                            on_dblclick(node.get())
+                                        }
                                     />
                                 }
                             }
@@ -67,30 +112,18 @@ fn NodeListItem(
     #[prop(into)] name: Signal<String>,
     #[prop(into)] node_type: Signal<NodeType>,
 ) -> impl IntoView {
-    let file_extension = name.get().split('.').last().unwrap_or_default().to_owned();
-    let file_icon = move || match file_extension.as_str() {
-        "zip" | "7zip" | "gz" => icondata::MdiFolderZipOutline,
-        "pdf" | "txt" | "md" => icondata::MdiFileDocumentOutline,
-        "html" | "xml" | "json" | "toml" | "yml" | "yaml" | "rs" => icondata::MdiFileCodeOutline,
-        "png" | "jpg" | "jpeg" | "gif" | "ico" => icondata::MdiFileImageOutline,
-        "mp4" | "mov" | "avi" => icondata::MdiFileVideoOutline,
-        "mp3" | "wav" | "flac" => icondata::MdiFileMusicOutline,
-        "doc" | "docx" | "odt" => icondata::MdiFileWordOutline,
-        "xls" | "xlsx" | "ods" => icondata::MdiFileExcelOutline,
-        "ppt" | "pptx" | "odp" => icondata::MdiFilePowerpointOutline,
-        "csv" | "tsv" => icondata::MdiFileTableOutline,
-        _ => icondata::MdiFileOutline,
-    };
-
     view! {
         <Button
             appearance=ButtonAppearance::Subtle
-            icon=Signal::derive(move || match node_type.get() {
-                NodeType::Folder => icondata::MdiFolderOutline,
-                NodeType::File => file_icon(),
-                NodeType::Link => icondata::MdiLinkBoxOutline,
+            icon=Signal::derive(move || get_node_icon(node_type.get(), name.get()))
+            size=Signal::derive(move || {
+                if node_type.get() == NodeType::Folder {
+                    ButtonSize::Large
+                } else {
+                    ButtonSize::Medium
+                }
             })
-            class="w-full flex !justify-start"
+            class="w-full flex !justify-start !px-4 !py-1"
         >
             <Text>{name}</Text>
         </Button>
