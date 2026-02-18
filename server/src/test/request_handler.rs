@@ -43,6 +43,7 @@ use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
 use tower_http::catch_panic::CatchPanicLayer;
+use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME: &str = "admin";
@@ -408,18 +409,11 @@ pub async fn get_server() -> TestServer {
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
     let user_repository = UserState::new(Arc::new(pool.clone()));
+    let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
-    let state = AppState::new(
-        config.clone(),
-        pool,
-        vfs,
-        node_repository,
-        revision_repository,
-        user_repository,
-        keys,
-    );
+    let state = AppState::new(config.clone(), pool, vfs, node_repository, revision_repository, user_repository,share_repository,  keys);
 
     prepare_db(&state);
 
