@@ -3,11 +3,8 @@ use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::{node::persistence::model::node_entity::NodeEntity, vfs::backend::Sfs};
-use crate::user::persistence::model::user_entity::UserEntity;
+use crate::storage::vfs::backend::Sfs;
 
-use chrono::Local;
-use crabdrive_common::uuid::UUID;
 use http_body_util::Full;
 
 use crate::auth::secrets::Keys;
@@ -17,8 +14,6 @@ use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;
 use axum::response::Response;
 use bytes::Bytes;
-use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::encryption_key::EncryptionKey;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::any::Any;
 use std::io::ErrorKind;
@@ -58,53 +53,9 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     );
 
     const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    let mut conn = state.db_pool.get().unwrap();
-    conn.run_pending_migrations(MIGRATIONS).unwrap();
-
-    // HACK: Create a root node with a zeroed UUID, if it's not already existing.
-    // TODO: Remove when adding auth!
-
-    if crate::db::operations::select_user(&state.db_pool, UUID::nil())
-        .unwrap()
-        .is_none()
     {
-        let system_user = UserEntity {
-            id: UUID::nil(),
-            username: "system".to_string(),
-            user_type: crabdrive_common::user::UserType::Admin,
-            created_at: Local::now().naive_local(),
-            password_hash: "".to_string(),
-            storage_limit: crabdrive_common::da!(500 MB),
-            encryption_uninitialized: false,
-            master_key: EncryptionKey::nil(),
-            private_key: EncryptionKey::nil(),
-            public_key: vec![],
-            root_key: EncryptionKey::nil(),
-            root_node: None,
-            trash_key: EncryptionKey::nil(),
-            trash_node: None,
-        };
-
-        crate::db::operations::insert_user(&state.db_pool, &system_user).unwrap();
-    }
-
-    if crate::db::operations::select_node(&state.db_pool, UUID::nil())
-        .unwrap()
-        .is_none()
-    {
-        let node = NodeEntity {
-            id: UUID::nil(),
-            owner_id: UUID::nil(),
-            parent_id: None,
-            metadata: EncryptedMetadata::nil(),
-            deleted_on: None,
-            current_revision: None,
-            metadata_change_counter: 0,
-            node_type: crabdrive_common::storage::NodeType::Folder,
-        };
-
-        crate::db::operations::insert_node(&state.db_pool, &node, &EncryptedMetadata::nil())
-            .unwrap();
+        let mut conn = state.db_pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS).unwrap();
     }
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission

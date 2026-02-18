@@ -14,6 +14,7 @@ use leptos_router::components::{Route, Router, Routes};
 use leptos_router::path;
 use leptos_use::use_preferred_dark;
 use pages::home_page::HomePage;
+use pages::login_page::LoginPage;
 use thaw::{ConfigProvider, ToastPosition, ToasterProvider};
 use tracing_subscriber::fmt::format::DefaultFields;
 use tracing_subscriber::layer::SubscriberExt;
@@ -31,8 +32,9 @@ fn main() {
     console_error_panic_hook::set_once();
 
     let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(false)
-        .with_line_number(true)
+        .with_ansi(true)
+        .with_target(false)
+        .with_line_number(false)
         .without_time()
         .with_writer(MakeWebConsoleWriter::new());
     let perf_layer = performance_layer().with_details_from_fields(DefaultFields::default());
@@ -41,6 +43,8 @@ fn main() {
         .with(fmt_layer)
         .with(perf_layer)
         .init();
+
+    // TODO: Test login!
 
     mount_to_body(CrabDrive)
 }
@@ -63,6 +67,14 @@ fn CrabDrive() -> impl IntoView {
                 <Router>
                     <Routes fallback=|| "Frontend route not found">
                         <Route path=path!("") view=HomePage />
+                        <Route
+                            path=path!("/register")
+                            view=move || view! { <LoginPage register_new_account=true /> }
+                        />
+                        <Route
+                            path=path!("/login")
+                            view=move || view! { <LoginPage register_new_account=false /> }
+                        />
                         <Route path=path!("/:id") view=HomePage />
                     </Routes>
                 </Router>

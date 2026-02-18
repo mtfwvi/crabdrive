@@ -1,15 +1,16 @@
 use crate::http::AppState;
 use crate::request_handler::node::entity_to_encrypted_node;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
+use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::{NodeId, NodeType};
-use crabdrive_common::uuid::UUID;
 
 pub async fn post_create_folder(
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path(parent_id): Path<NodeId>,
     Json(payload): Json<PostCreateFolderRequest>,
@@ -24,6 +25,13 @@ pub async fn post_create_folder(
     }
 
     let parent_node = parent_node.unwrap();
+
+    if parent_node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostCreateFolderResponse::NotFound),
+        );
+    }
 
     // a file cannot have children
     if parent_node.node_type != NodeType::Folder {
@@ -46,7 +54,7 @@ pub async fn post_create_folder(
         .node_repository
         .update_node(&NodeEntity {
             metadata: payload.parent_metadata,
-            metadata_change_counter: 0,
+            metadata_change_counter: parent_node.metadata_change_counter,
             ..parent_node
         })
         .expect("db error");
@@ -57,7 +65,7 @@ pub async fn post_create_folder(
         .create_node(
             Some(parent_id),
             payload.node_metadata,
-            UUID::nil(),
+            current_user.id,
             NodeType::Folder,
             payload.node_id,
         )
