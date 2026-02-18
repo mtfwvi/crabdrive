@@ -8,8 +8,8 @@ use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::{use_navigate, use_params_map};
 use thaw::{
-    Button, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider, Space, SpaceAlign,
-    Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
+    Button, ButtonAppearance, ButtonGroup, Divider, Flex, FlexAlign, Image, Layout, LayoutSider,
+    Space, SpaceAlign, Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
@@ -90,14 +90,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                     <ButtonGroup class="w-full">
                         <Button
                             on_click=move |_| on_go_to_node("root_id")
-                            icon=icondata::MdiFolderStarOutline
+                            icon=icondata_mdi::MdiFolderStarOutline
                             class="flex-1"
                         >
                             "Root"
                         </Button>
                         <Button
                             on_click=move |_| on_go_to_node("trash_id")
-                            icon=icondata::MdiTrashCanOutline
+                            icon=icondata_mdi::MdiTrashCanOutline
                             class="flex-1"
                         >
                             Trash
@@ -108,7 +108,7 @@ pub(crate) fn HomePage() -> impl IntoView {
                             logout_action.dispatch(());
                         }
                         block=true
-                        icon=icondata::MdiLogout
+                        icon=icondata_mdi::MdiLogout
                     >
                         {move || format!("Log out ({})", username.get())}
                     </Button>
@@ -116,12 +116,13 @@ pub(crate) fn HomePage() -> impl IntoView {
             </LayoutSider>
 
             <Layout
-                class="h-fit min-h-57 flex-1 rounded-sm outline outline-gray-300"
+                class="h-full flex-1 rounded-sm outline outline-gray-300"
+                content_style="height: 100%"
                 has_sider=true
             >
                 <Show
                     when=move || node_id.get().is_some()
-                    fallback=|| view! { <Text>No node selected.</Text> }
+                    fallback=|| view! { <Text class="m-8">No node selected.</Text> }
                 >
                     <FolderView
                         node_id=Signal::derive(move || node_id.get().unwrap())
@@ -134,5 +135,14 @@ pub(crate) fn HomePage() -> impl IntoView {
                 </Show>
             </Layout>
         </Layout>
+        <Button
+            class="absolute bottom-[15px] left-[20px] !text-gray-500 hover:!text-[var(--colorNeutralForeground2BrandHover)]"
+            appearance=ButtonAppearance::Transparent
+            on_click=move |_| {
+                toaster.dismiss_all();
+            }
+        >
+            "Dismiss all"
+        </Button>
     }
 }
