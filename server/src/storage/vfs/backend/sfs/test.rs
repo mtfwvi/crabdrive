@@ -12,22 +12,22 @@ mod tests {
 
     use pretty_assertions::assert_eq;
 
-    #[test]
-    fn test_sfs_write_read_cycle() {
+    #[tokio::test]
+    async fn test_sfs_write_read_cycle() {
         // This test writes all files into a temporary directory, which are then deleted directly after.
         let mut sfs = Sfs::new(&":temp:".to_string());
 
         // Test with 16 files, containing 16 chunks à 100KB of garbage data each.
-        // For testing, 100KB should be enough..
+        // For testing, 100KB should be enough.
         const NUM_FILES: u32 = 16;
         const NUM_CHUNKS: i64 = 16;
         const SIZE_CHUNK: DataAmount = da!(100 KB);
 
         for _ in 0..NUM_FILES {
-            let file_key = UUID::random().to_string();
+            let file_key = UUID::random();
 
-            let session_id = sfs
-                .start_transfer(file_key.clone())
+            sfs.create(&file_key)
+                .await
                 .expect("Failed to start transfer");
 
             let mut original_data = Vec::new();
@@ -45,21 +45,22 @@ mod tests {
                     data: bytes::Bytes::from(chunk_data),
                 };
 
-                assert!(!sfs.chunk_exists(&session_id, i));
+                assert!(!sfs.chunk_exists(&file_key, i).await);
 
                 // Write chunk in file system
-                sfs.write_chunk(&session_id, chunk)
+                sfs.write(&file_key, chunk)
+                    .await
                     .expect("Failed to write chunk");
 
-                assert!(sfs.chunk_exists(&session_id, i));
+                assert!(sfs.chunk_exists(&file_key, i).await);
             }
 
-            sfs.end_transfer(&session_id)
-                .expect("Failed to end transfer");
+            sfs.commit(&file_key).await.expect("Failed to end transfer");
 
             for i in 0..NUM_CHUNKS {
                 let chunk = sfs
-                    .get_chunk(file_key.clone(), i, SIZE_CHUNK)
+                    .read(&file_key, i)
+                    .await
                     .expect("Failed to read chunk back");
 
                 assert_eq!(
