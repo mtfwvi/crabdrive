@@ -20,7 +20,7 @@ axum-test = "18.7.0"
 base64 = "0.22.1"
 bytes = "1.11.1"
 chrono = { version = "0.4.42", features = ["serde"]}
-clap = "4.5.56"
+clap = "4.5.58"
 confique = { version = "0.4.0", git = "https://github.com/mtfwvi/confique", branch = "template-more-config-options" }
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
