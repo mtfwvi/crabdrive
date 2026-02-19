@@ -32,9 +32,9 @@ fn main() {
     console_error_panic_hook::set_once();
 
     let fmt_layer = tracing_subscriber::fmt::layer()
-        .with_ansi(true)
+        .with_ansi(false)
         .with_target(false)
-        .with_line_number(false)
+        .with_line_number(true)
         .without_time()
         .with_writer(MakeWebConsoleWriter::new());
     let perf_layer = performance_layer().with_details_from_fields(DefaultFields::default());
@@ -62,7 +62,11 @@ fn CrabDrive() -> impl IntoView {
 
     view! {
         <ConfigProvider theme>
-            <style>".thaw-toast { outline: 1px solid lightgray}"</style>
+            // Provide contrast against page background in dark theme
+            // + provide space for "Dismiss all" button below toasts
+            <style>
+                ".thaw-toast { outline: 1px solid lightgray; } .thaw-toaster--bottom-start { bottom: 60px}"
+            </style>
             <ToasterProvider position=ToastPosition::BottomStart>
                 <Router>
                     <Routes fallback=|| "Frontend route not found">

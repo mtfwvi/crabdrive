@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use crabdrive_common::storage::NodeType;
 
 pub(crate) fn format_date_time(naive_date_time: NaiveDateTime) -> String {
     naive_date_time.format("%d/%m/%Y, %H:%M:%S").to_string()
@@ -21,6 +22,30 @@ pub(crate) fn shorten_file_name(name: String) -> String {
         format!("{}…{}", start, end)
     } else {
         name
+    }
+}
+
+pub(crate) fn get_node_icon(node_type: NodeType, name: String) -> &'static icondata_core::IconData {
+    let file_extension = name.split('.').last().unwrap_or_default().to_owned();
+
+    match node_type {
+        NodeType::Folder => icondata_mdi::MdiFolderOutline,
+        NodeType::Link => icondata_mdi::MdiLinkBoxOutline,
+        NodeType::File => match file_extension.as_str() {
+            "zip" | "7zip" | "gz" => icondata_mdi::MdiFolderZipOutline,
+            "pdf" | "txt" | "md" => icondata_mdi::MdiFileDocumentOutline,
+            "html" | "xml" | "json" | "toml" | "yml" | "yaml" | "rs" => {
+                icondata_mdi::MdiFileCodeOutline
+            }
+            "png" | "jpg" | "jpeg" | "gif" | "ico" => icondata_mdi::MdiFileImageOutline,
+            "mp4" | "mov" | "avi" => icondata_mdi::MdiFileVideoOutline,
+            "mp3" | "wav" | "flac" => icondata_mdi::MdiFileMusicOutline,
+            "doc" | "docx" | "odt" => icondata_mdi::MdiFileWordOutline,
+            "xls" | "xlsx" | "ods" => icondata_mdi::MdiFileExcelOutline,
+            "ppt" | "pptx" | "odp" => icondata_mdi::MdiFilePowerpointOutline,
+            "csv" | "tsv" => icondata_mdi::MdiFileTableOutline,
+            _ => icondata_mdi::MdiFileOutline,
+        },
     }
 }
 
