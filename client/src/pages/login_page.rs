@@ -5,9 +5,10 @@ use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{
-    Button, ButtonAppearance, Image, Input, InputType, MessageBar, MessageBarBody,
-    MessageBarIntent, MessageBarLayout, MessageBarTitle, Space, SpaceAlign, Spinner, SpinnerSize,
-    Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToastTitleMedia, ToasterInjection,
+    Button, ButtonAppearance, ComponentRef, Image, Input, InputRef, InputType, MessageBar,
+    MessageBarBody, MessageBarIntent, MessageBarLayout, MessageBarTitle, Space, SpaceAlign,
+    Spinner, SpinnerSize, Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToastTitleMedia,
+    ToasterInjection,
 };
 
 #[component]
@@ -17,6 +18,8 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
     let navigate_to_register =
         Callback::new(move |_| navigate_to_register("/register", Default::default()));
     let navigate_to_login = Callback::new(move |_| navigate("/login", Default::default()));
+
+    let username_input_ref = ComponentRef::<InputRef>::new();
 
     let toaster = ToasterInjection::expect_context();
     let auth_in_progress_toast_id = UUID::random();
@@ -87,6 +90,14 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
         }
     });
 
+    Effect::watch(
+        move || register_new_account,
+        move |_, _, _| {
+            request_animation_frame(move || username_input_ref.get_untracked().unwrap().focus())
+        },
+        true,
+    );
+
     let login_action = Action::new_local(move |input: &(String, String)| {
         let (username, password) = input.to_owned();
         async move {
@@ -145,6 +156,7 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                 </Text>
                 <Input
                     placeholder="Username"
+                    comp_ref=username_input_ref
                     class="w-full"
                     autofocus=true
                     value=username
