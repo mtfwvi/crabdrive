@@ -27,7 +27,7 @@ pub(crate) fn NodeDetails(
             <Space class="!gap-0 h-full">
                 <Divider vertical=true />
 
-                <Space vertical=true class="p-8 !max-w-[35vw]">
+                <Space vertical=true class="p-8 !min-w-[25vw] !max-w-[35vw]">
                     <Space class="my-3 content-center justify-between">
                         <Text class="!text-2xl !font-bold">
                             {move || shorten_file_name(metadata.get().name)}
