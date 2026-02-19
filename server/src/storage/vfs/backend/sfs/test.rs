@@ -10,6 +10,7 @@ mod tests {
 
     use rand::{Rng, rng};
 
+    use crate::storage::vfs::model::FileStatus;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
@@ -23,8 +24,12 @@ mod tests {
         const NUM_CHUNKS: i64 = 16;
         const SIZE_CHUNK: DataAmount = da!(100 KB);
 
+        // Store filekeys for later deletion
+        let mut file_keys: Vec<UUID> = vec![];
+
         for _ in 0..NUM_FILES {
             let file_key = UUID::random();
+            file_keys.push(file_key.clone());
 
             sfs.create_file(&file_key)
                 .await
@@ -73,6 +78,24 @@ mod tests {
                     i
                 );
             }
+        }
+
+        // Delete first file
+        sfs.delete_file(&file_keys[0])
+            .await
+            .expect("Failed to delete file");
+        let exists = sfs.file_exists(&file_keys[0]).await;
+        assert_eq!(exists, FileStatus::NotFound);
+
+        for i in 0..NUM_CHUNKS {
+            let result = sfs.read_chunk(&file_keys[0], i).await;
+            assert!(result.is_err());
+        }
+
+        // Check all other files are still existent
+        for i in 1..NUM_FILES {
+            let exists = sfs.file_exists(&file_keys[i as usize]).await;
+            assert_eq!(exists, FileStatus::Persisted);
         }
     }
 }

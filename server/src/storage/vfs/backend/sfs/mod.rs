@@ -152,7 +152,7 @@ impl FileRepository for Sfs {
         }
         let mut path_buf = self.storage_dir.clone();
         path_buf.push(key.to_string());
-        Ok(std::fs::remove_file(&path_buf)?)
+        Ok(std::fs::remove_dir_all(&path_buf)?)
     }
 
     #[instrument(skip(self), fields(key = %key))]
