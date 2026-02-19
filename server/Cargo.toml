@@ -29,9 +29,9 @@ tracing-appender = { workspace = true }
 jsonwebtoken = { workspace = true, features = ["rust_crypto"]}
 axum-extra = { workspace = true, features = ["typed-header"]}
 argon2 = { workspace = true, features = ["alloc"]}
-moka = { version = "0.12.13", features = ["future", "logging"] }
-async-trait = "0.1.89"
-thiserror = "2.0.18"
+moka = { workspace = true }
+async-trait = { workspace = true }
+thiserror = { workspace = true }
 
 [dev-dependencies]
 axum-test = { workspace = true }
