@@ -29,7 +29,7 @@ mod tests {
 
         for _ in 0..NUM_FILES {
             let file_key = UUID::random();
-            file_keys.push(file_key.clone());
+            file_keys.push(file_key);
 
             sfs.create_file(&file_key)
                 .await
