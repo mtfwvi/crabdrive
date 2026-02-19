@@ -73,7 +73,7 @@ impl FileRepository for Sfs {
         pathbuf.as_path().exists()
     }
 
-    async fn exists(&self, key: &FileKey) -> FileStatus {
+    async fn file_exists(&self, key: &FileKey) -> FileStatus {
         let mut pathbuf = self.storage_dir.clone();
         pathbuf.push(key.to_string());
         if pathbuf.exists() {
@@ -89,7 +89,7 @@ impl FileRepository for Sfs {
     }
 
     #[instrument(skip(self), fields(key = %key))]
-    async fn create(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+    async fn create_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
         let session = *key;
         let mut pathbuf = self.storage_dir.clone();
         pathbuf.push(key.to_string());
@@ -100,7 +100,11 @@ impl FileRepository for Sfs {
     }
 
     #[instrument(skip(self, contents), fields(key = %key))]
-    async fn write(&mut self, key: &FileKey, contents: FileChunk) -> Result<(), FileSystemError> {
+    async fn write_chunk(
+        &mut self,
+        key: &FileKey,
+        contents: FileChunk,
+    ) -> Result<(), FileSystemError> {
         if !self.sessions.contains_key(key) {
             error!("Invalid session");
             return Err(FileSystemError::NotFound);
@@ -128,7 +132,7 @@ impl FileRepository for Sfs {
     }
 
     #[instrument(skip(self), fields(key = %key))]
-    async fn commit(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+    async fn commit_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
         if self.sessions.contains_key(key) {
             self.sessions.remove(key);
             debug!("Session {} removed", key);
@@ -142,8 +146,8 @@ impl FileRepository for Sfs {
     async fn abort(&mut self, _: &FileKey) -> Result<(), FileSystemError> {
         unimplemented!("SFS does not implement this functionality.")
     }
-    async fn delete(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
-        if self.exists(key).await != FileStatus::Persisted {
+    async fn delete_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+        if self.file_exists(key).await != FileStatus::Persisted {
             return Err(FileSystemError::NotFound);
         }
         let mut path_buf = self.storage_dir.clone();
@@ -152,8 +156,12 @@ impl FileRepository for Sfs {
     }
 
     #[instrument(skip(self), fields(key = %key))]
-    async fn read(&self, key: &FileKey, index: ChunkIndex) -> Result<FileChunk, FileSystemError> {
-        if self.exists(key).await != FileStatus::Persisted {
+    async fn read_chunk(
+        &self,
+        key: &FileKey,
+        index: ChunkIndex,
+    ) -> Result<FileChunk, FileSystemError> {
+        if self.file_exists(key).await != FileStatus::Persisted {
             return Err(FileSystemError::NotFound);
         }
 

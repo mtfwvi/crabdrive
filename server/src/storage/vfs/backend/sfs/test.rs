@@ -26,7 +26,7 @@ mod tests {
         for _ in 0..NUM_FILES {
             let file_key = UUID::random();
 
-            sfs.create(&file_key)
+            sfs.create_file(&file_key)
                 .await
                 .expect("Failed to start transfer");
 
@@ -48,18 +48,20 @@ mod tests {
                 assert!(!sfs.chunk_exists(&file_key, i).await);
 
                 // Write chunk in file system
-                sfs.write(&file_key, chunk)
+                sfs.write_chunk(&file_key, chunk)
                     .await
                     .expect("Failed to write chunk");
 
                 assert!(sfs.chunk_exists(&file_key, i).await);
             }
 
-            sfs.commit(&file_key).await.expect("Failed to end transfer");
+            sfs.commit_file(&file_key)
+                .await
+                .expect("Failed to end transfer");
 
             for i in 0..NUM_CHUNKS {
                 let chunk = sfs
-                    .read(&file_key, i)
+                    .read_chunk(&file_key, i)
                     .await
                     .expect("Failed to read chunk back");
 

@@ -106,7 +106,7 @@ pub async fn post_create_file(
     {
         let mut vfs = state.vfs.write().await;
 
-        vfs.create(&revision.id)
+        vfs.create_file(&revision.id)
             .await
             .expect("how does that happen? - File system error!");
     }
@@ -164,7 +164,7 @@ pub async fn post_update_file(
     {
         let mut vfs = state.vfs.write().await;
 
-        vfs.create(&revision.id)
+        vfs.create_file(&revision.id)
             .await
             .expect("how does that happen?");
     }
@@ -246,7 +246,7 @@ pub async fn post_commit_file(
 
     {
         let mut vfs = state.vfs.write().await;
-        vfs.commit(&revision_id).await.unwrap()
+        vfs.commit_file(&revision_id).await.unwrap()
     }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))

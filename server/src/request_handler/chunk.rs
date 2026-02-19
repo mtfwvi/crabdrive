@@ -53,7 +53,7 @@ pub async fn post_chunk(
         .vfs
         .write()
         .await
-        .write(&revision_id, file_chunk)
+        .write_chunk(&revision_id, file_chunk)
         .await;
 
     match result {
@@ -85,7 +85,12 @@ pub async fn get_chunk(
         return StatusCode::NOT_FOUND.into_response();
     }
 
-    let result = state.vfs.read().await.read(&revision_id, chunk_index).await;
+    let result = state
+        .vfs
+        .read()
+        .await
+        .read_chunk(&revision_id, chunk_index)
+        .await;
 
     if let Ok(data) = result {
         return (StatusCode::OK, data.data).into_response();
