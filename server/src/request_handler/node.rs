@@ -1,5 +1,3 @@
-use std::vec;
-
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -176,56 +174,34 @@ pub async fn get_path_between_nodes(
 
     let to_node_id = path_constraints.0.to_id;
     let from_node_id = path_constraints.0.from_id;
-    let to_node = state
+
+    let path = state
         .node_repository
-        .get_node(to_node_id)
+        .get_path_between_nodes(from_node_id, to_node_id)
         .expect("db error");
+    match path {
+        None => (
+            StatusCode::NO_CONTENT,
+            Json(GetPathBetweenNodesResponse::NoContent),
+        ),
+        Some(path_entites) => {
+            if path_entites[0].owner_id != current_user.id
+                || path_entites.last().unwrap().owner_id != current_user.id
+            {
+                return (
+                    StatusCode::NOT_FOUND,
+                    Json(GetPathBetweenNodesResponse::NotFound),
+                );
+            }
 
-    if to_node.is_none() {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(GetPathBetweenNodesResponse::NotFound),
-        );
-    }
-    let mut path = vec![to_node.unwrap()];
+            let path = path_entites
+                .iter()
+                .map(|entity| entity_to_encrypted_node(entity.clone(), &state).expect("db error"))
+                .collect();
 
-    loop {
-        if path.last().unwrap().id == from_node_id {
-            break;
+            (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))
         }
-
-        let new_parent_id = path.last().unwrap().parent_id;
-        if new_parent_id.is_none() {
-            // reached a node with no parent that is not the node we are looking for -> the path
-            // does not exist
-            return (
-                StatusCode::NO_CONTENT,
-                Json(GetPathBetweenNodesResponse::NoContent),
-            );
-        }
-
-        let parent = state
-            .node_repository
-            .get_node(new_parent_id.unwrap())
-            .unwrap()
-            .unwrap();
-        path.push(parent);
     }
-
-    let path: Vec<EncryptedNode> = path
-        .into_iter()
-        .map(|node_entity| entity_to_encrypted_node(node_entity.clone(), &state).unwrap())
-        .rev()
-        .collect();
-
-    if path[0].owner_id != current_user.id || path.last().unwrap().owner_id != current_user.id {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(GetPathBetweenNodesResponse::NotFound),
-        );
-    }
-
-    (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))
 }
 
 pub async fn get_node_children(

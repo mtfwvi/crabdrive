@@ -36,12 +36,18 @@ pub async fn create_file(
     // The key used to encrypt the file chunks. This will be stored in the encrypted metadata of the node.
     let file_encryption_key: FileKey = utils::encryption::generate_aes256_key().await?;
 
+    let file_type = file.type_();
+
     let file_metadata = NodeMetadata::V1(MetadataV1 {
         name: file_name,
         last_modified: Local::now().naive_local(),
         created: Local::now().naive_local(),
         size: Some(da!(file.size())),
-        mime_type: Some(file.type_()),
+        mime_type: if file_type.is_empty() {
+            None
+        } else {
+            Some(file_type)
+        },
         file_key: Some(file_encryption_key),
         children_key: vec![],
     });

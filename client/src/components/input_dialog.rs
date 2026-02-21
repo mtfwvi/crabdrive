@@ -8,7 +8,7 @@ use thaw::{
 pub(crate) fn InputDialog(
     #[prop(into)] open: RwSignal<bool>,
     #[prop(into)] title: Signal<String>,
-    #[prop(into)] placeholder: Signal<String>,
+    #[prop(into, optional)] placeholder: Signal<String>,
     #[prop(into)] confirm_label: Signal<String>,
     on_confirm: Callback<String>,
 ) -> impl IntoView {

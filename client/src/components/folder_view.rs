@@ -1,41 +1,28 @@
 use crate::api::{get_children, get_trash_node, path_to_root};
-use crate::components::file_creation_button::FileCreationButton;
-use crate::components::file_details::FileDetails;
-use crate::components::folder_creation_button::FolderCreationButton;
+use crate::components::folder_bottom_bar::FolderBottomBar;
+use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::components::resource_wrapper::ResourceWrapper;
-use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
-use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{
-    Divider, LayoutSider, Space, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
-};
+use thaw::{Divider, Space};
 
 #[component]
 pub(crate) fn FolderView(
     #[prop(into)] node_id: Signal<NodeId>,
     is_trash: Signal<bool>,
 ) -> impl IntoView {
-    let toaster = ToasterInjection::expect_context();
     let navigate = use_navigate();
+    let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
-    let add_toast = move |text: String| {
-        toaster.dispatch_toast(
-            move || {
-                view! {
-                    <Toast>
-                        <ToastTitle>{text}</ToastTitle>
-                    </Toast>
-                }
-            },
-            ToastOptions::default()
-                .with_intent(ToastIntent::Info)
-                .with_timeout(DEFAULT_TOAST_TIMEOUT),
-        )
-    };
+    let _reset_selection_effect = Effect::watch(
+        move || node_id.get(),
+        move |_, _, _| selection.set(None),
+        false,
+    );
 
     let path_res = LocalResource::new(move || {
         let node_id = node_id.get();
@@ -48,14 +35,12 @@ pub(crate) fn FolderView(
             }
         }
     });
-    let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let navigate_to_node = Callback::new(move |node_id| {
         navigate(&format!("/{}", node_id), Default::default());
-        selection.set(None);
     });
 
-    let toggle_selection = move |file: DecryptedNode| {
+    let toggle_selection = Callback::new(move |file: DecryptedNode| {
         let selected = selection.get().clone();
         let is_selected = selected.is_some() && selected.unwrap().id == file.id;
 
@@ -64,15 +49,9 @@ pub(crate) fn FolderView(
         } else {
             Some(file.clone())
         });
-    };
-
-    let on_select_node = Callback::new(move |node: DecryptedNode| match node.node_type {
-        NodeType::File => toggle_selection(node),
-        NodeType::Folder => navigate_to_node.run(node.id),
-        NodeType::Link => add_toast(String::from("Links have not been implemented")),
     });
 
-    let on_node_created = Callback::new(move |_| {
+    let on_children_changed = Callback::new(move |_| {
         path_res.refetch()
         // children_res will automatically refetch, because it is
         // only created within the resource wrapper for path_res
@@ -110,36 +89,29 @@ pub(crate) fn FolderView(
                                 })
                                 let:children
                             >
-                                <NodeList nodes=children on_select=on_select_node />
+                                <NodeList
+                                    nodes=children
+                                    on_node_click=toggle_selection
+                                    on_folder_dblclick=navigate_to_node
+                                    folders_only=false
+                                />
                             </ResourceWrapper>
                         </Space>
 
-                        <Space vertical=true>
-                            <Divider class="my-3" />
-
-                            <Space>
-                                <FileCreationButton
-                                    parent_node=Signal::derive(move || current_node.get())
-                                    on_created=on_node_created
-                                />
-                                <FolderCreationButton
-                                    parent_node=Signal::derive(move || current_node.get())
-                                    on_created=on_node_created
-                                />
-                            </Space>
-                        </Space>
+                        <FolderBottomBar current_node is_trash on_children_changed />
                     </Space>
 
                     <Show when=move || selection.get().is_some()>
-                        <LayoutSider content_style="height: 100%">
-                            <Space class="!gap-0 h-full">
-                                <Divider vertical=true />
-                                <FileDetails
-                                    selection=Signal::derive(move || selection.get().unwrap())
-                                    on_close=Callback::new(move |_| selection.set(None))
-                                />
-                            </Space>
-                        </LayoutSider>
+                        <NodeDetails
+                            node=Signal::derive(move || selection.get().unwrap())
+                            parent=current_node
+                            is_trash
+                            on_close=Callback::new(move |_| selection.set(None))
+                            on_modified=Callback::new(move |_| {
+                                children_res.refetch();
+                                selection.set(None);
+                            })
+                        />
                     </Show>
                 }
             }

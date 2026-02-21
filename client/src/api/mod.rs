@@ -7,22 +7,15 @@ mod get_root_node;
 mod get_trash_node;
 mod path_between_nodes;
 mod path_to_root;
+mod rename_node;
 mod requests;
 
-//TODO remove before submission
-#[allow(unused_imports)]
 pub use create_file::create_file;
-#[allow(unused_imports)]
 pub use create_folder::create_folder;
-#[allow(unused_imports)]
 pub use download_file::download_file;
-#[allow(unused_imports)]
 pub use get_children::get_children;
-#[allow(unused_imports)]
 pub use get_root_node::get_root_node;
-#[allow(unused_imports)]
 pub use get_trash_node::get_trash_node;
-#[allow(unused_imports)]
 pub use path_between_nodes::path_between_nodes;
-#[allow(unused_imports)]
 pub use path_to_root::path_to_root;
+pub use rename_node::rename_node;
