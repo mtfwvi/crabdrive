@@ -1,8 +1,6 @@
 mod test;
 
-use crate::storage::vfs::{
-    FileChunk, FileKey, FileRepository, TransferSessionId, model::FileError,
-};
+use crate::storage::vfs::{FileChunk, FileKey, FileRepository};
 use bytes::BytesMut;
 use crabdrive_common::{da, storage::ChunkIndex};
 use std::{
@@ -10,8 +8,10 @@ use std::{
     io::{Read, Write},
 };
 use tempfile::TempDir;
-use tracing::{debug, debug_span, error, info};
+use tracing::{debug, error, info, instrument};
 
+use crate::storage::vfs::model::{FileStatus, FileSystemError};
+use crabdrive_common::storage::RevisionId;
 use std::{collections::HashMap, path::PathBuf};
 
 /// S(tupid)imple File System
@@ -19,12 +19,12 @@ pub struct Sfs {
     // Internal guard object, which drops the directory
     _temp_dir: Option<TempDir>,
     storage_dir: PathBuf,
-    sessions: HashMap<TransferSessionId, PathBuf>,
+    sessions: HashMap<RevisionId, PathBuf>,
 }
 
 impl Sfs {
+    #[instrument]
     pub fn new(storage_dir: &String) -> Self {
-        let _span = debug_span!("Sfs::new").entered();
         let temp_dir = if storage_dir == ":temp:" {
             debug!("Configuration requests temporary directory");
             let directory = tempfile::tempdir().expect("Unable to create temporary directory!");
@@ -42,7 +42,7 @@ impl Sfs {
         let storage_dir = if let Some(temp_dir) = &temp_dir {
             temp_dir.path().to_path_buf()
         } else {
-            let mut directory = std::path::PathBuf::new();
+            let mut directory = PathBuf::new();
 
             directory.push(storage_dir);
             if !directory.exists() || !directory.is_dir() {
@@ -63,106 +63,111 @@ impl Sfs {
     }
 }
 
+#[async_trait::async_trait]
 impl FileRepository for Sfs {
-    fn exists(&self, key: &FileKey) -> bool {
+    async fn chunk_exists(&self, key: &FileKey, index: ChunkIndex) -> bool {
         let mut pathbuf = self.storage_dir.clone();
-        pathbuf.push(key);
-        pathbuf.exists()
-    }
-
-    fn chunk_exists(&self, key: &FileKey, chunk_index: ChunkIndex) -> bool {
-        let mut pathbuf = self.storage_dir.clone();
-        pathbuf.push(key);
-        pathbuf.push(chunk_index.to_string());
+        pathbuf.push(key.to_string());
+        pathbuf.push(index.to_string());
         pathbuf.set_extension("bin");
-        pathbuf.exists()
+        pathbuf.as_path().exists()
     }
 
-    fn session_exists(&self, session: &TransferSessionId) -> bool {
-        self.sessions.contains_key(session)
-    }
-
-    fn estimate_chunks(&self, _chunk_size: crabdrive_common::data::DataAmount) -> ChunkIndex {
-        unimplemented!("SFS does not implement this functionality.")
-    }
-
-    fn start_transfer(&mut self, key: FileKey) -> Result<TransferSessionId, FileError> {
-        let session = key.clone();
-
-        let _s = debug_span!(
-            "StartTransfer",
-            key = key.to_string(),
-            session = session.to_string()
-        )
-        .entered();
-
+    async fn file_exists(&self, key: &FileKey) -> FileStatus {
         let mut pathbuf = self.storage_dir.clone();
-        pathbuf.push(&key);
+        pathbuf.push(key.to_string());
+        if pathbuf.exists() {
+            // If path exists and in current session map -> Staged
+            if self.sessions.contains_key(key) {
+                FileStatus::Staged
+            } else {
+                FileStatus::Persisted
+            }
+        } else {
+            FileStatus::NotFound
+        }
+    }
+
+    #[instrument(skip(self), fields(key = %key))]
+    async fn create_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+        let session = *key;
+        let mut pathbuf = self.storage_dir.clone();
+        pathbuf.push(key.to_string());
         std::fs::create_dir_all(&pathbuf)?;
         debug!("Chunks will be stored in {}", pathbuf.display());
-        self.sessions.insert(session.clone(), pathbuf);
-        Ok(session)
+        self.sessions.insert(session, pathbuf);
+        Ok(())
     }
 
-    fn write_chunk(&self, session: &TransferSessionId, chunk: FileChunk) -> Result<(), FileError> {
-        let _s = debug_span!("WriteChunk", session = session.to_string()).entered();
-
-        if !self.sessions.contains_key(session) {
+    #[instrument(skip(self, contents), fields(key = %key))]
+    async fn write_chunk(
+        &mut self,
+        key: &FileKey,
+        contents: FileChunk,
+    ) -> Result<(), FileSystemError> {
+        if !self.sessions.contains_key(key) {
             error!("Invalid session");
-            return Err(FileError::InvalidSession);
+            return Err(FileSystemError::NotFound);
         }
 
-        let path = self.sessions.get(session).unwrap();
+        let path = self.sessions.get(key).unwrap();
 
         let mut pathbuf = path.clone();
-        pathbuf.push(chunk.index.to_string());
+        pathbuf.push(contents.index.to_string());
         pathbuf.set_extension("bin");
         let mut file_handle = OpenOptions::new()
             .write(true)
             .create_new(true)
             .open(&pathbuf)?;
-        file_handle.write_all(&chunk.data)?;
+        file_handle.write_all(&contents.data)?;
+
         debug!(
             "Wrote chunk {} (Size: {}) to {}",
-            chunk.index,
-            da!(chunk.data.len()),
+            contents.index,
+            da!(contents.data.len()),
             pathbuf.display()
         );
 
         Ok(())
     }
 
-    fn end_transfer(&mut self, session: &TransferSessionId) -> Result<(), FileError> {
-        let _s = debug_span!("EndTransfer", session = session.to_string()).entered();
-        if self.session_exists(session) {
-            self.sessions.remove(session);
-            debug!("Session {} removed", session);
+    #[instrument(skip(self), fields(key = %key))]
+    async fn commit_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+        if self.sessions.contains_key(key) {
+            self.sessions.remove(key);
+            debug!("Session {} removed", key);
             Ok(())
         } else {
             error!("Invalid session");
-            Err(FileError::InvalidSession)
+            Err(FileSystemError::NotFound)
         }
     }
 
-    fn abort_transfer(&mut self, _session: TransferSessionId) -> Result<(), FileError> {
-        unimplemented!("SFS does not support this functionality.")
+    async fn abort(&mut self, _: &FileKey) -> Result<(), FileSystemError> {
+        unimplemented!("SFS does not implement this functionality.")
+    }
+    async fn delete_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
+        if self.file_exists(key).await != FileStatus::Persisted {
+            return Err(FileSystemError::NotFound);
+        }
+        let mut path_buf = self.storage_dir.clone();
+        path_buf.push(key.to_string());
+        Ok(std::fs::remove_dir_all(&path_buf)?)
     }
 
-    fn get_chunk(
+    #[instrument(skip(self), fields(key = %key))]
+    async fn read_chunk(
         &self,
-        key: FileKey,
-        chunk_index: ChunkIndex,
-        _chunk_size: crabdrive_common::data::DataAmount,
-    ) -> Result<FileChunk, FileError> {
-        let _s = debug_span!("GetChunk", key = key).entered();
-
-        if !self.exists(&key) {
-            return Err(FileError::KeyNotFound);
+        key: &FileKey,
+        index: ChunkIndex,
+    ) -> Result<FileChunk, FileSystemError> {
+        if self.file_exists(key).await != FileStatus::Persisted {
+            return Err(FileSystemError::NotFound);
         }
 
         let mut pathbuf = self.storage_dir.clone();
-        pathbuf.push(&key);
-        pathbuf.push(chunk_index.to_string());
+        pathbuf.push(key.to_string());
+        pathbuf.push(index.to_string());
         pathbuf.set_extension("bin");
 
         let mut file_handle = OpenOptions::new().read(true).open(&pathbuf)?;
@@ -181,7 +186,7 @@ impl FileRepository for Sfs {
         file_handle.read_exact(&mut bytes)?;
 
         Ok(FileChunk {
-            index: chunk_index,
+            index,
             data: bytes.freeze(),
         })
     }

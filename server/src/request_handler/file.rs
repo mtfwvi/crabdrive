@@ -1,7 +1,6 @@
 use crate::http::AppState;
 use crate::request_handler::node::{entity_to_encrypted_node, entity_to_file_revision};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::vfs::model::new_filekey;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};
@@ -19,6 +18,7 @@ use crabdrive_common::payloads::node::response::file::{
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
 
+#[axum::debug_handler]
 pub async fn post_create_file(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -103,13 +103,12 @@ pub async fn post_create_file(
         .update_node(&node_with_revision)
         .expect("db error");
 
-    let file_key = new_filekey(node.id, revision.id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
+        let mut vfs = state.vfs.write().await;
+
+        vfs.create_file(&revision.id)
+            .await
+            .expect("how does that happen? - File system error!");
     }
 
     let response_node =
@@ -120,6 +119,7 @@ pub async fn post_create_file(
     )
 }
 
+#[axum::debug_handler]
 pub async fn post_update_file(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -161,13 +161,12 @@ pub async fn post_update_file(
         )
         .expect("db error");
 
-    let file_key = new_filekey(node_entity.id, revision.id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
+        let mut vfs = state.vfs.write().await;
+
+        vfs.create_file(&revision.id)
+            .await
+            .expect("how does that happen?");
     }
 
     (
@@ -178,6 +177,7 @@ pub async fn post_update_file(
     )
 }
 
+#[axum::debug_handler]
 pub async fn post_commit_file(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -213,11 +213,9 @@ pub async fn post_commit_file(
         );
     }
 
-    let file_key = new_filekey(file_id, revision.id);
-
     let mut missing_chunks = vec![];
     for i in 1..revision.chunk_count {
-        if !state.vfs.read().unwrap().chunk_exists(&file_key, i) {
+        if !state.vfs.read().await.chunk_exists(&revision_id, i).await {
             missing_chunks.push(i);
         }
     }
@@ -246,13 +244,9 @@ pub async fn post_commit_file(
 
     let node = entity_to_encrypted_node(node_entity, &state).expect("db error");
 
-    let file_key = new_filekey(node.id, revision_id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        vfs.end_transfer(&file_key).unwrap()
+        let mut vfs = state.vfs.write().await;
+        vfs.commit_file(&revision_id).await.unwrap()
     }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))
