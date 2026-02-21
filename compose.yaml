@@ -11,6 +11,7 @@ services:
       CRABDRIVE_DB_PATH: "file:/crabdrive/db/data.db"
       CRABDRIVE_LOG_TARGETS: "/crabdrive/logs/"
       CRABDRIVE_STORAGE_DIR: "/crabdrive/files/"
+      CRABDRIVE_ADDR: "0.0.0.0"
     cap_drop:
       - ALL
     read_only: true
