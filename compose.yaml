@@ -1,6 +1,16 @@
 services:
+  # very hacky workaround to fix permissions
+  # https://pratikpc.medium.com/use-docker-compose-named-volumes-as-non-root-within-your-containers-1911eb30f731
+  change-vol-ownership:
+    image: alpine
+    volumes:
+      - ./docker-data/db/:/crabdrive/db
+      - ./docker-data/logs/:/crabdrive/logs
+      - ./docker-data/files/:/crabdrive/files
+    command: chown -R ${UID}:${GID} /crabdrive
   server:
     build: .
+    user: ${UID}:${GID}
     ports:
       - "2722:2722"
     volumes:
@@ -15,3 +25,7 @@ services:
     cap_drop:
       - ALL
     read_only: true
+    depends_on:
+      change-vol-ownership:
+        # Wait for the ownership to change
+        condition: service_completed_successfully
