@@ -40,10 +40,8 @@ FROM alpine
 RUN apk update && apk add sqlite
 
 COPY --from=build /usr/src/crabdrive/client/dist/ /usr/bin/crabdrive/client/dist/
-COPY --from=build /usr/src/crabdrive/target/release/crabdrive-server/ /usr/bin/crabdrive/crabdrive-server 
+COPY --from=build /usr/src/crabdrive/target/release/crabdrive-server/ /usr/bin/crabdrive/crabdrive-server
 
 EXPOSE 2722
-
-RUN mkdir /var/log/crabdrive
 WORKDIR /usr/bin/crabdrive/
 ENTRYPOINT ["/usr/bin/crabdrive/crabdrive-server"]

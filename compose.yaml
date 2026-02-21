@@ -1,0 +1,16 @@
+services:
+  server:
+    build: .
+    ports:
+      - "2722:2722"
+    volumes:
+      - ./docker-data/db/:/crabdrive/db
+      - ./docker-data/logs/:/crabdrive/logs
+      - ./docker-data/files/:/crabdrive/files
+    environment:
+      CRABDRIVE_DB_PATH: "file:/crabdrive/db/data.db"
+      CRABDRIVE_LOG_TARGETS: "/crabdrive/logs/"
+      CRABDRIVE_STORAGE_DIR: "/crabdrive/files/"
+    cap_drop:
+      - ALL
+    read_only: true

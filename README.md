@@ -4,6 +4,8 @@ Prerequisites:
 
 - Rust 1.85.0 or later installed.
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
+## Docker
+To start the docker container run `docker compose up --build`
 
 ## Server
 

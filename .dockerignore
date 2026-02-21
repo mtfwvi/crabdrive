@@ -9,3 +9,5 @@ target/
 *.iml
 .devcontainer/
 Dockerfile
+compose.yaml
+docker-data
