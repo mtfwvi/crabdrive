@@ -22,6 +22,7 @@ dist
 .idea/
 .code/
 .zed/
+docker-data/
 .env
 *.sqlite
 crabdrive.toml
