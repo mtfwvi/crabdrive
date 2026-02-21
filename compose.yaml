@@ -7,10 +7,10 @@ services:
       - ./docker-data/db/:/crabdrive/db
       - ./docker-data/logs/:/crabdrive/logs
       - ./docker-data/files/:/crabdrive/files
-    command: chown -R ${UID}:${GID} /crabdrive
+    command: chown -R ${UID_GID} /crabdrive
   server:
     build: .
-    user: ${UID}:${GID}
+    user: ${UID_GID}
     ports:
       - "2722:2722"
     volumes:
