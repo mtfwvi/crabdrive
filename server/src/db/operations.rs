@@ -12,7 +12,7 @@ use crate::{
     },
     user::persistence::model::user_entity::UserEntity,
 };
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::ShareId;
 use crabdrive_common::{
@@ -136,6 +136,12 @@ pub fn insert_node(
     parent_mdata: &EncryptedMetadata,
 ) -> Result<()> {
     // Insert Node
+    
+    // check that the node id is not nil as it may break the path to root function
+    if node.id.eq(&UUID::nil()) {
+        return Err(anyhow!("illegal node id"));
+    }
+
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::insert_into(NodeDsl::Node)

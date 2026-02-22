@@ -17,6 +17,7 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
+use crabdrive_common::uuid::UUID;
 
 #[axum::debug_handler]
 pub async fn post_create_file(
@@ -25,6 +26,10 @@ pub async fn post_create_file(
     Path(parent_id): Path<NodeId>,
     Json(payload): Json<PostCreateFileRequest>,
 ) -> (StatusCode, Json<PostCreateFileResponse>) {
+    if payload.node_id.eq(&UUID::nil()) {
+        return (StatusCode::BAD_REQUEST, Json(PostCreateFileResponse::BadRequest));
+    }
+
     let parent_node = state.node_repository.get_node(parent_id).expect("db error");
 
     if parent_node.is_none() {

@@ -8,6 +8,7 @@ use axum::http::StatusCode;
 use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::uuid::UUID;
 
 pub async fn post_create_folder(
     current_user: UserEntity,
@@ -15,6 +16,10 @@ pub async fn post_create_folder(
     Path(parent_id): Path<NodeId>,
     Json(payload): Json<PostCreateFolderRequest>,
 ) -> (StatusCode, Json<PostCreateFolderResponse>) {
+    if payload.node_id.eq(&UUID::nil()) {
+        return (StatusCode::BAD_REQUEST, Json(PostCreateFolderResponse::BadRequest));
+    }
+
     let parent_node = state.node_repository.get_node(parent_id).expect("db error");
 
     if parent_node.is_none() {
