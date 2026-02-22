@@ -48,6 +48,8 @@ pub(crate) trait NodeRepository {
     fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>>;
 
     fn has_access(&self, id: NodeId, user: UserId) -> Result<bool>;
+
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>>;
 }
 
 pub struct NodeState {
@@ -173,5 +175,10 @@ impl NodeRepository for NodeState {
 
     fn has_access(&self, id: NodeId, user: UserId) -> Result<bool> {
         has_access(&self.db_pool, id, user)
+    }
+
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>> {
+        // since there is no node with the nil uuid (hopefully) it returns the path from a root node to the node
+        get_path_between_nodes(&self.db_pool, UUID::nil(), node)
     }
 }

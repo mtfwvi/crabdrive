@@ -69,7 +69,7 @@ pub async fn post_create_folder(
         .create_node(
             Some(parent_id),
             payload.node_metadata,
-            current_user.id,
+            parent_node.owner_id,
             NodeType::Folder,
             payload.node_id,
         )

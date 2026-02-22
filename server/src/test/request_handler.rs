@@ -28,9 +28,7 @@ use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::payloads::node::response::node::{
-    GetNodeResponse, GetPathBetweenNodesResponse,
-};
+use crabdrive_common::payloads::node::response::node::{GetAccessiblePathResponse, GetNodeResponse, GetPathBetweenNodesResponse};
 use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
@@ -392,12 +390,13 @@ pub async fn test_share() {
     }
 
     // user 2 should be able to add a folder to the shared folder
-    {
+    let (folder2_id, folder2_metadata) = {
         let folder2_id = NodeId::random();
+        let folder2_metadata = random_metadata();
         let create_node_request = PostCreateFolderRequest {
             parent_metadata_version: 0,
             parent_metadata: random_metadata(),
-            node_metadata: random_metadata(),
+            node_metadata: folder2_metadata.clone(),
             node_id: folder2_id,
         };
 
@@ -409,6 +408,55 @@ pub async fn test_share() {
 
         assert_eq!(test_request.status_code(), StatusCode::CREATED);
         let _create_folder_response: PostCreateFolderResponse = test_request.json();
+
+        (folder2_id, folder2_metadata)
+    };
+
+    // user1 should see all folders
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt1)
+            .await.json();
+
+        if let GetAccessiblePathResponse::Ok(path) = test_request {
+            assert_eq!(path.len(), 3);
+            assert_eq!(path[0].id, root_node_id1);
+            assert_eq!(path[1].id, folder1_id);
+            assert_eq!(path[2].id, folder2_id);
+        } else {
+            panic!("unexpected response: {:?}", test_request);
+        }
+    }
+
+    // user2 should see the last two folders
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt2)
+            .await.json();
+
+        if let GetAccessiblePathResponse::Ok(path) = test_request {
+            assert_eq!(path.len(), 2);
+            assert_eq!(path[0].id, folder1_id);
+            assert_eq!(path[1].id, folder2_id);
+        } else {
+            panic!("unexpected response: {:?}", test_request);
+        }
+    }
+
+    // user 1 should be able to read the folder that was created in his folder
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::by_id(folder2_id);
+
+        let test_request = auth(server.get(&url), &jwt1).await;
+
+        assert_eq!(test_request.status_code(), StatusCode::OK);
+        let response: GetNodeResponse = test_request.json();
+
+        if let GetNodeResponse::Ok(node) = response {
+            assert_eq!(node.encrypted_metadata, folder2_metadata)
+        } else {
+            panic!("unexpected response: {:?}", response);
+        }
     }
 }
 

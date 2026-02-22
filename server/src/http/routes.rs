@@ -64,6 +64,7 @@ pub fn nodes_routes() -> Router<AppState> {
                 .layer(DefaultBodyLimit::max(da!(18 MB).as_bytes() as usize))
                 .get(get_chunk),
         )
+        .route(routes::node::ROUTE_ACCESSIBLE_PATH, get(get_accessible_path))
 }
 
 pub fn auth_routes() -> Router<AppState> {
@@ -85,15 +86,15 @@ pub fn admin_routes() -> Router<AppState> {
 
 pub fn share_routes() -> Router<AppState> {
     Router::new()
-        .route(routes::node::share::SHARE_NODE, post(post_share_node))
+        .route(routes::node::share::ROUTE_SHARE_NODE, post(post_share_node))
         .route(
-            routes::node::share::NODE_SHARE_INFO,
+            routes::node::share::ROUTE_NODE_SHARE_INFO,
             get(get_node_shared_with),
         )
-        .route(routes::node::share::GET_SHARE_INFO, get(get_share_info))
+        .route(routes::node::share::ROUTE_GET_SHARE_INFO, get(get_share_info))
         .route(
-            routes::node::share::GET_ACCEPTED_SHARED,
+            routes::node::share::ROUTE_GET_ACCEPTED_SHARED,
             get(get_accepted_shared_nodes),
         )
-        .route(routes::node::share::ACCEPT_SHARE, post(post_accept_share))
+        .route(routes::node::share::ROUTE_ACCEPT_SHARE, post(post_accept_share))
 }

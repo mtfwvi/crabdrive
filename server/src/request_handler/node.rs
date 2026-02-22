@@ -1,15 +1,12 @@
-use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
+use axum::Json;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
 };
-use crabdrive_common::payloads::node::response::node::{
-    DeleteNodeResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse,
-    PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
-    PostMoveNodeToTrashResponse,
-};
+use crabdrive_common::payloads::node::response::node::{DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse};
+use std::collections::VecDeque;
 
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
@@ -257,6 +254,28 @@ pub async fn get_node_children(
         StatusCode::OK,
         Json(GetNodeChildrenResponse::Ok(children.collect())),
     )
+}
+
+pub async fn get_accessible_path(
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+) -> (StatusCode, Json<GetAccessiblePathResponse>) {
+    if !state.node_repository.has_access(node_id, current_user.id).expect("db error") {
+        return (StatusCode::NOT_FOUND, Json(GetAccessiblePathResponse::NotFound));
+    }
+
+    let path = state.node_repository.get_path_to_root(node_id).expect("db error");
+    let mut path_list= VecDeque::from(path);
+
+    // there is always at least one element as we checked that the user has access to the last node so this cannot panic
+    while !state.node_repository.has_access(path_list[0].id, current_user.id).expect("db error") {
+        path_list.pop_front();
+    }
+
+    let encrypted_node_path: Vec<EncryptedNode> = path_list.iter().map(|entity| entity_to_encrypted_node(entity.clone(), &state).unwrap()).collect();
+
+    (StatusCode::OK, Json(GetAccessiblePathResponse::Ok(encrypted_node_path)))
 }
 
 pub fn entity_to_encrypted_node(

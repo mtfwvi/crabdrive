@@ -25,38 +25,44 @@ pub mod node {
         ROUTE_MOVE_OUT_OF_TRASH.replace("{id}", &id.to_string())
     }
 
+    pub const ROUTE_ACCESSIBLE_PATH: &str = "/api/node/{id}/path_to";
+    /// `/api/node/{id}/path_to"`
+    pub fn accessible_path(id: NodeId) -> String {
+        ROUTE_ACCESSIBLE_PATH.replace("{id}", &id.to_string())
+    }
+
     pub mod share {
         use crate::storage::{NodeId, ShareId};
 
-        pub const SHARE_NODE: &str = "/api/node/{id}/share/";
+        pub const ROUTE_SHARE_NODE: &str = "/api/node/{id}/share/";
         /// `/api/node/{id}/share/`
         pub fn share(id: NodeId) -> String {
-            SHARE_NODE.replace("{id}", &id.to_string())
+            ROUTE_SHARE_NODE.replace("{id}", &id.to_string())
         }
 
         // used to see who has access to the file
-        pub const NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
+        pub const ROUTE_NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
         /// `/api/node/{id}/shared_info//`
         pub fn get_node_share_info(id: NodeId) -> String {
-            NODE_SHARE_INFO.replace("{id}", &id.to_string())
+            ROUTE_NODE_SHARE_INFO.replace("{id}", &id.to_string())
         }
 
         // used to get information about a share link to be accepted
-        pub const GET_SHARE_INFO: &str = "/api/shared/{share_id}/";
+        pub const ROUTE_GET_SHARE_INFO: &str = "/api/shared/{share_id}/";
         /// `/api/shared/{share_id}/`
         pub fn get_share_info(id: ShareId) -> String {
-            GET_SHARE_INFO.replace("{share_id}", &id.to_string())
+            ROUTE_GET_SHARE_INFO.replace("{share_id}", &id.to_string())
         }
 
-        pub const ACCEPT_SHARE: &str = "/api/shared/{share_id}/accept";
+        pub const ROUTE_ACCEPT_SHARE: &str = "/api/shared/{share_id}/accept";
         /// `/api/shared/{share_id}/`
         pub fn accept_share(id: ShareId) -> String {
-            ACCEPT_SHARE.replace("{share_id}", &id.to_string())
+            ROUTE_ACCEPT_SHARE.replace("{share_id}", &id.to_string())
         }
 
-        pub const GET_ACCEPTED_SHARED: &str = "/api/shared/";
+        pub const ROUTE_GET_ACCEPTED_SHARED: &str = "/api/shared/";
         pub fn get_accepted_shared() -> String {
-            GET_ACCEPTED_SHARED.to_string()
+            ROUTE_GET_ACCEPTED_SHARED.to_string()
         }
     }
 
