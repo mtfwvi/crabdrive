@@ -113,7 +113,6 @@ async fn request(
     let response: Response = dyn_into(response_value)?;
 
     //TODO maybe here we should redirect to the login page in case of a 403
-    //TODO deserialize json objects here
     //TODO maybe get the token from storage here to avoid duplicate code
 
     Ok(response)
