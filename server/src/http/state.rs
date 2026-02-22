@@ -20,6 +20,8 @@ pub struct AppState {
 }
 
 impl AppState {
+    // grouping some parameters won't help with readability
+    #[allow(clippy::too_many_arguments)]
     pub fn new<FileRepo, NodeRepo, RevisionRepo, UserRepo, ShareRepo>(
         config: AppConfig,
         db_pool: DbPool,
