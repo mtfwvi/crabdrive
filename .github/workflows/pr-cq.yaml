@@ -271,7 +271,7 @@ jobs:
                   if [ -z "$PR_VAL" ]; then
                     PR_ID="man"
                   else
-                    PR_ID="$PR_VAL"
+                    PR_ID="pr/$PR_VAL"
                   fi
                   echo "pr_id=$PR_ID" >> $GITHUB_OUTPUT
                   DEST_PATH="/data/test-coverage/${PR_ID}/$(git rev-parse --short HEAD)"
