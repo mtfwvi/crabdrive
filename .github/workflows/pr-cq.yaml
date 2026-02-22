@@ -343,6 +343,10 @@ jobs:
                   update-comment: true
                   additional-message: >
                       [View report for `${{ steps.vars.outputs.sha_short }}`](${{ secrets.SSH_HOST_COVERAGE_DEPLOY }}/${{ steps.vars.outputs.pr_id }}/${{ steps.vars.outputs.sha_short }})
-                      or [Download Report for `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) \n
-                      _Authenticate with `${{ secrets.DEPLOY_USER }}` and password `${{ secrets.DEPLOY_PASS }}`_
+                      or [Download Report for `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) <br>
+                      <details>
+                        <summary>Authentication</summary>
+                        Authenticate with <code>${{ secrets.DEPLOY_USER }}</code> and password <code>${{ secrets.DEPLOY_PASS }}</code>
+                      </details> <br>
+                      <i>This tracks which lines and functions were executed during testing.</i>
                   minimum-coverage: 0 # TODO: Bump
