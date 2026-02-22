@@ -164,7 +164,7 @@ jobs:
 
             - name: Build WASM Target
               if: steps.filter.outputs.client == 'true'
-              run: cargo build --target wasm32-unknown-unknown --release --timings
+              run: cargo build --target wasm32-unknown-unknown --release --timings -p crabdrive-client
 
             - name: Build with Trunk
               if: steps.filter.outputs.client == 'true'
