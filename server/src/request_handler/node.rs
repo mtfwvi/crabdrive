@@ -10,10 +10,10 @@ use std::collections::VecDeque;
 
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
 use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
+use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 
 pub async fn delete_node(
     State(_state): State<AppState>,

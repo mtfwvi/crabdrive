@@ -25,6 +25,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
     sql_query,
 };
+
 // User Ops
 
 pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntity>> {
