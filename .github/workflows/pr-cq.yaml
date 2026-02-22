@@ -333,7 +333,7 @@ jobs:
             - name: Deploy Coverage report
               run: |
                   ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "mkdir -p ${{ steps.vars.outputs.dest_path }}"
-                  scp -r ./coverage-html/html/* ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }}:${{ steps.vars.outputs.dest_path }}/
+                  tar -cz -C ./coverage-html/html/ . | ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "tar -xz -C ${{ steps.vars.outputs.dest_path }}/"
 
             - name: Report code coverage to PR
               uses: zgosalvez/github-actions-report-lcov@v4
