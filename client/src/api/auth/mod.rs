@@ -133,6 +133,7 @@ async fn fetch_user_nodes(
 
     // Store Root ID + Trash ID in session storage
     SessionStorage::set("root_id", &root_node_id)?;
+
     SessionStorage::set("trash_id", &trash_node_id)?;
 
     Ok(())

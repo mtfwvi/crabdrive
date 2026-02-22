@@ -172,6 +172,7 @@ impl Sum for DataAmount {
 impl fmt::Display for DataAmount {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let bytes = self.0 as f64;
+
         if self.0 >= TB {
             write!(f, "{:.1} TB ({bytes} Bytes)", bytes / TB as f64)
         } else if self.0 >= GB {
