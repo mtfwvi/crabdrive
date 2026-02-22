@@ -27,3 +27,12 @@ pub use rename_node::rename_node;
 
 #[allow(unused_imports)]
 pub use get_accessible_path::get_accessible_path;
+#[allow(unused_imports)]
+pub use get_shared_with::get_shared_with;
+#[allow(unused_imports)]
+pub use get_accepted_nodes::get_accepted_nodes;
+#[allow(unused_imports)]
+pub use accept_share::accept_share;
+#[allow(unused_imports)]
+pub use share_node::share_node;
+

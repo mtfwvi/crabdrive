@@ -141,7 +141,7 @@ async fn json_request<BodyT, ResponseT>(
         RequestBody::Json(json),
         vec![],
         auth_token,
-        true,
+        use_api_base_path,
     ).await?;
 
     let response_string = string_from_response(response).await?;
