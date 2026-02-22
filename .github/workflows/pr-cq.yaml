@@ -60,7 +60,8 @@ jobs:
               id: vars
               # Replace / with - in branch names, due to Github limitations
               run: |
-                  echo "sha_short=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
@@ -90,7 +91,8 @@ jobs:
             - name: Collect commit information
               id: vars
               run: |
-                  echo "sha_short=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
@@ -134,7 +136,8 @@ jobs:
             - name: Collect commit information
               id: vars
               run: |
-                  echo "sha_short=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
@@ -263,7 +266,8 @@ jobs:
             - name: Collect commit information
               id: vars
               run: |
-                  echo "sha_short=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
                   # If dispatched manually, no event number (PR Number). Changes will be deployed to /man/...
@@ -274,7 +278,7 @@ jobs:
                     PR_ID="pr/$PR_VAL"
                   fi
                   echo "pr_id=$PR_ID" >> $GITHUB_OUTPUT
-                  DEST_PATH="/data/test-coverage/${PR_ID}/$(git rev-parse --short HEAD)"
+                  DEST_PATH="/data/test-coverage/${PR_ID}/${SHA_SHORT}"
                   echo "dest_path=$DEST_PATH" >> $GITHUB_OUTPUT
 
             - name: Install lcov
