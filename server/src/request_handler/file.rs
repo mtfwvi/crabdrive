@@ -199,7 +199,7 @@ pub async fn post_commit_file(
 
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
 
-    // check if node belongs to user and if the revision belongs to the node
+    // check if node belongs toa user and if the revision belongs to the node
     if node_entity.owner_id != current_user.id || revision.file_id != node_entity.id {
         return (
             StatusCode::NOT_FOUND,
