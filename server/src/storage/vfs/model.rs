@@ -1,44 +1,47 @@
+use axum::Json;
+use axum::http::StatusCode;
+use axum::response::{IntoResponse, Response};
 use bytes::Bytes;
-use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
+use crabdrive_common::storage::{ChunkIndex, RevisionId};
+use thiserror::Error;
 
-#[derive(Debug)]
-pub(crate) enum FileError {
-    KeyNotFound,
-    InvalidSession,
-    InvalidLength,
-    Io(std::io::Error),
+#[derive(Error, Debug)]
+pub enum FileSystemError {
+    #[error("File not found.")]
+    NotFound,
+
+    #[error("File already committed.")]
+    AlreadyCommitted,
+
+    #[error("IO Error: {0}")]
+    Io(#[from] std::io::Error),
 }
 
-impl std::fmt::Display for FileError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl IntoResponse for FileSystemError {
+    fn into_response(self) -> Response {
         match self {
-            FileError::KeyNotFound => write!(f, "Key not found"),
-            FileError::InvalidSession => write!(f, "Invalid session key"),
-            FileError::InvalidLength => write!(f, "Invalid length"),
-            FileError::Io(error_kind) => write!(f, "IO ({})", error_kind),
-        }?;
-        Ok(())
+            FileSystemError::NotFound => (StatusCode::NOT_FOUND, Json(())),
+            FileSystemError::AlreadyCommitted => (StatusCode::BAD_REQUEST, Json(())),
+            FileSystemError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
+        }
+        .into_response()
     }
 }
 
-impl From<std::io::Error> for FileError {
-    fn from(value: std::io::Error) -> Self {
-        FileError::Io(value)
-    }
+#[derive(Debug, Eq, PartialEq)]
+pub(crate) enum FileStatus {
+    /// Reserved for future usage
+    Stale,
+    /// File is currently being uploaded
+    Staged,
+    /// File is stored on permanent, persistent storage
+    Persisted,
+    /// The file has not been found (neither Staged nor Persisted)
+    NotFound,
 }
-
-impl std::error::Error for FileError {}
 
 /// Internal storage key for a file
-pub(crate) type FileKey = String;
-
-pub fn new_filekey(node_id: NodeId, revision_id: RevisionId) -> FileKey {
-    format!("{}_{}", node_id, revision_id)
-}
-
-/// Crated when starting a transfer, this acts as a handle and is needed for all subsequent operations
-/// (upload, end, abort).
-pub(crate) type TransferSessionId = String;
+pub(crate) type FileKey = RevisionId;
 
 pub(crate) struct FileChunk {
     pub index: ChunkIndex,

@@ -56,7 +56,7 @@ pub(crate) fn FolderCreationButton(
     view! {
         <Button
             on_click=move |_| folder_creation_dialog_open.set(true)
-            icon=icondata::MdiFolderPlusOutline
+            icon=icondata_mdi::MdiFolderPlusOutline
         >
             "Create folder"
         </Button>
