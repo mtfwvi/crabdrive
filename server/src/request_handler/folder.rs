@@ -17,7 +17,10 @@ pub async fn post_create_folder(
     Json(payload): Json<PostCreateFolderRequest>,
 ) -> (StatusCode, Json<PostCreateFolderResponse>) {
     if payload.node_id.eq(&UUID::nil()) {
-        return (StatusCode::BAD_REQUEST, Json(PostCreateFolderResponse::BadRequest));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostCreateFolderResponse::BadRequest),
+        );
     }
 
     let parent_node = state.node_repository.get_node(parent_id).expect("db error");

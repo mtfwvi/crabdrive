@@ -14,7 +14,7 @@ use crabdrive_common::payloads::node::response::share::{
     GetAcceptedSharedResponse, GetNodeSharedWithResponse, GetShareInfoResponse,
     PostAcceptShareResponse, PostShareNodeResponse, ShareEncryptionInfo,
 };
-use crabdrive_common::storage::{EncryptedNode, ShareId, NodeId};
+use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
 
 pub async fn post_share_node(
     current_user: UserEntity,

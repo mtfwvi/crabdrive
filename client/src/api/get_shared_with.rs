@@ -7,11 +7,9 @@ pub async fn get_shared_with(node_id: NodeId) -> Result<Vec<String>> {
     let response = get_node_shared_with(node_id).await?;
 
     match response {
-        GetNodeSharedWithResponse::Ok(usernames) => {
-            Ok(usernames)
-        }
-        GetNodeSharedWithResponse::NotFound => {
-            Err(anyhow::anyhow!("Server returned NotFound on get_shared_with"))
-        }
+        GetNodeSharedWithResponse::Ok(usernames) => Ok(usernames),
+        GetNodeSharedWithResponse::NotFound => Err(anyhow::anyhow!(
+            "Server returned NotFound on get_shared_with"
+        )),
     }
 }

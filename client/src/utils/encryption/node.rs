@@ -9,7 +9,7 @@ use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
 
-use anyhow::{Error, anyhow, Result};
+use anyhow::{Error, Result, anyhow};
 use tracing::debug_span;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
@@ -141,7 +141,10 @@ pub async fn decrypt_node_with_parent(
     decrypt_node(child, key.1).await
 }
 
-pub async fn decrypt_node_path(start_node: DecryptedNode, path: Vec<EncryptedNode>) -> Result<Vec<DecryptedNode>> {
+pub async fn decrypt_node_path(
+    start_node: DecryptedNode,
+    path: Vec<EncryptedNode>,
+) -> Result<Vec<DecryptedNode>> {
     let mut decrypted_nodes: Vec<DecryptedNode> = Vec::with_capacity(path.len());
     decrypted_nodes.push(start_node);
 
@@ -151,12 +154,12 @@ pub async fn decrypt_node_path(start_node: DecryptedNode, path: Vec<EncryptedNod
             decrypted_nodes.last().unwrap(),
             encrypted_node.clone(),
         )
-            .await
-            .inspect_err(|e| tracing::error!("Failed to decrypt node with parent: {}", e))?;
+        .await
+        .inspect_err(|e| tracing::error!("Failed to decrypt node with parent: {}", e))?;
 
         decrypted_nodes.push(decrypted_node);
     }
-    
+
     Ok(decrypted_nodes)
 }
 

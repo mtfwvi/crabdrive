@@ -4,10 +4,14 @@ use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
     PostMoveNodeToTrashRequest,
 };
-use crabdrive_common::payloads::node::response::node::{DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse};
+use crabdrive_common::payloads::node::response::node::{
+    DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse,
+    GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse,
+    PostMoveNodeResponse, PostMoveNodeToTrashResponse,
+};
+use crabdrive_common::routes;
 use crabdrive_common::storage::NodeId;
 use web_sys::Response;
-use crabdrive_common::routes;
 
 pub async fn delete_node(
     node_id: NodeId,
@@ -240,7 +244,7 @@ pub async fn get_accessible_path(
         auth_token,
         true,
     )
-        .await?;
+    .await?;
     let response_string = string_from_response(response).await?;
 
     let response_object = serde_json::from_str(&response_string)?;

@@ -27,7 +27,10 @@ pub async fn post_create_file(
     Json(payload): Json<PostCreateFileRequest>,
 ) -> (StatusCode, Json<PostCreateFileResponse>) {
     if payload.node_id.eq(&UUID::nil()) {
-        return (StatusCode::BAD_REQUEST, Json(PostCreateFileResponse::BadRequest));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostCreateFileResponse::BadRequest),
+        );
     }
 
     let parent_node = state.node_repository.get_node(parent_id).expect("db error");

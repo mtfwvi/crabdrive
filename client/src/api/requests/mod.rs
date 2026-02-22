@@ -6,16 +6,16 @@ pub mod node;
 pub mod share;
 
 use crate::constants::API_BASE_PATH;
+use crate::utils::auth::get_token;
 use crate::utils::browser::get_window;
 use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
 use anyhow::{Result, anyhow};
 use leptos::wasm_bindgen::JsValue;
-use std::fmt::Display;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
+use std::fmt::Display;
 use web_sys::js_sys::{JsString, Uint8Array};
 use web_sys::{Request, RequestInit, Response, Url};
-use crate::utils::auth::get_token;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
@@ -123,7 +123,11 @@ async fn json_request<BodyT, ResponseT>(
     request_method: RequestMethod,
     body: BodyT,
     use_api_base_path: bool,
-) -> Result<ResponseT> where ResponseT: DeserializeOwned, BodyT: Serialize {
+) -> Result<ResponseT>
+where
+    ResponseT: DeserializeOwned,
+    BodyT: Serialize,
+{
     let token = get_token()?;
 
     // avoid sending the token to other apis
@@ -142,11 +146,15 @@ async fn json_request<BodyT, ResponseT>(
         vec![],
         auth_token,
         use_api_base_path,
-    ).await?;
+    )
+    .await?;
 
     let response_string = string_from_response(response).await?;
 
-    let response_object = serde_json::from_str(&response_string).or_else(|_| Err(anyhow!("could not parse json response: {:?}", response_string)))?;
+    let response_object = serde_json::from_str(&response_string).map_err(|_| anyhow!(
+            "could not parse json response: {:?}",
+            response_string
+        ))?;
     Ok(response_object)
 }
 

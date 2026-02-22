@@ -28,7 +28,9 @@ use crabdrive_common::payloads::node::response::file::{
     PostCommitFileResponse, PostCreateFileResponse,
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::payloads::node::response::node::{GetAccessiblePathResponse, GetNodeResponse, GetPathBetweenNodesResponse};
+use crabdrive_common::payloads::node::response::node::{
+    GetAccessiblePathResponse, GetNodeResponse, GetPathBetweenNodesResponse,
+};
 use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
@@ -415,8 +417,7 @@ pub async fn test_share() {
     // user1 should see all folders
     {
         let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
-        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt1)
-            .await.json();
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt1).await.json();
 
         if let GetAccessiblePathResponse::Ok(path) = test_request {
             assert_eq!(path.len(), 3);
@@ -431,8 +432,7 @@ pub async fn test_share() {
     // user2 should see the last two folders
     {
         let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
-        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt2)
-            .await.json();
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt2).await.json();
 
         if let GetAccessiblePathResponse::Ok(path) = test_request {
             assert_eq!(path.len(), 2);

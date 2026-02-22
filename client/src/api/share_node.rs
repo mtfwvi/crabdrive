@@ -19,7 +19,7 @@ pub async fn share_node(node: &DecryptedNode) -> Result<String> {
 
     let response = post_share_node(node.id, body).await?;
 
-    match response{
+    match response {
         PostShareNodeResponse::NotFound => {
             Err(anyhow::anyhow!("server returned NotFound on share node"))
         }
