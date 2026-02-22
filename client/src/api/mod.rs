@@ -9,6 +9,11 @@ mod path_between_nodes;
 mod path_to_root;
 mod rename_node;
 mod requests;
+mod get_accessible_path;
+mod share_node;
+mod get_shared_with;
+mod get_accepted_nodes;
+mod accept_share;
 
 pub use create_file::create_file;
 pub use create_folder::create_folder;
@@ -19,3 +24,6 @@ pub use get_trash_node::get_trash_node;
 pub use path_between_nodes::path_between_nodes;
 pub use path_to_root::path_to_root;
 pub use rename_node::rename_node;
+
+#[allow(unused_imports)]
+pub use get_accessible_path::get_accessible_path;

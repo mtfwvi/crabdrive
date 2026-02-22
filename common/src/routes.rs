@@ -41,10 +41,10 @@ pub mod node {
         }
 
         // used to see who has access to the file
-        pub const ROUTE_NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
+        pub const ROUTE_NODE_SHARED_WITH: &str = "/api/node/{id}/shared_info/";
         /// `/api/node/{id}/shared_info//`
-        pub fn get_node_share_info(id: NodeId) -> String {
-            ROUTE_NODE_SHARE_INFO.replace("{id}", &id.to_string())
+        pub fn get_node_shared_with(id: NodeId) -> String {
+            ROUTE_NODE_SHARED_WITH.replace("{id}", &id.to_string())
         }
 
         // used to get information about a share link to be accepted

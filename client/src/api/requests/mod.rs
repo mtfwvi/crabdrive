@@ -3,6 +3,7 @@ pub mod chunk;
 pub mod file;
 pub mod folder;
 pub mod node;
+pub mod share;
 
 use crate::constants::API_BASE_PATH;
 use crate::utils::browser::get_window;
@@ -10,8 +11,11 @@ use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
 use anyhow::{Result, anyhow};
 use leptos::wasm_bindgen::JsValue;
 use std::fmt::Display;
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use web_sys::js_sys::{JsString, Uint8Array};
 use web_sys::{Request, RequestInit, Response, Url};
+use crate::utils::auth::get_token;
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
@@ -39,6 +43,7 @@ async fn request(
     url: String,
     method: RequestMethod,
     body: RequestBody,
+    //TODO maybe remove query parameters as they are never used
     query_parameters: Vec<(String, String)>,
     auth_token: Option<&String>,
     use_api_base_path: bool,
@@ -108,8 +113,42 @@ async fn request(
     let response: Response = dyn_into(response_value)?;
 
     //TODO maybe here we should redirect to the login page in case of a 403
+    //TODO deserialize json objects here
+    //TODO maybe get the token from storage here to avoid duplicate code
 
     Ok(response)
+}
+
+async fn json_request<BodyT, ResponseT>(
+    url: String,
+    request_method: RequestMethod,
+    body: BodyT,
+    use_api_base_path: bool,
+) -> Result<ResponseT> where ResponseT: DeserializeOwned, BodyT: Serialize {
+    let token = get_token()?;
+
+    // avoid sending the token to other apis
+    let auth_token = if use_api_base_path {
+        Some(&token)
+    } else {
+        None
+    };
+
+    let json = serde_json::to_string(&body)?;
+
+    let response: Response = request(
+        url,
+        request_method,
+        RequestBody::Json(json),
+        vec![],
+        auth_token,
+        true,
+    ).await?;
+
+    let response_string = string_from_response(response).await?;
+
+    let response_object = serde_json::from_str(&response_string).or_else(|_| Err(anyhow!("could not parse json response: {:?}", response_string)))?;
+    Ok(response_object)
 }
 
 async fn string_from_response(response: Response) -> Result<String> {
