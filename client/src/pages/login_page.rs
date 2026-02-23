@@ -146,7 +146,7 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
             <form
                 class="h-fit w-100 mt-15 px-15 py-10 flex flex-col gap-2 rounded-sm outline outline-gray-300"
                 attr:accept-charset="utf-8"
-                on:submit=move |e| {
+                on:submit=move |e: web_sys::SubmitEvent| {
                     e.prevent_default();
                     on_submit.run(())
                 }
@@ -188,7 +188,8 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                 <Button
                     appearance=ButtonAppearance::Transparent
                     block=true
-                    on_click=move |_| {
+                    on_click=move |e: web_sys::MouseEvent| {
+                        e.prevent_default();
                         if register_new_account {
                             navigate_to_login.run(())
                         } else {
