@@ -1,7 +1,7 @@
 use crate::api::{get_children, path_to_root};
+use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
-use crate::components::resource_wrapper::ResourceWrapper;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{

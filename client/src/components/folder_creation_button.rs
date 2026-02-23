@@ -1,5 +1,5 @@
 use crate::api::create_folder;
-use crate::components::input_dialog::InputDialog;
+use crate::components::basic::input_dialog::InputDialog;
 use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;

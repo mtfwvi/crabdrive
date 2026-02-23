@@ -1,7 +1,7 @@
 use crate::api::rename_node;
+use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
 use crate::components::folder_selection_dialog::FolderSelectionDialog;
-use crate::components::input_dialog::InputDialog;
 use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
