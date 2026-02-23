@@ -1,5 +1,5 @@
 use crate::api::auth::logout;
-use crate::components::folder_view::FolderView;
+use crate::components::folder_view::{FolderView, FolderViewType};
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::utils::auth::is_authenticated;
 use crate::utils::browser::SessionStorage;
@@ -27,8 +27,8 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
     });
 
     let navigate = use_navigate();
-    let navigate_to_login = navigate.clone();
-    let navigate_to_login = Callback::new(move |_| navigate_to_login("/login", Default::default()));
+    let navigate_to = navigate.clone();
+    let navigate_to = Callback::new(move |path| navigate_to(path, Default::default()));
 
     let navigate_to_node = Callback::new(move |node_id: NodeId| {
         navigate(&format!("/{}", node_id), Default::default())
@@ -37,7 +37,7 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
     Effect::new(move || {
         let is_logged_in = is_authenticated().unwrap_or_default();
         if !is_logged_in {
-            navigate_to_login.run(());
+            navigate_to.run("/login");
         }
     });
 
@@ -66,14 +66,14 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
         let status = logout_action.value().get();
         if status.is_some() {
             match status.unwrap() {
-                Ok(_) => navigate_to_login.run(()),
+                Ok(_) => navigate_to.run("/login"),
                 Err(e) => add_toast(format!("Logout failed: {}", e)),
             }
         }
     });
 
-    let on_go_to_node = move |storage_field: &'static str| {
-        let node_id: Option<UUID> = SessionStorage::get(storage_field).unwrap_or_default();
+    let on_go_to_root = move || {
+        let node_id: Option<UUID> = SessionStorage::get("root_id").unwrap_or_default();
         if let Some(node_id) = node_id {
             navigate_to_node.run(node_id);
         }
@@ -94,16 +94,23 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                     </Space>
                     <Text class="!text-lg !font-bold">"Rust native cloud storage"</Text>
                     <Divider class="mt-2 mb-4" />
-                    <ButtonGroup class="w-full">
+                    <ButtonGroup class="w-full" vertical=true>
                         <Button
-                            on_click=move |_| on_go_to_node("root_id")
-                            icon=icondata_mdi::MdiFolderStarOutline
+                            on_click=move |_| on_go_to_root()
+                            icon=icondata_mdi::MdiFolderHomeOutline
                             class="flex-1"
                         >
                             "Root"
                         </Button>
                         <Button
-                            on_click=move |_| on_go_to_node("trash_id")
+                            on_click=move |_| navigate_to.run("/shared")
+                            icon=icondata_mdi::MdiFolderAccountOutline
+                            class="flex-1"
+                        >
+                            "Shared"
+                        </Button>
+                        <Button
+                            on_click=move |_| navigate_to.run("/trash")
                             icon=icondata_mdi::MdiTrashCanOutline
                             class="flex-1"
                         >
@@ -116,6 +123,7 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                         }
                         block=true
                         icon=icondata_mdi::MdiLogout
+                        class="mt-3"
                     >
                         {move || format!("Log out ({})", username.get())}
                     </Button>
@@ -131,14 +139,16 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                     when=move || node_id.get().is_some()
                     fallback=|| view! { <Text class="m-8">No node selected.</Text> }
                 >
-                    <FolderView
-                        node_id=Signal::derive(move || node_id.get().unwrap())
-                        is_trash=Signal::derive(move || {
-                            let trash_id: Option<UUID> = SessionStorage::get("trash_id")
-                                .unwrap_or_default();
-                            trash_id == node_id.get()
-                        })
-                    />
+                    <FolderView view_type=Signal::derive(move || {
+                        match view_type.get() {
+                            HomePageType::Folder => {
+                                let node_id = node_id.get().unwrap();
+                                FolderViewType::Folder(node_id)
+                            }
+                            HomePageType::Shared => FolderViewType::Shared,
+                            HomePageType::Trash => FolderViewType::Trash,
+                        }
+                    }) />
                 </Show>
             </Layout>
         </Layout>

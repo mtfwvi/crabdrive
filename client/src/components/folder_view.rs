@@ -1,38 +1,43 @@
 use crate::api::{get_children, get_trash_node, path_to_root};
+use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::components::folder_bottom_bar::FolderBottomBar;
 use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
-use crate::components::resource_wrapper::ResourceWrapper;
 use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Space};
 
+#[derive(PartialEq, Clone, Copy)]
+pub(crate) enum FolderViewType {
+    Folder(NodeId),
+    Shared,
+    Trash,
+}
+
 #[component]
-pub(crate) fn FolderView(
-    #[prop(into)] node_id: Signal<NodeId>,
-    is_trash: Signal<bool>,
-) -> impl IntoView {
+pub(crate) fn FolderView(#[prop(into)] view_type: Signal<FolderViewType>) -> impl IntoView {
     let navigate = use_navigate();
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let _reset_selection_effect = Effect::watch(
-        move || node_id.get(),
+        move || view_type.get(),
         move |_, _, _| selection.set(None),
         false,
     );
 
-    let path_res = LocalResource::new(move || {
-        let node_id = node_id.get();
-        async move {
-            if is_trash.get() {
-                let trash_node = get_trash_node().await.map_err(|err| err.to_string())?;
-                Ok(vec![trash_node])
-            } else {
+    let path_res = LocalResource::new(move || async move {
+        match view_type.get() {
+            FolderViewType::Folder(node_id) => {
                 path_to_root(node_id).await.map_err(|err| err.to_string())
             }
+            FolderViewType::Trash => get_trash_node()
+                .await
+                .map_err(|err| err.to_string())
+                .map(|trash_node| vec![trash_node]),
+            FolderViewType::Shared => Ok(vec![]),
         }
     });
 
@@ -61,7 +66,20 @@ pub(crate) fn FolderView(
         <ResourceWrapper
             resource=path_res
             error_text=Signal::derive(move || {
-                format!("The path to node '{}' could not be loaded from the server", node_id.get())
+                match view_type.get() {
+                    FolderViewType::Folder(node_id) => {
+                        format!(
+                            "The path to node '{}' could not be loaded from the server",
+                            node_id,
+                        )
+                    }
+                    FolderViewType::Shared => {
+                        String::from("Failed to get path because view_type is Shared, not Folder")
+                    }
+                    FolderViewType::Trash => {
+                        String::from("Failed to get path because view_type is Trash, not Folder")
+                    }
+                }
             })
             fallback_spinner=false
             children=move |path| {
