@@ -1,6 +1,5 @@
 use crate::api::auth::logout;
-use crate::components::folder_content::FolderContent;
-use crate::components::path_provider::{FolderViewType, PathProvider};
+use crate::components::content_frame::{ContentFrame, ContentViewType};
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::utils::auth::is_authenticated;
 use crate::utils::browser::SessionStorage;
@@ -137,29 +136,16 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                 content_style="height: 100%"
                 has_sider=true
             >
-                // TODO: Fix and extract
-                <Show
-                    when=move || node_id.get().is_some()
-                    fallback=|| view! { <Text class="m-8">No node selected.</Text> }
-                >
-                    <PathProvider
-                        view_type=Signal::derive(move || {
-                            match view_type.get() {
-                                HomePageType::Folder => {
-                                    let node_id = node_id.get().unwrap();
-                                    FolderViewType::Folder(node_id)
-                                }
-                                HomePageType::Shared => FolderViewType::Shared,
-                                HomePageType::Trash => FolderViewType::Trash,
-                            }
-                        })
-                        let:path
-                        let:refetch
-                    >
-                        // TODO: Show other types' content
-                        <FolderContent path request_path_refetch=refetch />
-                    </PathProvider>
-                </Show>
+                <ContentFrame content_type=Signal::derive(move || {
+                    match view_type.get() {
+                        HomePageType::Folder => {
+                            let node_id = node_id.get().unwrap();
+                            ContentViewType::Folder(node_id)
+                        }
+                        HomePageType::Shared => ContentViewType::Shared,
+                        HomePageType::Trash => ContentViewType::Trash,
+                    }
+                }) />
             </Layout>
         </Layout>
         <Button
