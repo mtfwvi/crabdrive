@@ -1,5 +1,6 @@
 use crate::api::auth::logout;
-use crate::components::folder_view::{FolderView, FolderViewType};
+use crate::components::folder_content::FolderContent;
+use crate::components::path_provider::{FolderViewType, PathProvider};
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::utils::auth::is_authenticated;
 use crate::utils::browser::SessionStorage;
@@ -19,6 +20,7 @@ pub(crate) enum HomePageType {
     Trash,
 }
 
+// TODO: Extract stuff out of this - make smaller
 #[component]
 pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl IntoView {
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
@@ -135,20 +137,28 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                 content_style="height: 100%"
                 has_sider=true
             >
+                // TODO: Fix and extract
                 <Show
                     when=move || node_id.get().is_some()
                     fallback=|| view! { <Text class="m-8">No node selected.</Text> }
                 >
-                    <FolderView view_type=Signal::derive(move || {
-                        match view_type.get() {
-                            HomePageType::Folder => {
-                                let node_id = node_id.get().unwrap();
-                                FolderViewType::Folder(node_id)
+                    <PathProvider
+                        view_type=Signal::derive(move || {
+                            match view_type.get() {
+                                HomePageType::Folder => {
+                                    let node_id = node_id.get().unwrap();
+                                    FolderViewType::Folder(node_id)
+                                }
+                                HomePageType::Shared => FolderViewType::Shared,
+                                HomePageType::Trash => FolderViewType::Trash,
                             }
-                            HomePageType::Shared => FolderViewType::Shared,
-                            HomePageType::Trash => FolderViewType::Trash,
-                        }
-                    }) />
+                        })
+                        let:path
+                        let:refetch
+                    >
+                        // TODO: Show other types' content
+                        <FolderContent path request_path_refetch=refetch />
+                    </PathProvider>
                 </Show>
             </Layout>
         </Layout>

@@ -1,11 +1,11 @@
 pub(crate) mod basic;
-pub(crate) mod folder_view;
+pub(crate) mod folder_content;
+pub(crate) mod path_provider;
 
 mod file_creation_button;
 mod file_download_button;
 mod file_selection_dialog;
 mod folder_bottom_bar;
-mod folder_content;
 mod folder_creation_button;
 mod folder_selection_dialog;
 mod modify_node_menu;
