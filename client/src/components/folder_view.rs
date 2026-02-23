@@ -1,5 +1,6 @@
 use crate::api::get_children;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
+use crate::components::content_frame::ContentViewType;
 use crate::components::folder_bottom_bar::FolderBottomBar;
 use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
@@ -66,7 +67,7 @@ pub(crate) fn FolderView(
         >
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
-                    <PathBreadcrumb path is_trash=false on_select=navigate_to_node />
+                    <PathBreadcrumb path on_select=navigate_to_node />
                     <Divider class="mb-3" />
 
                     <NodeList
@@ -78,19 +79,16 @@ pub(crate) fn FolderView(
                 </Space>
 
                 // Request refetch since parent metadata was modified
-                <FolderBottomBar
-                    current_node
-                    is_trash=false
-                    on_children_changed=request_path_refetch
-                />
+                <FolderBottomBar current_node on_children_modified=request_path_refetch />
             </Space>
 
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
                     parent=current_node
-                    // TODO: Implement passing view_type
-                    is_trash=false
+                    content_type=Signal::derive(move || ContentViewType::Folder(
+                        current_node.get().id,
+                    ))
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();

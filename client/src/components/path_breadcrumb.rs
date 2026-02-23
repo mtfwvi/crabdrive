@@ -1,12 +1,11 @@
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
-use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Icon, Text};
+use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Text};
 
 #[component]
 pub(crate) fn PathBreadcrumb(
     #[prop(into)] path: Signal<Vec<DecryptedNode>>,
-    #[prop(into, optional, default = false.into())] is_trash: Signal<bool>,
     on_select: Callback<NodeId>,
     #[prop(optional, default = false)] compact: bool,
 ) -> impl IntoView {
@@ -27,7 +26,6 @@ pub(crate) fn PathBreadcrumb(
                         <PathBreadcrumbItem
                             node=path_node
                             is_last=!is_not_last()
-                            is_trash
                             on_click=on_select
                             leaf_node_style
                             inner_node_style
@@ -46,7 +44,6 @@ pub(crate) fn PathBreadcrumb(
 fn PathBreadcrumbItem(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(optional, into)] is_last: Signal<bool>,
-    is_trash: Signal<bool>,
     leaf_node_style: &'static str,
     inner_node_style: &'static str,
     on_click: Callback<NodeId>,
@@ -69,12 +66,6 @@ fn PathBreadcrumbItem(
     view! {
         <BreadcrumbItem>
             <BreadcrumbButton on:click=on_click>
-                <Show when=move || is_trash.get()>
-                    <Icon
-                        class=format!("{} mr-1", text_style.get())
-                        icon=icondata_mdi::MdiTrashCanOutline
-                    />
-                </Show>
                 <Text class=format!("{} !font-bold", text_style.get())>{name}</Text>
             </BreadcrumbButton>
         </BreadcrumbItem>

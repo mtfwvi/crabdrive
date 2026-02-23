@@ -1,4 +1,4 @@
-use crate::api::share_node;
+use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::model::node::DecryptedNode;
@@ -7,13 +7,12 @@ use crate::utils::ui::{format_date_time, shorten_file_name};
 use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
-use tracing::debug;
 
 #[component]
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] parent: Signal<DecryptedNode>,
-    #[prop(into)] is_trash: Signal<bool>,
+    #[prop(into)] content_type: Signal<ContentViewType>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -60,45 +59,32 @@ pub(crate) fn NodeDetails(
                         name="Created"
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
-                    <NodeAttribute
-                        name="Access"
-                        value=Signal::derive(move || format!("{:?}", node.get().has_access))
-                    />
 
-                    <Show
-                        when=move || !is_trash.get()
-                        fallback=move || {
-                            view! {
-                                <Space vertical=true class="mt-4">
-                                    <Button
-                                        block=true
-                                        icon=icondata_mdi::MdiRestore
-                                        appearance=ButtonAppearance::Primary
-                                    >
-                                        "Restore"
-                                    </Button>
-                                    <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
-                                        "Delete forever"
-                                    </Button>
-                                </Space>
-                            }
-                        }
-                    >
+                    <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
                         <Space vertical=true class="mt-4">
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileDownloadButton node />
                             </Show>
 
                             <ModifyNodeMenu node parent on_modified />
-
-                            <Text on:click=move |_| {
-                                let node = node.get();
-                                leptos::reactive::spawn_local(async move {
-                                    let url = share_node(&node).await.expect("fail");
-                                    debug!("{}" ,url);
-                                });
-                            }>"Share"</Text>
                         </Space>
+                    </Show>
+                    <Show when=move || content_type.get() == ContentViewType::Trash>
+                        <Space vertical=true class="mt-4">
+                            <Button
+                                block=true
+                                icon=icondata_mdi::MdiRestore
+                                appearance=ButtonAppearance::Primary
+                            >
+                                "Restore"
+                            </Button>
+                            <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
+                                "Delete forever"
+                            </Button>
+                        </Space>
+                    </Show>
+                    <Show when=move || content_type.get() == ContentViewType::Shared>
+                        <Text>TODO</Text>
                     </Show>
                 </Space>
             </Space>

@@ -1,13 +1,13 @@
 use crate::api::get_children;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
-use crate::components::folder_bottom_bar::FolderBottomBar;
+use crate::components::content_frame::ContentViewType;
 use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
-use crate::components::path_breadcrumb::PathBreadcrumb;
+use crate::components::trash_empty_button::TrashEmptyButton;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{Divider, Space};
+use thaw::{Divider, Icon, Space, Text};
 
 #[component]
 pub(crate) fn TrashView(
@@ -48,12 +48,10 @@ pub(crate) fn TrashView(
         >
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
-                    // TODO: Refactor breadcrumbs to title
-                    <PathBreadcrumb
-                        path=Signal::derive(move || vec![trash_node.get()])
-                        is_trash=true
-                        on_select=navigate_to_node
-                    />
+                    <Space>
+                        <Icon class="!text-2xl mr-1" icon=icondata_mdi::MdiTrashCanOutline />
+                        <Text class="!text-2xl !font-bold">"Trash"</Text>
+                    </Space>
                     <Divider class="mb-3" />
 
                     <NodeList
@@ -65,20 +63,14 @@ pub(crate) fn TrashView(
                 </Space>
 
                 // Request refetch since parent metadata was modified
-                // TODO: Refactor: separate bar based on basic component, pass children from here
-                <FolderBottomBar
-                    current_node=trash_node
-                    is_trash=true
-                    on_children_changed=request_trash_node_refetch
-                />
+                <TrashEmptyButton on_emptied=request_trash_node_refetch />
             </Space>
 
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
                     parent=trash_node
-                    // TODO: Implement passing view_type
-                    is_trash=true
+                    content_type=ContentViewType::Trash
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();
