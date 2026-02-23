@@ -5,7 +5,7 @@ use crate::components::trash_view::TrashView;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Debug)]
 pub(crate) enum ContentViewType {
     Folder(NodeId),
     Shared,
@@ -14,21 +14,26 @@ pub(crate) enum ContentViewType {
 
 #[component]
 pub(crate) fn ContentFrame(#[prop(into)] content_type: Signal<ContentViewType>) -> impl IntoView {
-    match content_type.get() {
-        ContentViewType::Folder(node_id) => view! {
-            <PathProvider node_id let:path let:refetch>
+    view! {
+        <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
+            <PathProvider
+                node_id=Signal::derive(move || {
+                    let ContentViewType::Folder(node_id) = content_type.get() else {
+                        unreachable!()
+                    };
+                    node_id
+                })
+                let:path
+                let:refetch
+            >
                 <FolderView path request_path_refetch=refetch />
             </PathProvider>
-        }
-        .into_any(),
-        ContentViewType::Shared => {
-            view! { <p>todo</p> }.into_any() // TODO
-        }
-        ContentViewType::Trash => view! {
+        </Show>
+        // TODO: Add SharedView
+        <Show when=move || content_type.get() == ContentViewType::Trash>
             <TrashProvider let:trash_node let:refetch>
                 <TrashView trash_node request_trash_node_refetch=refetch />
             </TrashProvider>
-        }
-        .into_any(),
+        </Show>
     }
 }
