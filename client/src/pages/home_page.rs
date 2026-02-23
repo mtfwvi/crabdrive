@@ -12,8 +12,15 @@ use thaw::{
     Space, SpaceAlign, Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
+#[derive(PartialEq, Clone, Copy)]
+pub(crate) enum HomePageType {
+    Folder,
+    Shared,
+    Trash,
+}
+
 #[component]
-pub(crate) fn HomePage() -> impl IntoView {
+pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl IntoView {
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
         let parameter = use_params_map().get().get("id")?;
         UUID::parse_string(&parameter)

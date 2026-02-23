@@ -11,8 +11,14 @@ use thaw::{
     ToasterInjection,
 };
 
+#[derive(PartialEq, Clone, Copy)]
+pub(crate) enum LoginType {
+    Register,
+    Login,
+}
+
 #[component]
-pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
+pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_register = navigate.clone();
     let navigate_to_register =
@@ -91,7 +97,7 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
     });
 
     Effect::watch(
-        move || register_new_account,
+        move || login_type,
         move |_, _, _| {
             request_animation_frame(move || username_input_ref.get_untracked().unwrap().focus())
         },
@@ -128,11 +134,10 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
             return;
         }
 
-        if register_new_account {
-            register_action.dispatch((username, password));
-        } else {
-            login_action.dispatch((username, password));
-        }
+        match login_type.get() {
+            LoginType::Register => register_action.dispatch((username, password)),
+            LoginType::Login => login_action.dispatch((username, password)),
+        };
     });
 
     view! {
@@ -152,7 +157,10 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                 }
             >
                 <Text class="!text-2xl">
-                    {move || if register_new_account { "Register new account" } else { "Login" }}
+                    {move || match login_type.get() {
+                        LoginType::Register => "Register new account",
+                        LoginType::Login => "Login",
+                    }}
                 </Text>
                 <Input
                     placeholder="Username"
@@ -167,13 +175,14 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     class="w-full"
                     input_type=InputType::Password
                     value=password
-                    autocomplete=if register_new_account {
-                        "new-password"
-                    } else {
-                        "current-password"
+                    autocomplete=match login_type.get() {
+                        LoginType::Register => "new-password",
+                        LoginType::Login => "current-password",
                     }
                 />
-                <Show when=move || !is_password_valid.get() && register_new_account>
+                <Show when=move || {
+                    !is_password_valid.get() && (login_type.get() == LoginType::Register)
+                }>
                     <MessageBar intent=MessageBarIntent::Error layout=MessageBarLayout::Multiline>
                         <MessageBarBody class="mb-2">
                             <MessageBarTitle>"Invalid password"</MessageBarTitle>
@@ -182,7 +191,10 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     </MessageBar>
                 </Show>
                 <Button appearance=ButtonAppearance::Primary block=true>
-                    {move || if register_new_account { "Register" } else { "Login" }}
+                    {move || match login_type.get() {
+                        LoginType::Register => "Register",
+                        LoginType::Login => "Login",
+                    }}
                 </Button>
 
                 <Button
@@ -190,18 +202,17 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     block=true
                     on_click=move |e: web_sys::MouseEvent| {
                         e.prevent_default();
-                        if register_new_account {
-                            navigate_to_login.run(())
-                        } else {
-                            navigate_to_register.run(())
-                        }
+                        let navigate = match login_type.get() {
+                            LoginType::Register => navigate_to_login,
+                            LoginType::Login => navigate_to_register,
+                        };
+                        navigate.run(())
                     }
                 >
                     {move || {
-                        if register_new_account {
-                            "Already have an account? Login now"
-                        } else {
-                            "Have no account yet? Register now"
+                        match login_type.get() {
+                            LoginType::Register => "Already have an account? Login now",
+                            LoginType::Login => "Have no account yet? Register now",
                         }
                     }}
                 </Button>
