@@ -5,6 +5,7 @@ mod file_creation_button;
 mod file_download_button;
 mod file_selection_dialog;
 mod folder_bottom_bar;
+mod folder_content;
 mod folder_creation_button;
 mod folder_selection_dialog;
 mod modify_node_menu;

@@ -1,14 +1,10 @@
 use crate::api::{get_children, get_trash_node, path_to_root};
 use crate::components::basic::resource_wrapper::ResourceWrapper;
-use crate::components::folder_bottom_bar::FolderBottomBar;
+use crate::components::folder_content::FolderContent;
 use crate::components::node_details::NodeDetails;
-use crate::components::node_list::NodeList;
-use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
-use leptos_router::hooks::use_navigate;
-use thaw::{Divider, Space};
 
 #[derive(PartialEq, Clone, Copy)]
 pub(crate) enum FolderViewType {
@@ -17,9 +13,9 @@ pub(crate) enum FolderViewType {
     Trash,
 }
 
+// TODO: Find better name
 #[component]
 pub(crate) fn FolderView(#[prop(into)] view_type: Signal<FolderViewType>) -> impl IntoView {
-    let navigate = use_navigate();
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
     let _reset_selection_effect = Effect::watch(
@@ -39,10 +35,6 @@ pub(crate) fn FolderView(#[prop(into)] view_type: Signal<FolderViewType>) -> imp
                 .map(|trash_node| vec![trash_node]),
             FolderViewType::Shared => Ok(vec![]),
         }
-    });
-
-    let navigate_to_node = Callback::new(move |node_id| {
-        navigate(&format!("/{}", node_id), Default::default());
     });
 
     let toggle_selection = Callback::new(move |file: DecryptedNode| {
@@ -92,38 +84,19 @@ pub(crate) fn FolderView(#[prop(into)] view_type: Signal<FolderViewType>) -> imp
                 });
 
                 view! {
-                    <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
-                        <Space vertical=true>
-                            <PathBreadcrumb path is_trash on_select=navigate_to_node />
-                            <Divider class="mb-3" />
-
-                            <ResourceWrapper
-                                resource=children_res
-                                error_text=Signal::derive(move || {
-                                    format!(
-                                        "The children of '{}' could not be loaded from the server",
-                                        node_id.get(),
-                                    )
-                                })
-                                let:children
-                            >
-                                <NodeList
-                                    nodes=children
-                                    on_node_click=toggle_selection
-                                    on_folder_dblclick=navigate_to_node
-                                    folders_only=false
-                                />
-                            </ResourceWrapper>
-                        </Space>
-
-                        <FolderBottomBar current_node is_trash on_children_changed />
-                    </Space>
+                    // TODO: Show other types' content
+                    <FolderContent
+                        path
+                        on_select_node=toggle_selection
+                        on_content_modified=on_children_changed
+                    />
 
                     <Show when=move || selection.get().is_some()>
                         <NodeDetails
                             node=Signal::derive(move || selection.get().unwrap())
                             parent=current_node
-                            is_trash
+                            // TODO: Implement passing view_type
+                            is_trash=false
                             on_close=Callback::new(move |_| selection.set(None))
                             on_modified=Callback::new(move |_| {
                                 children_res.refetch();

@@ -8,7 +8,7 @@ use thaw::{Divider, Space};
 #[component]
 pub(crate) fn FolderBottomBar(
     #[prop(into)] current_node: Signal<DecryptedNode>,
-    is_trash: Signal<bool>,
+    #[prop(into)] is_trash: Signal<bool>,
     on_children_changed: Callback<()>,
 ) -> impl IntoView {
     view! {

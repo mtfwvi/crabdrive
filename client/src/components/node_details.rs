@@ -13,7 +13,7 @@ use tracing::debug;
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] parent: Signal<DecryptedNode>,
-    is_trash: Signal<bool>,
+    #[prop(into)] is_trash: Signal<bool>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
