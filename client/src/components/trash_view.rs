@@ -10,23 +10,17 @@ use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Space};
 
 #[component]
-pub(crate) fn FolderContent(
-    path: Signal<Vec<DecryptedNode>>,
-    request_path_refetch: Callback<()>,
+pub(crate) fn TrashView(
+    trash_node: Signal<DecryptedNode>,
+    request_trash_node_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_node = Callback::new(move |node_id| {
         navigate(&format!("/{}", node_id), Default::default());
     });
 
-    let current_node = Signal::derive(move || {
-        path.get()
-            .last()
-            .expect("Failed to get current node due to empty path")
-            .clone()
-    });
     let children_res = LocalResource::new(move || {
-        let current_node = current_node.get();
+        let current_node = trash_node.get();
         async move {
             get_children(current_node)
                 .await
@@ -35,13 +29,6 @@ pub(crate) fn FolderContent(
     });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
-
-    let _reset_selection_effect = Effect::watch(
-        move || path.get(),
-        move |_, _, _| selection.set(None),
-        false,
-    );
-
     let toggle_selection = Callback::new(move |file: DecryptedNode| {
         let selected = selection.get().clone();
         let is_selected = selected.is_some() && selected.unwrap().id == file.id;
@@ -56,17 +43,17 @@ pub(crate) fn FolderContent(
     view! {
         <ResourceWrapper
             resource=children_res
-            error_text=Signal::derive(move || {
-                format!(
-                    "The children of '{}' could not be loaded from the server",
-                    current_node.get().id,
-                )
-            })
+            error_text="The items in trash could not be loaded from the server"
             let:children
         >
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
-                    <PathBreadcrumb path is_trash=false on_select=navigate_to_node />
+                    // TODO: Refactor breadcrumbs to title
+                    <PathBreadcrumb
+                        path=Signal::derive(move || vec![trash_node.get()])
+                        is_trash=true
+                        on_select=navigate_to_node
+                    />
                     <Divider class="mb-3" />
 
                     <NodeList
@@ -78,19 +65,20 @@ pub(crate) fn FolderContent(
                 </Space>
 
                 // Request refetch since parent metadata was modified
+                // TODO: Refactor: separate bar based on basic component, pass children from here
                 <FolderBottomBar
-                    current_node
-                    is_trash=false
-                    on_children_changed=request_path_refetch
+                    current_node=trash_node
+                    is_trash=true
+                    on_children_changed=request_trash_node_refetch
                 />
             </Space>
 
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    parent=current_node
+                    parent=trash_node
                     // TODO: Implement passing view_type
-                    is_trash=false
+                    is_trash=true
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();
