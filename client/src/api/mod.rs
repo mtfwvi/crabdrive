@@ -19,9 +19,7 @@ pub use create_file::create_file;
 pub use create_folder::create_folder;
 pub use download_file::download_file;
 pub use get_children::get_children;
-pub use get_root_node::get_root_node;
 pub use get_trash_node::get_trash_node;
-pub use path_between_nodes::path_between_nodes;
 pub use path_to_root::path_to_root;
 pub use rename_node::rename_node;
 

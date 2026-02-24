@@ -18,6 +18,15 @@ pub fn get_document() -> Result<Document> {
     ))
 }
 
+pub fn get_current_url() -> Result<String> {
+    wrap_js_err(get_window()?.location().href())
+}
+
+pub fn set_current_url(url: &str) -> Result<()> {
+    let window = get_window()?;
+    wrap_js_err(window.location().set_href(url))
+}
+
 pub fn get_crypto() -> Result<Crypto> {
     wrap_js_err(get_window()?.crypto())
 }

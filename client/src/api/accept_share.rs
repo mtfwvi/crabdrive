@@ -8,8 +8,9 @@ use crabdrive_common::payloads::node::request::share::PostAcceptShareRequest;
 use crabdrive_common::payloads::node::response::share::{
     GetShareInfoResponse, PostAcceptShareResponse,
 };
+use crabdrive_common::storage::NodeId;
 
-pub async fn accept_share(url: &str) -> Result<()> {
+pub async fn accept_share(url: &str) -> Result<NodeId> {
     let (share_id, wrapping_encryption_key) = parse_share_url(url)?;
 
     let share_info_response = get_share_info(share_id).await?;
@@ -33,7 +34,7 @@ pub async fn accept_share(url: &str) -> Result<()> {
     };
     let accept_share_response = post_accept_share(share_id, accept_share_body).await?;
     match accept_share_response {
-        PostAcceptShareResponse::Ok => Ok(()),
+        PostAcceptShareResponse::Ok => Ok(share_info.node_id),
         PostAcceptShareResponse::NotFound => {
             Err(anyhow!("Server returned NotFound when accepting node"))
         }

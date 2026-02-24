@@ -1,34 +1,26 @@
 use crate::constants::APPLICATION_BASE_PATH;
 use crate::model::encryption::RawEncryptionKey;
 use crate::utils::encryption::{decode_key, encode_key};
-use anyhow::Result;
 use anyhow::anyhow;
-use crabdrive_common::storage::{NodeId, ShareId};
+use anyhow::Result;
+use crabdrive_common::storage::ShareId;
 use crabdrive_common::uuid::UUID;
 use regex::Regex;
+use tracing::error;
 
 //TODO test this + create share url
-pub fn parse_share_url(url: &str) -> Result<(NodeId, RawEncryptionKey)> {
-    // regex stolen from here: https://stackoverflow.com/a/8798297
-    let re = Regex::new(r"([^/]+)/?$")?;
-    let Some(caps) = re.captures(url) else {
-        return Err(anyhow!("could not parse URL"));
-    };
-    let url_end = &caps[1];
-
-    let split = url_end.split_once("#");
+pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {
+    // we have to start by splitting at '#' because base64 allows '/'
+    let split = url.split_once('#');
     if split.is_none() {
         return Err(anyhow!("could not find encryption key in url"));
     }
-    let (share_id, encryption_key_string_from_url) = split.unwrap();
+    let (url, encryption_key_string_from_url) = split.unwrap();
 
-    let share_id = UUID::parse_string(share_id);
+    let share_id = url.split('/').next_back().ok_or(anyhow!("url {url} is not valid"))?;
+    let share_id = UUID::parse_string(share_id).ok_or(anyhow!("not a valid uuid"))?;
 
-    let Some(share_id) = share_id else {
-        return Err(anyhow!("could not parse share id"));
-    };
     let wrapping_encryption_key = decode_key(encryption_key_string_from_url)?;
-
     Ok((share_id, wrapping_encryption_key))
 }
 
@@ -55,5 +47,11 @@ mod test {
 
         assert_eq!(parsed.0, share_id);
         assert_eq!(parsed.1, key);
+    }
+
+    #[test]
+    fn test_parse_url() {
+        let url = "http://localhost:2722/share/99202218-bee9-4c9d-b3b7-5bfb6ccc7862#AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=";
+        let _parsed = parse_share_url(&url).unwrap();
     }
 }

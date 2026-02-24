@@ -132,10 +132,16 @@ where
 
     let json = serde_json::to_string(&body)?;
 
+    let body = if json == "null" {
+        RequestBody::Empty
+    } else {
+        RequestBody::Json(json)
+    };
+
     let response: Response = request(
         url,
         request_method,
-        RequestBody::Json(json),
+        body,
         vec![],
         token,
         true,
