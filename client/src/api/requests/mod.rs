@@ -144,10 +144,8 @@ where
 
     let response_string = string_from_response(response).await?;
 
-    let response_object = serde_json::from_str(&response_string).map_err(|_| anyhow!(
-            "could not parse json response: {:?}",
-            response_string
-        ))?;
+    let response_object = serde_json::from_str(&response_string)
+        .map_err(|_| anyhow!("could not parse json response: {:?}", response_string))?;
     Ok(response_object)
 }
 

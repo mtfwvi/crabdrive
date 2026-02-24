@@ -1,7 +1,7 @@
 use crate::api::requests::share::post_share_node;
-use crate::constants::APPLICATION_BASE_PATH;
 use crate::model::node::DecryptedNode;
-use crate::utils::encryption::{encode_key, generate_aes256_key, wrap_key};
+use crate::utils::encryption::{generate_aes256_key, wrap_key};
+use crate::utils::share::create_share_url;
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::share::PostShareNodeRequest;
 use crabdrive_common::payloads::node::response::share::PostShareNodeResponse;
@@ -24,8 +24,7 @@ pub async fn share_node(node: &DecryptedNode) -> Result<String> {
             Err(anyhow::anyhow!("server returned NotFound on share node"))
         }
         PostShareNodeResponse::Ok(share_id) => {
-            let encoded_key = encode_key(&encryption_key);
-            let url = format!("{APPLICATION_BASE_PATH}/share/{share_id}#{encoded_key}");
+            let url = create_share_url(&share_id, &encryption_key);
             Ok(url)
         }
         PostShareNodeResponse::BadRequest(error) => {
