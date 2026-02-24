@@ -1,4 +1,3 @@
-use crate::auth::claims::Claims;
 use crate::http::AppState;
 use crate::user::persistence::model::user_entity::UserEntity;
 use anyhow::Result;
@@ -11,6 +10,7 @@ use axum_extra::TypedHeader;
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
 use chrono::{TimeDelta, Utc};
+use claims::Claims;
 use crabdrive_common::user::UserId;
 use jsonwebtoken::errors::ErrorKind::ExpiredSignature;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode};
@@ -126,7 +126,7 @@ pub fn decode_bearer_token(
 
 #[cfg(test)]
 mod test {
-    use crate::auth::{decode_bearer_token, new_bearer_token};
+    use super::{decode_bearer_token, new_bearer_token};
     use crabdrive_common::user::UserId;
     use jsonwebtoken::errors::ErrorKind::ExpiredSignature;
     use jsonwebtoken::{DecodingKey, EncodingKey};

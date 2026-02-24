@@ -3,10 +3,10 @@ use crate::{api, utils};
 
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
-use crabdrive_common::payloads::auth::response::login::UserKeys;
 use crabdrive_common::payloads::auth::response::register::PostRegisterResponse;
 
 use anyhow::{Context, Result, anyhow};
+use crabdrive_common::user::UserKeys;
 use tracing::debug_span;
 
 /// Attempts to register a user, with a username and (unencrypted) password.
