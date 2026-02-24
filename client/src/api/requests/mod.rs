@@ -118,24 +118,17 @@ async fn request(
     Ok(response)
 }
 
-async fn json_request<BodyT, ResponseT>(
+async fn json_api_request<BodyT, ResponseT>(
     url: String,
     request_method: RequestMethod,
     body: BodyT,
-    use_api_base_path: bool,
 ) -> Result<ResponseT>
 where
     ResponseT: DeserializeOwned,
     BodyT: Serialize,
 {
     let token = get_token()?;
-
-    // avoid sending the token to other apis
-    let auth_token = if use_api_base_path {
-        Some(&token)
-    } else {
-        None
-    };
+    let token = Some(&token);
 
     let json = serde_json::to_string(&body)?;
 
@@ -144,8 +137,8 @@ where
         request_method,
         RequestBody::Json(json),
         vec![],
-        auth_token,
-        use_api_base_path,
+        token,
+        true,
     )
     .await?;
 

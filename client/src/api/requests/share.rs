@@ -1,4 +1,4 @@
-use crate::api::requests::{RequestMethod, json_request};
+use crate::api::requests::{RequestMethod, json_api_request};
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
@@ -16,19 +16,19 @@ pub async fn post_share_node(
 ) -> Result<PostShareNodeResponse> {
     let url = routes::node::share::share(node_id);
 
-    json_request(url, RequestMethod::POST, body, true).await
+    json_api_request(url, RequestMethod::POST, body).await
 }
 
 pub async fn get_share_info(share_id: ShareId) -> Result<GetShareInfoResponse> {
     let url = routes::node::share::get_share_info(share_id);
 
-    json_request(url, RequestMethod::GET, (), true).await
+    json_api_request(url, RequestMethod::GET, ()).await
 }
 
 pub async fn get_node_shared_with(node_id: NodeId) -> Result<GetNodeSharedWithResponse> {
     let url = routes::node::share::get_node_shared_with(node_id);
 
-    json_request(url, RequestMethod::GET, (), true).await
+    json_api_request(url, RequestMethod::GET, ()).await
 }
 
 pub async fn post_accept_share(
@@ -37,11 +37,11 @@ pub async fn post_accept_share(
 ) -> Result<PostAcceptShareResponse> {
     let url = routes::node::share::accept_share(share_id);
 
-    json_request(url, RequestMethod::POST, body, true).await
+    json_api_request(url, RequestMethod::POST, body).await
 }
 
 pub async fn get_accepted_shared_nodes() -> Result<GetAcceptedSharedResponse> {
     let url = routes::node::share::get_accepted_shared();
 
-    json_request(url, RequestMethod::GET, (), true).await
+    json_api_request(url, RequestMethod::GET, ()).await
 }
