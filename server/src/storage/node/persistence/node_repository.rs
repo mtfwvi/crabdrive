@@ -1,3 +1,4 @@
+use crate::db::NodeDsl;
 use crate::db::connection::DbPool;
 use crate::db::operations;
 use crate::db::operations::{
@@ -202,42 +203,21 @@ impl NodeRepository for NodeState {
         to_trash: NodeId,
         to_trash_metadata: EncryptedMetadata,
     ) -> Result<()> {
+        self.move_node(id, from, from_metadata, to_trash, to_trash_metadata)?;
+
         let mut conn = self
             .db_pool
             .get()
             .context("Failed to get database connection")?;
 
         conn.transaction(|conn| {
-            use crate::db::schema::Node::dsl as NodeDsl;
             let now = chrono::Local::now().naive_local();
 
             diesel::update(NodeDsl::Node)
-                .filter(NodeDsl::id.eq(from))
-                .set((
-                    NodeDsl::metadata.eq(&from_metadata),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
-                .execute(conn)
-                .context("Failed to update old parent")?;
-
-            diesel::update(NodeDsl::Node)
-                .filter(NodeDsl::id.eq(to_trash))
-                .set((
-                    NodeDsl::metadata.eq(&to_trash_metadata),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
-                .execute(conn)
-                .context("Failed to update trash parent")?;
-
-            diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(id))
-                .set((
-                    NodeDsl::parent_id.eq(Some(to_trash)),
-                    NodeDsl::deleted_on.eq(Some(now)),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
+                .set(NodeDsl::deleted_on.eq(Some(now)))
                 .execute(conn)
-                .context("Failed to move node to trash")?;
+                .context("Failed to set deleted_on timestamp")?;
 
             Ok(())
         })?;
@@ -253,41 +233,19 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
+        self.move_node(id, from_trash, from_trash_metadata, to, to_metadata)?;
+
         let mut conn = self
             .db_pool
             .get()
             .context("Failed to get database connection")?;
 
         conn.transaction(|conn| {
-            use crate::db::schema::Node::dsl as NodeDsl;
-
-            diesel::update(NodeDsl::Node)
-                .filter(NodeDsl::id.eq(from_trash))
-                .set((
-                    NodeDsl::metadata.eq(&from_trash_metadata),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
-                .execute(conn)
-                .context("Failed to update trash parent")?;
-
-            diesel::update(NodeDsl::Node)
-                .filter(NodeDsl::id.eq(to))
-                .set((
-                    NodeDsl::metadata.eq(&to_metadata),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
-                .execute(conn)
-                .context("Failed to update new parent")?;
-
             diesel::update(NodeDsl::Node)
                 .filter(NodeDsl::id.eq(id))
-                .set((
-                    NodeDsl::parent_id.eq(Some(to)),
-                    NodeDsl::deleted_on.eq(None::<NaiveDateTime>),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
+                .set(NodeDsl::deleted_on.eq(None::<NaiveDateTime>))
                 .execute(conn)
-                .context("Failed to move node out of trash")?;
+                .context("Failed to clear deleted_on timestamp")?;
 
             Ok(())
         })?;
@@ -296,8 +254,7 @@ impl NodeRepository for NodeState {
     }
 
     fn purge_tree_from_trash(&self, id: NodeId) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)> {
-        use crate::db::schema::Node::dsl as NodeDsl;
-        use crate::db::schema::Revision::dsl as RevisionDsl;
+        use crate::db::{NodeDsl, RevisionDsl};
 
         let mut conn = self
             .db_pool
