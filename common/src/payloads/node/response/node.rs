@@ -54,3 +54,17 @@ pub enum GetNodeChildrenResponse {
     Ok(Vec<EncryptedNode>),
     NotFound,
 }
+
+#[derive(Serialize, Deserialize, Debug)]
+pub enum GetSharedItemInfoResponse {
+    Ok(SharedItemInfo),
+    NotFound,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SharedItemInfo {
+    pub node_id: String,
+    pub node_type: String,
+    pub owner_username: String,
+    pub shared_at: String,
+}
