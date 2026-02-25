@@ -210,7 +210,7 @@ pub async fn get_accepted_shared_nodes(
 ) -> (StatusCode, Json<GetAcceptedSharedResponse>) {
     let accepted_shares = state
         .share_repository
-        .get_shares_by_user(current_user.id)
+        .get_accepted_shares_by_user(current_user.id)
         .expect("db error");
 
     let nodes: Vec<(EncryptionKey, EncryptedNode)> = accepted_shares

@@ -14,7 +14,7 @@ pub trait ShareRepository {
     fn insert_share(&self, entity: ShareEntity) -> Result<ShareEntity>;
     fn delete_share(&self, share_id: ShareId) -> Result<ShareEntity>;
     fn update_share(&self, entity: ShareEntity) -> Result<ShareEntity>;
-    fn get_shares_by_user(&self, user_id: UserId) -> Result<Vec<ShareEntity>>;
+    fn get_accepted_shares_by_user(&self, user_id: UserId) -> Result<Vec<ShareEntity>>;
     fn get_shares_by_node_id(&self, node_id: NodeId) -> Result<Vec<ShareEntity>>;
     fn get_share_by_node_id_and_user_id(
         &self,
@@ -50,7 +50,7 @@ impl ShareRepository for ShareRepositoryImpl {
         update_share(&self.db_pool, &entity)
     }
 
-    fn get_shares_by_user(&self, user_id: UserId) -> Result<Vec<ShareEntity>> {
+    fn get_accepted_shares_by_user(&self, user_id: UserId) -> Result<Vec<ShareEntity>> {
         get_all_shares_by_user(&self.db_pool, user_id)
     }
 

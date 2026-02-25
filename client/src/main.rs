@@ -81,7 +81,7 @@ fn CrabDrive() -> impl IntoView {
                             view=move || view! { <LoginPage register_new_account=false /> }
                         />
                         <Route
-                            path=path!("/share/:shareId")
+                            path=path!("/shared/:shareId")
                             view=move || view! { <AcceptSharePage /> }
                         />
                         <Route path=path!("/:id") view=HomePage />

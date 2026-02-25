@@ -79,6 +79,7 @@ pub struct EncryptedNode {
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
     pub encrypted_metadata: EncryptedMetadata,
+    /// vec containing user_id and username
     pub has_access: Vec<(UserId, String)>,
 }
 

@@ -26,7 +26,7 @@ pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {
 
 pub fn create_share_url(share_id: &ShareId, wrapped_key: &RawEncryptionKey) -> String {
     let encoded_key = encode_key(wrapped_key);
-    let url = format!("{APPLICATION_BASE_PATH}/share/{share_id}#{encoded_key}");
+    let url = format!("{APPLICATION_BASE_PATH}/shared/{share_id}#{encoded_key}");
     url
 }
 
@@ -52,6 +52,12 @@ mod test {
     #[test]
     fn test_parse_url() {
         let url = "http://localhost:2722/share/99202218-bee9-4c9d-b3b7-5bfb6ccc7862#AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=";
-        let _parsed = parse_share_url(url).unwrap();
+        let expected_encryption_key =
+            decode_key("AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=").unwrap();
+        let expected_share_id =
+            ShareId::parse_string("99202218-bee9-4c9d-b3b7-5bfb6ccc7862").unwrap();
+
+        let parsed = parse_share_url(url).unwrap();
+        assert_eq!((expected_share_id, expected_encryption_key), parsed);
     }
 }

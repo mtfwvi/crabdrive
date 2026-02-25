@@ -277,12 +277,10 @@ pub fn has_access(db_pool: &DbPool, node_id: NodeId, user_id: UserId) -> Result<
             return Ok(false);
         }
 
-        let matching_nodes = shared_with_user
+        if shared_with_user
             .iter()
-            .filter(|share_entity| share_entity.node_id == node.id)
-            .collect::<Vec<&ShareEntity>>();
-
-        if !matching_nodes.is_empty() {
+            .any(|share_entity| share_entity.node_id == node.id)
+        {
             return Ok(true);
         }
     }
