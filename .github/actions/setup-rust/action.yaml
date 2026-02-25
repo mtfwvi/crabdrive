@@ -11,6 +11,14 @@ inputs:
         description: "Target to compile to"
         required: false
         default: ""
+    components:
+        description: "The components to install"
+        required: false
+        default: clippy, rustfmt
+    shared-cache:
+        description: "Shared cache key"
+        required: false
+        default: "crabdrive_sc"
 
 runs:
     using: "composite"
@@ -20,5 +28,6 @@ runs:
           with:
               target: ${{ inputs.target }}
               toolchain: ${{ inputs.toolchain }}
-              components: clippy, rustfmt
+              components: ${{ inputs.components }}
+              cache-shared-key: ${{ inputs.cache-shared-key }}
               cache-on-failure: true

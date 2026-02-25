@@ -1,5 +1,6 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
-name: Code Quality (PR)
+
+name: CI (PR)
 
 on:
     workflow_dispatch:
@@ -21,11 +22,13 @@ concurrency:
     cancel-in-progress: true
 
 jobs:
-    check-formatted:
-        name: Check formatting
+    check-formatting:
+        name: Check code formatting
         runs-on: ubuntu-latest
-        if: >
-            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        permissions:
+            contents: read
+            pull-requests: read
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
@@ -34,6 +37,7 @@ jobs:
               uses: ./.github/actions/setup-rust
               with:
                   toolchain: nightly
+                  shared-cache: nightly
 
             - name: rs-fmt-check
               uses: clechasseur/rs-fmt-check@v3.0.1
@@ -44,33 +48,98 @@ jobs:
     check-build:
         name: Check build
         runs-on: ubuntu-latest
-        if: >
-            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        permissions:
+            contents: read
+            pull-requests: read
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+
+            - name: Collect commit information
+              id: vars
+              # Replace / with - in branch names, due to Github limitations
+              run: |
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+                  BRANCH="${GITHUB_REF_NAME//\//-}"
+                  echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
             - name: Setup Rust
               uses: ./.github/actions/setup-rust
 
             - name: Check for linter errors / warnings
-              run: cargo clippy --all-targets --all-features
+              run: cargo clippy --all-targets --all-features --timings
 
-            - name: Run tests
-              shell: bash
-              run: cargo test --all-features --all-targets --no-fail-fast
+            - name: Upload build times
+              uses: actions/upload-artifact@v6
+              with:
+                  name: "Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
+                  path: target/cargo-timings/
 
-    check-client-build:
-        name: Check client build
+    test-code:
+        name: Run tests
+        runs-on: ubuntu-latest
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
         permissions:
             contents: read
             pull-requests: read
-        runs-on: ubuntu-latest
-        if: >
-            github.event_name != 'pull_request' || !github.event.pull_request.draft
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
+
+            - name: Collect commit information
+              id: vars
+              run: |
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+                  BRANCH="${GITHUB_REF_NAME//\//-}"
+                  echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
+
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
+              with:
+                  components: llvm-tools-preview
+                  toolchain: nightly-2026-02-20
+                  shared-cache: nightly-2026-02-20
+
+            - name: Install cargo-llvm-cov
+              uses: taiki-e/install-action@v2
+              with:
+                  tool: cargo-llvm-cov,cargo-nextest
+
+            - name: Run tests
+              shell: bash
+              # llvm-cov automatically runs tests
+              run: |
+                  cargo llvm-cov nextest --all-features --no-fail-fast --workspace  \
+                  --lcov --output-path lcov-native.info
+
+            # Upload lcov informations as artifact, used by later job
+            - name: Upload Native Coverage Artifact
+              uses: actions/upload-artifact@v6
+              with:
+                  name: lcov-native
+                  path: lcov-native.info
+
+    check-client-build:
+        name: Check client build
+        runs-on: ubuntu-latest
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        permissions:
+            contents: read
+            pull-requests: read
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Collect commit information
+              id: vars
+              run: |
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+                  BRANCH="${GITHUB_REF_NAME//\//-}"
+                  echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
             - name: Detect changes
               uses: dorny/paths-filter@v3
@@ -96,58 +165,192 @@ jobs:
               with:
                   version: "latest"
 
+            - name: Build WASM Target
+              if: steps.filter.outputs.client == 'true'
+              run: cargo build --target wasm32-unknown-unknown --release --timings -p crabdrive-client
+
             - name: Build with Trunk
               if: steps.filter.outputs.client == 'true'
               run: |
                   cd ./client
                   trunk build --release --verbose
 
-    test-wasm-bindgen:
+            - name: Upload build times as artifact
+              if: steps.filter.outputs.client == 'true'
+              uses: actions/upload-artifact@v6
+              with:
+                  name: "WASM Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
+                  path: target/cargo-timings/
+    test-wasm-code:
         name: Run WASM tests
+        runs-on: ubuntu-latest
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
         permissions:
             contents: read
             pull-requests: read
-        runs-on: ubuntu-latest
-        if: >
-            github.event_name != 'pull_request' || !github.event.pull_request.draft
+        env:
+            CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER: wasm-bindgen-test-runner
+            CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUSTFLAGS: >-
+                -Cinstrument-coverage
+                -Zno-profiler-runtime
+                -Clink-args=--no-gc-sections
+                --cfg=wasm_bindgen_unstable_test_coverage
+                --emit=llvm-ir
+            CFLAGS_wasm32_unknown_unknown: "-matomics -mbulk-memory"
         steps:
             - name: Checkout code
               uses: actions/checkout@v4
 
-            - name: Detect changes
-              uses: dorny/paths-filter@v3
-              id: filter
+            - name: Setup Rust
+              uses: ./.github/actions/setup-rust
               with:
-                  filters: |
-                      client:
-                      - 'client/**'
-                      - 'common/**'
-                      - 'Cargo.toml'
-                      - 'Cargo.lock'
-                      - 'Trunk.toml'
+                  toolchain: nightly-2026-02-20
+                  target: wasm32-unknown-unknown
+                  components: llvm-tools-preview
+                  shared-cache: nightly-2026-02-20
+
+            - name: Install cargo-llvm-cov
+              uses: taiki-e/install-action@cargo-llvm-cov
+
+            - name: Install wasm-bindgen-cli+
+              uses: jetli/wasm-bindgen-action@v0.2.0
+              with:
+                  version: "latest"
+
+            - name: Test on Chrome
+              env:
+                  CHROMEDRIVER: chromedriver
+              run: |
+                  unset RUSTFLAGS
+                  cargo llvm-cov show-env --sh
+                  source <(cargo llvm-cov show-env --sh)
+                  cargo llvm-cov clean
+                  cargo test --target wasm32-unknown-unknown -p crabdrive-client
+
+            - name: Test on Firefox
+              env:
+                  GECKODRIVER: geckodriver
+              run: |
+                  unset RUSTFLAGS
+                  source <(cargo llvm-cov show-env --sh)
+                  cargo test --target wasm32-unknown-unknown -p crabdrive-client
+
+            - name: Generate code coverage
+              run: |
+                  unset RUSTFLAGS
+                  source <(cargo llvm-cov show-env --sh)
+                  find . -type f -name "*.profraw"
+                  cargo llvm-cov report --target wasm32-unknown-unknown --lcov  --output-path lcov-wasm.info
+
+            - name: Upload WASM Coverage Artifact
+              uses: actions/upload-artifact@v6
+              with:
+                  name: lcov-wasm
+                  path: lcov-wasm.info
+
+    check-code-cov:
+        name: Summarize code coverage
+        needs:
+            - test-code
+            - test-wasm-code
+        runs-on: ubuntu-latest
+        if: github.event_name != 'pull_request' || !github.event.pull_request.draft
+        permissions:
+            contents: read
+            pull-requests: write
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
+            - name: Collect commit information
+              id: vars
+              run: |
+                  SHA_SHORT=$(echo "${{ github.event.pull_request.head.sha }}" | cut -c1-7)
+                  echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
+                  BRANCH="${GITHUB_REF_NAME//\//-}"
+                  echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
+                  # If dispatched manually, no event number (PR Number). Changes will be deployed to /man/...
+                  PR_VAL="${{ github.event.number }}"
+                  if [ -z "$PR_VAL" ]; then
+                    PR_ID="man"
+                  else
+                    PR_ID="pr/$PR_VAL"
+                  fi
+                  echo "pr_id=$PR_ID" >> $GITHUB_OUTPUT
+                  DEST_PATH="/data/test-coverage/${PR_ID}/${SHA_SHORT}"
+                  echo "dest_path=$DEST_PATH" >> $GITHUB_OUTPUT
+
+            - name: Install lcov
+              run: sudo apt-get install --no-install-recommends -y lcov
 
             - name: Setup Rust
               uses: ./.github/actions/setup-rust
-              if: steps.filter.outputs.client == 'true'
               with:
-                  target: wasm32-unknown-unknown
+                  components: llvm-tools-preview
 
-            - name: Install wasm-pack
-              if: steps.filter.outputs.client == 'true'
-              run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+            - name: Setup SSH Credentials
+              uses: shimataro/ssh-key-action@v2
+              with:
+                  key: ${{ secrets.SSH_PRIVATE_KEY_COVERAGE_DEPLOY }}
+                  known_hosts: ${{ secrets.SSH_KNOWNHOSTS_COVERAGE_DEPLOY }}
 
-            - name: Setup Chrome
-              if: steps.filter.outputs.client == 'true'
-              uses: browser-actions/setup-chrome@v2
+            - name: Install cargo-llvm-cov
+              uses: taiki-e/install-action@v2
+              with:
+                  tool: cargo-llvm-cov,grcov
 
-            - name: Test on Chrome
-              if: steps.filter.outputs.client == 'true'
-              run: wasm-pack test --headless --chrome client
+            - name: Download Native Coverage
+              uses: actions/download-artifact@v7
+              with:
+                  name: lcov-native
 
-            - name: Setup Firefox
-              if: steps.filter.outputs.client == 'true'
-              uses: browser-actions/setup-firefox@v1
+            - name: Download WASM Coverage
+              uses: actions/download-artifact@v7
+              with:
+                  name: lcov-wasm
 
-            - name: Test on Firefox
-              if: steps.filter.outputs.client == 'true'
-              run: wasm-pack test --headless --firefox client
+            # Merge the code coverages of the native and WASM tests
+            - name: Merge code coverages
+              run: |
+                  lcov -a lcov-native.info -a lcov-wasm.info --output-file lcov.info
+
+            - name: Generate HTML report
+              run: |
+                  mkdir -p coverage-html
+                  grcov lcov.info \
+                    --source-dir . \
+                     \
+                    --ignore-not-existing \
+                    --ignore "/*" \
+                    --ignore "../*" \
+                    -t html \
+                    -o coverage-html
+
+            - name: Upload HTML coverage report
+              id: upload-html
+              uses: actions/upload-artifact@v6
+              with:
+                  name: "Test Coverage of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
+                  path: coverage-html/
+
+            - name: Deploy Coverage report
+              run: |
+                  ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "mkdir -p ${{ steps.vars.outputs.dest_path }}"
+                  tar -cz -C ./coverage-html/html/ . | ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "tar -xz -C ${{ steps.vars.outputs.dest_path }}/"
+
+            - name: Report code coverage to PR
+              uses: zgosalvez/github-actions-report-lcov@v4
+              with:
+                  coverage-files: lcov.info
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+                  update-comment: true
+                  additional-message: >
+                      [View report for `${{ steps.vars.outputs.sha_short }}`](${{ secrets.SSH_HOST_COVERAGE_DEPLOY }}/${{ steps.vars.outputs.pr_id }}/${{ steps.vars.outputs.sha_short }})
+                      or [Download Report for `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) <br>
+                      <details>
+                      <summary>Authentication</summary>
+                      <p>Authenticate with <code>${{ secrets.DEPLOY_USER }}</code> and password <code>${{ secrets.DEPLOY_PASS }}</code></p>
+                      </details>
+                      <i>This tracks which lines and functions were executed during testing.</i>
+                  minimum-coverage: 0 # TODO: Bump
