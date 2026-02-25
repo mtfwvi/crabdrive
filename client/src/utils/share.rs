@@ -52,6 +52,6 @@ mod test {
     #[test]
     fn test_parse_url() {
         let url = "http://localhost:2722/share/99202218-bee9-4c9d-b3b7-5bfb6ccc7862#AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=";
-        let _parsed = parse_share_url(&url).unwrap();
+        let _parsed = parse_share_url(url).unwrap();
     }
 }
