@@ -43,7 +43,8 @@ use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
 use crabdrive_common::payloads::node::response::share::{
-    GetAcceptedSharedResponse, GetAcceptShareInfoResponse, PostAcceptShareResponse, PostShareNodeResponse,
+    GetAcceptShareInfoResponse, GetAcceptedSharedResponse, PostAcceptShareResponse,
+    PostShareNodeResponse,
 };
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -339,7 +340,8 @@ pub async fn test_share() {
         let get_share_info_url =
             API_BASE_PATH.to_owned() + &routes::node::share::get_share_accept_info(share_id);
         let get_share_info_response = auth(server.get(&get_share_info_url), &jwt2).await;
-        let get_share_info_response_body: GetAcceptShareInfoResponse = get_share_info_response.json();
+        let get_share_info_response_body: GetAcceptShareInfoResponse =
+            get_share_info_response.json();
 
         if let GetAcceptShareInfoResponse::Ok(share_info) = get_share_info_response_body {
             assert_eq!(share_info.node_id, folder1_id)

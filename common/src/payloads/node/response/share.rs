@@ -31,6 +31,7 @@ pub enum GetNodeShareInfo {
 pub enum PostAcceptShareResponse {
     Ok,
     NotFound,
+    BadRequest(String),
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]

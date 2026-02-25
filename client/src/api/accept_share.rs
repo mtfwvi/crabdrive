@@ -38,5 +38,6 @@ pub async fn accept_share(url: &str) -> Result<NodeId> {
         PostAcceptShareResponse::NotFound => {
             Err(anyhow!("Server returned NotFound when accepting node"))
         }
+        PostAcceptShareResponse::BadRequest(error) => Err(anyhow!("BadRequest: {error}")),
     }
 }

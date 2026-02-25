@@ -1,6 +1,6 @@
 use crate::api::accept_share;
 use crate::utils::browser::{get_current_url, set_current_url};
-use leptos::{component, IntoView};
+use leptos::{IntoView, component};
 
 #[component]
 pub fn AcceptSharePage() -> impl IntoView {

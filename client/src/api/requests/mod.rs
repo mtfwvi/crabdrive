@@ -138,15 +138,7 @@ where
         RequestBody::Json(json)
     };
 
-    let response: Response = request(
-        url,
-        request_method,
-        body,
-        vec![],
-        token,
-        true,
-    )
-    .await?;
+    let response: Response = request(url, request_method, body, vec![], token, true).await?;
 
     let response_string = string_from_response(response).await?;
 

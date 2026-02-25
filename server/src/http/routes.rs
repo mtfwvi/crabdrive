@@ -11,7 +11,7 @@ use crabdrive_common::da;
 use crabdrive_common::routes;
 
 use crate::request_handler::share::{
-    get_accepted_shared_nodes, get_node_share_info, get_share_info, post_accept_share,
+    get_accept_share_info, get_accepted_shared_nodes, get_node_share_info, post_accept_share,
     post_share_node,
 };
 use axum::Router;
@@ -96,7 +96,7 @@ pub fn share_routes() -> Router<AppState> {
         )
         .route(
             routes::node::share::ROUTE_GET_SHARE_ACCEPT_INFO,
-            get(get_share_info),
+            get(get_accept_share_info),
         )
         .route(
             routes::node::share::ROUTE_GET_ACCEPTED_SHARED,

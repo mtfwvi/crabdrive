@@ -1,4 +1,6 @@
-use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response, json_api_request};
+use crate::api::requests::{
+    RequestBody, RequestMethod, json_api_request, request, string_from_response,
+};
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
@@ -225,9 +227,7 @@ pub async fn get_path_between_nodes(
     Ok(response_object)
 }
 
-pub async fn get_accessible_path(
-    node_id: NodeId,
-) -> Result<GetAccessiblePathResponse> {
+pub async fn get_accessible_path(node_id: NodeId) -> Result<GetAccessiblePathResponse> {
     let url = routes::node::accessible_path(node_id);
 
     json_api_request(url, RequestMethod::GET, ()).await

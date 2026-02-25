@@ -79,7 +79,7 @@ pub struct EncryptedNode {
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
     pub encrypted_metadata: EncryptedMetadata,
-    pub has_access: Vec<(UserId, String)>
+    pub has_access: Vec<(UserId, String)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

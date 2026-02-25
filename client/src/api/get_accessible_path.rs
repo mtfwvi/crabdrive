@@ -4,7 +4,7 @@ use crate::utils::browser::SessionStorage;
 use crate::utils::encryption::auth::{get_master_key, get_root_key};
 use crate::utils::encryption::node::{decrypt_node, decrypt_node_path};
 use crate::utils::encryption::unwrap_key;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetAccessiblePathResponse;
 use crabdrive_common::storage::NodeId;
 
@@ -26,7 +26,6 @@ pub async fn get_accessible_path(node_id: NodeId) -> Result<Vec<DecryptedNode>> 
     encrypted_path
         .first()
         .ok_or(anyhow!("path returned by server is empty"))?;
-
 
     let first_node = encrypted_path.first().unwrap();
 

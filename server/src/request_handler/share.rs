@@ -6,16 +6,16 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::Utc;
-use tracing::error;
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
 use crabdrive_common::payloads::node::response::share::{
-    GetAcceptedSharedResponse, GetNodeShareInfo, GetAcceptShareInfoResponse,
+    GetAcceptShareInfoResponse, GetAcceptedSharedResponse, GetNodeShareInfo,
     PostAcceptShareResponse, PostShareNodeResponse, ShareEncryptionInfo,
 };
 use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
+use tracing::error;
 
 pub async fn post_share_node(
     current_user: UserEntity,
@@ -32,7 +32,12 @@ pub async fn post_share_node(
     let node = node.unwrap();
 
     if node.owner_id != current_user.id {
-        return (StatusCode::NOT_FOUND, Json(PostShareNodeResponse::NotFound));
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostShareNodeResponse::BadRequest(
+                "cannot share a file that you do not own".to_string(),
+            )),
+        );
     }
 
     if node.parent_id.is_none() {
@@ -75,7 +80,7 @@ pub async fn post_share_node(
     )
 }
 
-pub async fn get_share_info(
+pub async fn get_accept_share_info(
     _current_user: UserEntity,
     State(state): State<AppState>,
     Path(share_id): Path<ShareId>,
@@ -86,13 +91,19 @@ pub async fn get_share_info(
         .expect("db error");
 
     if share_entity.is_none() {
-        return (StatusCode::NOT_FOUND, Json(GetAcceptShareInfoResponse::NotFound));
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetAcceptShareInfoResponse::NotFound),
+        );
     }
 
     let share_entity = share_entity.unwrap();
 
     if share_entity.accepted_by.is_some() {
-        return (StatusCode::NOT_FOUND, Json(GetAcceptShareInfoResponse::NotFound));
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetAcceptShareInfoResponse::NotFound),
+        );
     }
 
     let response = GetAcceptShareInfoResponse::Ok(ShareEncryptionInfo {
@@ -115,28 +126,20 @@ pub async fn get_node_share_info(
         .has_access(node_id, current_user.id)
         .expect("db error")
     {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(GetNodeShareInfo::NotFound),
-        );
+        return (StatusCode::NOT_FOUND, Json(GetNodeShareInfo::NotFound));
     }
 
     let Some(share_entity) = state
         .share_repository
         .get_share_by_node_id_and_user_id(node_id, current_user.id)
-        .expect("db error") else {
-        return (
-            StatusCode::NOT_FOUND,
-            Json(GetNodeShareInfo::NotFound),
-        );
+        .expect("db error")
+    else {
+        return (StatusCode::NOT_FOUND, Json(GetNodeShareInfo::NotFound));
     };
 
     let Some(wrapped_key) = share_entity.accepted_encryption_key else {
         error!("A user has accepted a share but there is not key in the db???????");
-        return (
-            StatusCode::NOT_FOUND,
-            Json(GetNodeShareInfo::NotFound),
-        );
+        return (StatusCode::NOT_FOUND, Json(GetNodeShareInfo::NotFound));
     };
 
     (
@@ -154,18 +157,30 @@ pub async fn post_accept_share(
     Path(share_id): Path<ShareId>,
     Json(payload): Json<PostAcceptShareRequest>,
 ) -> (StatusCode, Json<PostAcceptShareResponse>) {
-    let share_entity = state
+    let Some(mut share_entity) = state
         .share_repository
         .get_share(share_id)
-        .expect("db error");
-    if share_entity.is_none() {
+        .expect("db error")
+    else {
         return (
             StatusCode::NOT_FOUND,
             Json(PostAcceptShareResponse::NotFound),
         );
-    }
+    };
 
-    let mut share_entity = share_entity.unwrap();
+    // cannot accept a share that is already accessible (owned/ access to parent)
+    if state
+        .node_repository
+        .has_access(share_entity.node_id, current_user.id)
+        .expect("db error")
+    {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostAcceptShareResponse::BadRequest(
+                "share is already accessible".to_string(),
+            )),
+        );
+    }
 
     if share_entity.accepted_by.is_some() {
         return (

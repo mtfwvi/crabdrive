@@ -21,9 +21,9 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_web::{MakeWebConsoleWriter, performance_layer};
 
+use crate::pages::accept_share_page::AcceptSharePage;
 #[cfg(test)]
 use wasm_bindgen_test::wasm_bindgen_test_configure;
-use crate::pages::accept_share_page::AcceptSharePage;
 
 // instruct wasm-pack to run all test in the browser (otherwise node is used)
 #[cfg(test)]
@@ -82,7 +82,7 @@ fn CrabDrive() -> impl IntoView {
                         />
                         <Route
                             path=path!("/share/:shareId")
-                            view=move || view! { <AcceptSharePage/> }
+                            view=move || view! { <AcceptSharePage /> }
                         />
                         <Route path=path!("/:id") view=HomePage />
                     </Routes>

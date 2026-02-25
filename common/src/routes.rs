@@ -40,7 +40,7 @@ pub mod node {
             ROUTE_SHARE_NODE.replace("{id}", &id.to_string())
         }
 
-        // get information about a node shared that was accepted 
+        // get information about a node shared that was accepted
         pub const ROUTE_NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
         /// `/api/node/{id}/shared_info//`
         pub fn get_node_share_info(id: NodeId) -> String {

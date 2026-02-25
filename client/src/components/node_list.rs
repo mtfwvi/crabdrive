@@ -7,8 +7,6 @@ use thaw::{
     Button, ButtonAppearance, ButtonSize, Flex, FlexGap, FlexJustify, Text, Toast, ToastIntent,
     ToastOptions, ToastTitle, ToasterInjection,
 };
-use tracing::debug;
-use crate::api::share_node;
 
 #[component]
 pub(crate) fn NodeList(
@@ -99,14 +97,6 @@ pub(crate) fn NodeList(
                                             on_dblclick(node.get())
                                         }
                                     />
-                                    <Text
-                                        on:click=move |_| {
-                                        let node = node.get();
-                                            leptos::reactive::spawn_local(async move {
-                                                let url = share_node(&node).await.expect("fail");
-                                                debug!("{}" ,url);
-                                            });
-                                        }>"Share"</Text>
                                 }
                             }
                         />

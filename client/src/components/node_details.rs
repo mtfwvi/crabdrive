@@ -1,3 +1,4 @@
+use crate::api::share_node;
 use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::model::node::DecryptedNode;
@@ -6,6 +7,7 @@ use crate::utils::ui::{format_date_time, shorten_file_name};
 use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
+use tracing::debug;
 
 #[component]
 pub(crate) fn NodeDetails(
@@ -88,6 +90,14 @@ pub(crate) fn NodeDetails(
                             </Show>
 
                             <ModifyNodeMenu node parent on_modified />
+
+                            <Text on:click=move |_| {
+                                let node = node.get();
+                                leptos::reactive::spawn_local(async move {
+                                    let url = share_node(&node).await.expect("fail");
+                                    debug!("{}" ,url);
+                                });
+                            }>"Share"</Text>
                         </Space>
                     </Show>
                 </Space>

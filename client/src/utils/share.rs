@@ -1,8 +1,8 @@
 use crate::constants::APPLICATION_BASE_PATH;
 use crate::model::encryption::RawEncryptionKey;
 use crate::utils::encryption::{decode_key, encode_key};
-use anyhow::anyhow;
 use anyhow::Result;
+use anyhow::anyhow;
 use crabdrive_common::storage::ShareId;
 use crabdrive_common::uuid::UUID;
 
@@ -15,7 +15,10 @@ pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {
     }
     let (url, encryption_key_string_from_url) = split.unwrap();
 
-    let share_id = url.split('/').next_back().ok_or(anyhow!("url {url} is not valid"))?;
+    let share_id = url
+        .split('/')
+        .next_back()
+        .ok_or(anyhow!("url {url} is not valid"))?;
     let share_id = UUID::parse_string(share_id).ok_or(anyhow!("not a valid uuid"))?;
 
     let wrapping_encryption_key = decode_key(encryption_key_string_from_url)?;
