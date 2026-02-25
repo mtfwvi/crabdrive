@@ -415,7 +415,7 @@ pub fn get_all_shares_by_user(db_pool: &DbPool, user_id: UserId) -> Result<Vec<S
     })
 }
 
-pub fn get_share_by_user_node(
+pub fn get_share_by_node_id_and_accepted_user_id(
     db_pool: &DbPool,
     node_id: NodeId,
     user_id: UserId,

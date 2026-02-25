@@ -131,7 +131,7 @@ pub async fn get_node_share_info(
 
     let Some(share_entity) = state
         .share_repository
-        .get_share_by_node_id_and_user_id(node_id, current_user.id)
+        .get_share_by_node_id_and_accepted_user_id(node_id, current_user.id)
         .expect("db error")
     else {
         return (StatusCode::NOT_FOUND, Json(GetNodeShareInfo::NotFound));
