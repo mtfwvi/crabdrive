@@ -2,10 +2,13 @@ use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState};
+use crate::storage::node::NodeRepository;
 use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::revision::RevisionRepository;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
+use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
-use crate::user::persistence::user_repository::UserState;
+use crate::user::persistence::user_repository::{UserRepository, UserState};
 use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
@@ -36,6 +39,7 @@ use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
@@ -403,11 +407,15 @@ pub async fn get_server() -> TestServer {
 
     let pool = create_pool(&db_path, config.db.pool_size);
 
-    let vfs = Sfs::new(&config.storage.dir);
+    let vfs: Arc<RwLock<dyn FileRepository + Send + Sync>> =
+        Arc::new(RwLock::new(Sfs::new(&config.storage.dir)));
 
-    let node_repository = NodeState::new(Arc::new(pool.clone()));
-    let revision_repository = RevisionService::new(Arc::new(pool.clone()));
-    let user_repository = UserState::new(Arc::new(pool.clone()));
+    let node_repository: Arc<dyn NodeRepository + Send + Sync> =
+        Arc::new(NodeState::new(Arc::new(pool.clone())));
+    let revision_repository: Arc<dyn RevisionRepository + Send + Sync> =
+        Arc::new(RevisionService::new(Arc::new(pool.clone())));
+    let user_repository: Arc<dyn UserRepository + Send + Sync> =
+        Arc::new(UserState::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 

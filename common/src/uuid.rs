@@ -31,6 +31,10 @@ impl UUID {
         Self(uuid::Uuid::nil())
     }
 
+    pub fn get(&self) -> uuid::Uuid {
+        self.0
+    }
+
     pub fn parse_string(s: String) -> Option<UUID> {
         match uuid::Uuid::parse_str(&s) {
             Ok(uuid) => Some(UUID(uuid)),

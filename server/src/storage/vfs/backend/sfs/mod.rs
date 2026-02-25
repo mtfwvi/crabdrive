@@ -73,7 +73,7 @@ impl FileRepository for Sfs {
         pathbuf.as_path().exists()
     }
 
-    async fn file_exists(&self, key: &FileKey) -> FileStatus {
+    async fn file_status(&self, key: &FileKey) -> FileStatus {
         let mut pathbuf = self.storage_dir.clone();
         pathbuf.push(key.to_string());
         if pathbuf.exists() {
@@ -147,7 +147,7 @@ impl FileRepository for Sfs {
         unimplemented!("SFS does not implement this functionality.")
     }
     async fn delete_file(&mut self, key: &FileKey) -> Result<(), FileSystemError> {
-        if self.file_exists(key).await != FileStatus::Persisted {
+        if self.file_status(key).await != FileStatus::Persisted {
             return Err(FileSystemError::NotFound);
         }
         let mut path_buf = self.storage_dir.clone();
@@ -161,7 +161,7 @@ impl FileRepository for Sfs {
         key: &FileKey,
         index: ChunkIndex,
     ) -> Result<FileChunk, FileSystemError> {
-        if self.file_exists(key).await != FileStatus::Persisted {
+        if self.file_status(key).await != FileStatus::Persisted {
             return Err(FileSystemError::NotFound);
         }
 

@@ -1,14 +1,20 @@
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
+use crate::storage::node::NodeRepository;
 use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::revision::RevisionRepository;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
+use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
+use crate::storage::vfs::backend::c3::C3;
 
 use http_body_util::Full;
+use tempfile::TempDir;
+use tokio::sync::RwLock;
 
 use crate::auth::secrets::Keys;
-use crate::user::persistence::user_repository::UserState;
+use crate::user::persistence::user_repository::{UserRepository, UserState};
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;
@@ -17,6 +23,8 @@ use bytes::Bytes;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::any::Any;
 use std::io::ErrorKind;
+use std::path::PathBuf;
+use std::str::FromStr;
 use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
@@ -34,11 +42,31 @@ async fn shutdown(_state: AppState) {
 pub async fn start(config: AppConfig) -> Result<(), ()> {
     let pool = create_pool(&config.db.path, config.db.pool_size);
 
-    let vfs = Sfs::new(&config.storage.dir);
+    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
+    {
+        let mut conn = pool.get().unwrap();
+        conn.run_pending_migrations(MIGRATIONS).unwrap();
+    }
 
-    let node_repository = NodeState::new(Arc::new(pool.clone()));
-    let revision_repository = RevisionService::new(Arc::new(pool.clone()));
-    let user_repository = UserState::new(Arc::new(pool.clone()));
+    let dir = TempDir::new().expect("Failed to create temporary directory!");
+    let directory = if config.storage.dir == ":temp:" {
+        dir.path().to_path_buf()
+    } else {
+        PathBuf::from_str(&config.storage.dir).expect("Invalid storage directory!")
+    };
+
+    let vfs: Arc<RwLock<dyn FileRepository + Send + Sync>> = match config.storage.backend.as_str() {
+        "SFS" => Arc::new(RwLock::new(Sfs::new(&config.storage.dir))),
+        "C3" => Arc::new(RwLock::new(C3::new(directory, pool.clone()).await)),
+        _ => panic!("Unknown Backend"),
+    };
+
+    let node_repository: Arc<dyn NodeRepository + Send + Sync> =
+        Arc::new(NodeState::new(Arc::new(pool.clone())));
+    let revision_repository: Arc<dyn RevisionRepository + Send + Sync> =
+        Arc::new(RevisionService::new(Arc::new(pool.clone())));
+    let user_repository: Arc<dyn UserRepository + Send + Sync> =
+        Arc::new(UserState::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
@@ -51,12 +79,6 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         user_repository,
         keys,
     );
-
-    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    {
-        let mut conn = state.db_pool.get().unwrap();
-        conn.run_pending_migrations(MIGRATIONS).unwrap();
-    }
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission
         .allow_origin(tower_http::cors::Any)

@@ -3,6 +3,7 @@ use crate::{
         NodeDsl, RevisionDsl,
         UserDsl::{self},
         connection::DbPool,
+        schema,
     },
     storage::{
         node::persistence::model::node_entity::NodeEntity,
@@ -293,6 +294,19 @@ pub fn delete_revision(db_pool: &DbPool, revision_id: RevisionId) -> Result<Revi
             .get_result(conn)?;
 
         Ok(revision)
+    })
+}
+
+pub fn get_all_uncommitted_revisions(db_pool: &DbPool) -> Result<Vec<UUID>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let results = schema::Revision::table
+            .inner_join(schema::Node::table)
+            .filter(NodeDsl::node_type.eq("FILE"))
+            .filter(RevisionDsl::upload_ended_on.is_null())
+            .select(RevisionDsl::id)
+            .load::<UUID>(conn)?;
+        Ok(results)
     })
 }
 

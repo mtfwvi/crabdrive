@@ -16,10 +16,10 @@ use serde::{Deserialize, Serialize};
     AsChangeset,
     Clone,
     QueryableByName,
+    Identifiable,
 )]
 #[diesel(table_name = crate::db::schema::Node)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[diesel(belongs_to(encryptionKey))]
 pub(crate) struct NodeEntity {
     pub id: NodeId,
     pub parent_id: Option<NodeId>,

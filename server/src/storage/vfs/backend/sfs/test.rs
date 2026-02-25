@@ -84,7 +84,7 @@ mod tests {
         sfs.delete_file(&file_keys[0])
             .await
             .expect("Failed to delete file");
-        let exists = sfs.file_exists(&file_keys[0]).await;
+        let exists = sfs.file_status(&file_keys[0]).await;
         assert_eq!(exists, FileStatus::NotFound);
 
         for i in 0..NUM_CHUNKS {
@@ -94,7 +94,7 @@ mod tests {
 
         // Check all other files are still existent
         for i in 1..NUM_FILES {
-            let exists = sfs.file_exists(&file_keys[i as usize]).await;
+            let exists = sfs.file_status(&file_keys[i as usize]).await;
             assert_eq!(exists, FileStatus::Persisted);
         }
     }

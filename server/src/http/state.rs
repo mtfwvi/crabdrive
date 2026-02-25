@@ -19,28 +19,22 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new<FileRepo, NodeRepo, RevisionRepo, UserRepo>(
+    pub fn new(
         config: AppConfig,
         db_pool: DbPool,
-        vfs: FileRepo,
-        node_repository: NodeRepo,
-        revision_repository: RevisionRepo,
-        user_repository: UserRepo,
+        vfs: Arc<RwLock<dyn FileRepository + Send + Sync>>,
+        node_repository: Arc<dyn NodeRepository + Send + Sync>,
+        revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
+        user_repository: Arc<dyn UserRepository + Send + Sync>,
         keys: Keys,
-    ) -> Self
-    where
-        FileRepo: FileRepository + Send + Sync + 'static,
-        NodeRepo: NodeRepository + Send + Sync + 'static,
-        RevisionRepo: RevisionRepository + Send + Sync + 'static,
-        UserRepo: UserRepository + Send + Sync + 'static,
-    {
+    ) -> Self {
         Self {
             config: Arc::new(config),
             db_pool: Arc::new(db_pool),
-            vfs: Arc::new(RwLock::new(vfs)),
-            node_repository: Arc::new(node_repository),
-            revision_repository: Arc::new(revision_repository),
-            user_repository: Arc::new(user_repository),
+            vfs,
+            node_repository,
+            revision_repository,
+            user_repository,
             keys: Arc::new(keys),
         }
     }

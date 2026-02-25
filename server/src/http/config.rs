@@ -15,6 +15,14 @@ fn is_valid_log_level(level: &String) -> Result<(), String> {
     }
 }
 
+fn is_valid_storage_backend(backend: &String) -> Result<(), String> {
+    let backend: &str = backend.as_ref();
+    match backend {
+        "C3" | "SFS" => Ok(()),
+        _ => Err("Invalid storage backend".to_string()),
+    }
+}
+
 fn parse_list(s: &str) -> Result<Vec<String>, std::convert::Infallible> {
     Ok(s.split(',').map(|item| item.trim().to_string()).collect())
 }
@@ -116,6 +124,12 @@ pub struct LogConfig {
 
 #[derive(Debug, Clone, Serialize, Deserialize, Config)]
 pub struct StorageConfig {
+    /// The storage backend to use. Can be one of the following:
+    /// - `SFS`
+    ///
+    /// **Default**: `:temp:`
+    #[config(env = "CRABDRIVE_STORAGE_BACKEND", validate = is_valid_storage_backend)]
+    pub backend: String,
     /// The path to the storage directory. Can be of the following formats:
     /// - `/path/to/directory/`
     /// - `:temp:` (*automatically created and deleted*)
@@ -172,6 +186,7 @@ impl AppConfig {
                 pool_size: Some(15),
             },
             storage: StorageConfigLayer {
+                backend: Some("C3".into()),
                 dir: Some(":temp:".into()),
                 limit: Some(500_000_000),
             },
@@ -297,6 +312,7 @@ impl std::fmt::Display for AppConfig {
         writeln!(f, "│ ├── Path:        {}", self.db.path)?;
         writeln!(f, "│ └── Pool Size:   {}", self.db.pool_size)?;
         writeln!(f, "├─┬ Storage:")?;
+        writeln!(f, "│ ├── Backend:     {}", self.storage.backend)?;
         writeln!(f, "│ ├── Directory:   {}", self.storage.dir)?;
         writeln!(f, "│ └── Limit:       {} bytes", self.storage.limit)?;
         writeln!(f, "└─┬ Logging:")?;
