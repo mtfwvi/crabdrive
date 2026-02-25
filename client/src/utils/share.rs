@@ -6,7 +6,6 @@ use anyhow::anyhow;
 use crabdrive_common::storage::ShareId;
 use crabdrive_common::uuid::UUID;
 
-//TODO test this + create share url
 pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {
     // we have to start by splitting at '#' because base64 allows '/'
     let split = url.split_once('#');
