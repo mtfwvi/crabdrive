@@ -1,4 +1,4 @@
-use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response, json_api_request};
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
@@ -227,26 +227,8 @@ pub async fn get_path_between_nodes(
 
 pub async fn get_accessible_path(
     node_id: NodeId,
-    token: &String,
 ) -> Result<GetAccessiblePathResponse> {
     let url = routes::node::accessible_path(node_id);
 
-    let request_method = RequestMethod::GET;
-    let body = RequestBody::Empty;
-    let query_parameters = vec![];
-    let auth_token = Some(token);
-
-    let response: Response = request(
-        url,
-        request_method,
-        body,
-        query_parameters,
-        auth_token,
-        true,
-    )
-    .await?;
-    let response_string = string_from_response(response).await?;
-
-    let response_object = serde_json::from_str(&response_string)?;
-    Ok(response_object)
+    json_api_request(url, RequestMethod::GET, ()).await
 }

@@ -1,19 +1,15 @@
 use crate::api::{get_accepted_nodes, requests};
 use crate::model::node::DecryptedNode;
-use crate::utils::auth::get_token;
-use crate::utils::encryption::auth::{get_master_key, get_root_key};
+use crate::utils::browser::SessionStorage;
+use crate::utils::encryption::auth::get_root_key;
 use crate::utils::encryption::node::{decrypt_node, decrypt_node_path};
-use anyhow::{Context, Result, anyhow};
+use anyhow::{anyhow, Context, Result};
 use crabdrive_common::payloads::node::response::node::GetAccessiblePathResponse;
 use crabdrive_common::storage::NodeId;
-use crate::api::requests::share::get_accepted_shared_nodes;
-use crate::utils::browser::SessionStorage;
 
 // returns the path from a shared node to the topmost node the user has access to
 pub async fn get_accessible_path(node_id: NodeId) -> Result<Vec<DecryptedNode>> {
-    let token = get_token()?;
-
-    let response = requests::node::get_accessible_path(node_id, &token)
+    let response = requests::node::get_accessible_path(node_id)
         .await
         .context("Failed to get path to shared node")?;
 
