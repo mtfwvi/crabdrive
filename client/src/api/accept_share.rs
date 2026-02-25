@@ -6,7 +6,7 @@ use anyhow::Result;
 use anyhow::anyhow;
 use crabdrive_common::payloads::node::request::share::PostAcceptShareRequest;
 use crabdrive_common::payloads::node::response::share::{
-    GetShareInfoResponse, PostAcceptShareResponse,
+    GetAcceptShareInfoResponse, PostAcceptShareResponse,
 };
 use crabdrive_common::storage::NodeId;
 
@@ -16,8 +16,8 @@ pub async fn accept_share(url: &str) -> Result<NodeId> {
     let share_info_response = get_share_info(share_id).await?;
 
     let share_info = match share_info_response {
-        GetShareInfoResponse::Ok(share_info) => share_info,
-        GetShareInfoResponse::NotFound => return Err(anyhow!("share not found")),
+        GetAcceptShareInfoResponse::Ok(share_info) => share_info,
+        GetAcceptShareInfoResponse::NotFound => return Err(anyhow!("share not found")),
     };
 
     // unwrap the key that was encrypted with the key in the url

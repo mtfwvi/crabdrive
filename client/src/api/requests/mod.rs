@@ -113,11 +113,11 @@ async fn request(
     let response: Response = dyn_into(response_value)?;
 
     //TODO maybe here we should redirect to the login page in case of a 403
-    //TODO maybe get the token from storage here to avoid duplicate code
 
     Ok(response)
 }
 
+//TODO use this for all api requests
 async fn json_api_request<BodyT, ResponseT>(
     url: String,
     request_method: RequestMethod,

@@ -16,14 +16,14 @@ pub enum PostShareNodeResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GetShareInfoResponse {
+pub enum GetAcceptShareInfoResponse {
     Ok(ShareEncryptionInfo),
     NotFound,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub enum GetNodeSharedWithResponse {
-    Ok(Vec<String>),
+pub enum GetNodeShareInfo {
+    Ok(ShareEncryptionInfo),
     NotFound,
 }
 

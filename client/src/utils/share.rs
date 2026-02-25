@@ -5,8 +5,6 @@ use anyhow::anyhow;
 use anyhow::Result;
 use crabdrive_common::storage::ShareId;
 use crabdrive_common::uuid::UUID;
-use regex::Regex;
-use tracing::error;
 
 //TODO test this + create share url
 pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {

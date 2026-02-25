@@ -41,7 +41,6 @@ web-sys = { workspace = true, features = [
     "Url",
     "Window"
 ] }
-regex = {  workspace = true }
 
 crabdrive-common = { workspace = true }
 

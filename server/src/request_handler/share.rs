@@ -6,12 +6,13 @@ use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::Utc;
+use tracing::error;
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
 use crabdrive_common::payloads::node::response::share::{
-    GetAcceptedSharedResponse, GetNodeSharedWithResponse, GetShareInfoResponse,
+    GetAcceptedSharedResponse, GetNodeShareInfo, GetAcceptShareInfoResponse,
     PostAcceptShareResponse, PostShareNodeResponse, ShareEncryptionInfo,
 };
 use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
@@ -78,23 +79,23 @@ pub async fn get_share_info(
     _current_user: UserEntity,
     State(state): State<AppState>,
     Path(share_id): Path<ShareId>,
-) -> (StatusCode, Json<GetShareInfoResponse>) {
+) -> (StatusCode, Json<GetAcceptShareInfoResponse>) {
     let share_entity = state
         .share_repository
         .get_share(share_id)
         .expect("db error");
 
     if share_entity.is_none() {
-        return (StatusCode::NOT_FOUND, Json(GetShareInfoResponse::NotFound));
+        return (StatusCode::NOT_FOUND, Json(GetAcceptShareInfoResponse::NotFound));
     }
 
     let share_entity = share_entity.unwrap();
 
     if share_entity.accepted_by.is_some() {
-        return (StatusCode::NOT_FOUND, Json(GetShareInfoResponse::NotFound));
+        return (StatusCode::NOT_FOUND, Json(GetAcceptShareInfoResponse::NotFound));
     }
 
-    let response = GetShareInfoResponse::Ok(ShareEncryptionInfo {
+    let response = GetAcceptShareInfoResponse::Ok(ShareEncryptionInfo {
         node_id: share_entity.node_id,
         wrapped_metadata_key: share_entity
             .shared_encryption_key
@@ -104,11 +105,11 @@ pub async fn get_share_info(
     (StatusCode::OK, Json(response))
 }
 
-pub async fn get_node_shared_with(
+pub async fn get_node_share_info(
     current_user: UserEntity,
     State(state): State<AppState>,
     Path(node_id): Path<NodeId>,
-) -> (StatusCode, Json<GetNodeSharedWithResponse>) {
+) -> (StatusCode, Json<GetNodeShareInfo>) {
     if !state
         .node_repository
         .has_access(node_id, current_user.id)
@@ -116,37 +117,53 @@ pub async fn get_node_shared_with(
     {
         return (
             StatusCode::NOT_FOUND,
-            Json(GetNodeSharedWithResponse::NotFound),
+            Json(GetNodeShareInfo::NotFound),
         );
     }
 
-    let shares_entity = state
+    let Some(share_entity) = state
         .share_repository
-        .get_shares_by_node_id(node_id)
-        .expect("db error");
+        .get_share_by_node_id_and_user_id(node_id, current_user.id)
+        .expect("db error") else {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetNodeShareInfo::NotFound),
+        );
+    };
 
-    let usernames = shares_entity
-        .iter()
-        .map(|share_entity| {
-            if share_entity.accepted_by.is_none() {
-                return "Not accepted".to_string();
-            }
-            let user = state
-                .user_repository
-                .get_user(share_entity.accepted_by.unwrap())
-                .expect("db error");
+    let Some(wrapped_key) = share_entity.accepted_encryption_key else {
+        error!("A user has accepted a share but there is not key in the db???????");
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetNodeShareInfo::NotFound),
+        );
+    };
 
-            if user.is_none() {
-                return "Deleted user".to_string();
-            }
-
-            user.unwrap().username.clone()
-        })
-        .collect::<Vec<String>>();
+    // let usernames = shares_entity
+    //     .iter()
+    //     .map(|share_entity| {
+    //         if share_entity.accepted_by.is_none() {
+    //             return "Not accepted".to_string();
+    //         }
+    //         let user = state
+    //             .user_repository
+    //             .get_user(share_entity.accepted_by.unwrap())
+    //             .expect("db error");
+    //
+    //         if user.is_none() {
+    //             return "Deleted user".to_string();
+    //         }
+    //
+    //         user.unwrap().username.clone()
+    //     })
+    //     .collect::<Vec<String>>();
 
     (
         StatusCode::OK,
-        Json(GetNodeSharedWithResponse::Ok(usernames)),
+        Json(GetNodeShareInfo::Ok(ShareEncryptionInfo {
+            node_id,
+            wrapped_metadata_key: wrapped_key,
+        })),
     )
 }
 

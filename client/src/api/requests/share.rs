@@ -4,7 +4,7 @@ use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
 use crabdrive_common::payloads::node::response::share::{
-    GetAcceptedSharedResponse, GetNodeSharedWithResponse, GetShareInfoResponse,
+    GetAcceptedSharedResponse, GetNodeShareInfo, GetAcceptShareInfoResponse,
     PostAcceptShareResponse, PostShareNodeResponse,
 };
 use crabdrive_common::routes;
@@ -19,14 +19,14 @@ pub async fn post_share_node(
     json_api_request(url, RequestMethod::POST, body).await
 }
 
-pub async fn get_share_info(share_id: ShareId) -> Result<GetShareInfoResponse> {
-    let url = routes::node::share::get_share_info(share_id);
+pub async fn get_share_info(share_id: ShareId) -> Result<GetAcceptShareInfoResponse> {
+    let url = routes::node::share::get_share_accept_info(share_id);
 
     json_api_request(url, RequestMethod::GET, ()).await
 }
 
-pub async fn get_node_shared_with(node_id: NodeId) -> Result<GetNodeSharedWithResponse> {
-    let url = routes::node::share::get_node_shared_with(node_id);
+pub async fn get_node_share_info(node_id: NodeId) -> Result<GetNodeShareInfo> {
+    let url = routes::node::share::get_node_share_info(node_id);
 
     json_api_request(url, RequestMethod::GET, ()).await
 }

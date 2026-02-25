@@ -416,3 +416,14 @@ pub fn get_all_shares_by_user(db_pool: &DbPool, user_id: UserId) -> Result<Vec<S
         Ok(shares)
     })
 }
+
+pub fn get_share_by_user_node(db_pool: &DbPool, node_id: NodeId, user_id: UserId) -> Result<Option<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = ShareDsl::Share
+            .filter(ShareDsl::node_id.eq(node_id)).filter(ShareDsl::accepted_by.eq(user_id))
+            .first::<ShareEntity>(conn)
+            .optional()?;
+        Ok(share)
+    })
+}

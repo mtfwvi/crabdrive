@@ -627,7 +627,6 @@ dependencies = [
  "leptos-use",
  "leptos_router",
  "pretty_assertions",
- "regex",
  "serde",
  "serde_json",
  "test-case",

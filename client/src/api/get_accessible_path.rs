@@ -1,8 +1,9 @@
-use crate::api::{get_accepted_nodes, requests};
+use crate::api::{get_shared_node_encryption_key, requests};
 use crate::model::node::DecryptedNode;
 use crate::utils::browser::SessionStorage;
-use crate::utils::encryption::auth::get_root_key;
+use crate::utils::encryption::auth::{get_master_key, get_root_key};
 use crate::utils::encryption::node::{decrypt_node, decrypt_node_path};
+use crate::utils::encryption::unwrap_key;
 use anyhow::{anyhow, Context, Result};
 use crabdrive_common::payloads::node::response::node::GetAccessiblePathResponse;
 use crabdrive_common::storage::NodeId;
@@ -34,12 +35,11 @@ pub async fn get_accessible_path(node_id: NodeId) -> Result<Vec<DecryptedNode>> 
         decrypt_node(first_node.clone(), key).await?
     } else {
         // assume the first node in the path is a shared node that the user has access to as it is not the root node
+        let wrapped_encryption_key = get_shared_node_encryption_key(first_node.id).await?;
+        let master_key = get_master_key()?;
+        let unwrapped_key = unwrap_key(&wrapped_encryption_key, &master_key).await?;
 
-        //TODO this is really inefficient and queries all the nodes although we just need the encryption key stored in the share entry
-        let shared_nodes = get_accepted_nodes().await?;
-        let first_node_decrypted = shared_nodes.iter().find(|node| node.id == first_node.id).ok_or(anyhow!("the user does not have access to this node"))?;
-
-        first_node_decrypted.clone()
+        decrypt_node(first_node.clone(), unwrapped_key).await?
     };
 
     decrypt_node_path(decrypted_first_node, encrypted_path).await

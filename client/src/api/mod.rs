@@ -7,7 +7,7 @@ mod get_accepted_nodes;
 mod get_accessible_path;
 mod get_children;
 mod get_root_node;
-mod get_shared_with;
+mod get_shared_node_encryption_key;
 mod get_trash_node;
 mod path_between_nodes;
 mod path_to_root;
@@ -30,6 +30,6 @@ pub use get_accepted_nodes::get_accepted_nodes;
 #[allow(unused_imports)]
 pub use get_accessible_path::get_accessible_path;
 #[allow(unused_imports)]
-pub use get_shared_with::get_shared_with;
+pub use get_shared_node_encryption_key::get_shared_node_encryption_key;
 #[allow(unused_imports)]
 pub use share_node::share_node;

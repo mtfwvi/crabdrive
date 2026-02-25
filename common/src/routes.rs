@@ -40,18 +40,18 @@ pub mod node {
             ROUTE_SHARE_NODE.replace("{id}", &id.to_string())
         }
 
-        // used to see who has access to the file
-        pub const ROUTE_NODE_SHARED_WITH: &str = "/api/node/{id}/shared_info/";
+        // get information about a node shared that was accepted 
+        pub const ROUTE_NODE_SHARE_INFO: &str = "/api/node/{id}/shared_info/";
         /// `/api/node/{id}/shared_info//`
-        pub fn get_node_shared_with(id: NodeId) -> String {
-            ROUTE_NODE_SHARED_WITH.replace("{id}", &id.to_string())
+        pub fn get_node_share_info(id: NodeId) -> String {
+            ROUTE_NODE_SHARE_INFO.replace("{id}", &id.to_string())
         }
 
         // used to get information about a share link to be accepted
-        pub const ROUTE_GET_SHARE_INFO: &str = "/api/shared/{share_id}/";
+        pub const ROUTE_GET_SHARE_ACCEPT_INFO: &str = "/api/shared/{share_id}/accept_info";
         /// `/api/shared/{share_id}/`
-        pub fn get_share_info(id: ShareId) -> String {
-            ROUTE_GET_SHARE_INFO.replace("{share_id}", &id.to_string())
+        pub fn get_share_accept_info(id: ShareId) -> String {
+            ROUTE_GET_SHARE_ACCEPT_INFO.replace("{share_id}", &id.to_string())
         }
 
         pub const ROUTE_ACCEPT_SHARE: &str = "/api/shared/{share_id}/accept";
