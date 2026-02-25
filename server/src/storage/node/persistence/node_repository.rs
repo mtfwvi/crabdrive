@@ -1,9 +1,6 @@
 use crate::db::connection::DbPool;
 use crate::db::operations;
-use crate::db::operations::{
-    delete_node, get_all_children, get_path_between_nodes, has_access, insert_node, select_node,
-    update_node,
-};
+use crate::db::operations::{delete_node, get_access_list, get_all_children, get_path_between_nodes, has_access, insert_node, select_node, update_node};
 
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use anyhow::{Context, Ok, Result};
@@ -51,6 +48,8 @@ pub(crate) trait NodeRepository {
     fn has_access(&self, id: NodeId, user: UserId) -> Result<bool>;
 
     fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>>;
+
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>>;
 }
 
 pub struct NodeState {
@@ -181,5 +180,9 @@ impl NodeRepository for NodeState {
     fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>> {
         // since there is no node with the nil uuid (hopefully) it returns the path from a root node to the node
         get_path_between_nodes(&self.db_pool, UUID::nil(), node)
+    }
+
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>> {
+        get_access_list(&self.db_pool, node)
     }
 }

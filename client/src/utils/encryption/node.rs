@@ -36,6 +36,7 @@ pub async fn decrypt_node(
         current_revision: node.current_revision,
         metadata: decrypted_metadata,
         encryption_key: metadata_key,
+        has_access: node.has_access,
     };
 
     Ok(decrypted_node)

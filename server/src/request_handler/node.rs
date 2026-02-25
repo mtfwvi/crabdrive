@@ -325,6 +325,7 @@ pub fn entity_to_encrypted_node(
         node_type: node.node_type,
         current_revision,
         encrypted_metadata: node.metadata,
+        has_access: state.node_repository.get_access_list(node.id)?
     })
 }
 pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {

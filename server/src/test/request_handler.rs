@@ -165,6 +165,7 @@ pub async fn test_folder() {
         node_type: NodeType::Folder,
         current_revision: None,
         encrypted_metadata: node_metadata,
+        has_access: vec![(self_id, TEST_USERNAME1.to_string())],
     });
 
     assert_eq!(expected_response, create_folder_response);

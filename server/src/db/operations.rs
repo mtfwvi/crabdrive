@@ -427,3 +427,27 @@ pub fn get_share_by_user_node(db_pool: &DbPool, node_id: NodeId, user_id: UserId
         Ok(share)
     })
 }
+
+pub fn get_access_list(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
+    let Some(node) = select_node(db_pool, node_id)? else {
+        return Ok(vec![])
+    };
+
+
+    let owner = select_user(db_pool, node.owner_id)?.ok_or(anyhow!("db constraints are not respected"))?;
+
+    let mut access_list = vec![(owner.id, owner.username)];
+
+    let share_entities = get_all_shares_by_node(db_pool, node_id)?;
+
+    for share_entity in share_entities {
+        let Some(user_id) = share_entity.accepted_by else {
+            continue;
+        };
+
+        let user = select_user(db_pool, user_id)?.ok_or(anyhow!("db constraints are not respected"))?;
+        access_list.push((user.id, user.username));
+    }
+
+    Ok(access_list)
+}

@@ -139,25 +139,6 @@ pub async fn get_node_share_info(
         );
     };
 
-    // let usernames = shares_entity
-    //     .iter()
-    //     .map(|share_entity| {
-    //         if share_entity.accepted_by.is_none() {
-    //             return "Not accepted".to_string();
-    //         }
-    //         let user = state
-    //             .user_repository
-    //             .get_user(share_entity.accepted_by.unwrap())
-    //             .expect("db error");
-    //
-    //         if user.is_none() {
-    //             return "Deleted user".to_string();
-    //         }
-    //
-    //         user.unwrap().username.clone()
-    //     })
-    //     .collect::<Vec<String>>();
-
     (
         StatusCode::OK,
         Json(GetNodeShareInfo::Ok(ShareEncryptionInfo {

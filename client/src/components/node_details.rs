@@ -58,6 +58,10 @@ pub(crate) fn NodeDetails(
                         name="Created"
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
+                    <NodeAttribute
+                        name="Access"
+                        value=Signal::derive(move || format!("{:?}", node.get().has_access))
+                    />
 
                     <Show
                         when=move || !is_trash.get()
