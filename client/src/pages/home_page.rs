@@ -1,6 +1,7 @@
 use crate::components::account_sider::AccountSider;
 use crate::components::content_frame::{ContentFrame, ContentViewType};
 use crate::utils::auth::is_authenticated;
+use crate::utils::browser::SessionStorage;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
@@ -45,7 +46,13 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
                 <ContentFrame content_type=Signal::derive(move || {
                     match view_type.get() {
                         HomePageType::Folder => {
-                            let node_id = node_id.get().unwrap();
+                            let node_id = node_id
+                                .get()
+                                .unwrap_or_else(|| {
+                                    let root_id: Option<NodeId> = SessionStorage::get("root_id")
+                                        .unwrap_or_default();
+                                    root_id.unwrap_or_else(NodeId::nil)
+                                });
                             ContentViewType::Folder(node_id)
                         }
                         HomePageType::Shared => ContentViewType::Shared,

@@ -1,6 +1,8 @@
 use crate::api::auth::{login, register};
 use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::utils::auth::is_valid_password;
+use crate::utils::browser::SessionStorage;
+use crabdrive_common::storage::NodeId;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
@@ -23,7 +25,11 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
     let navigate_to_register = navigate.clone();
     let navigate_to_register =
         Callback::new(move |_| navigate_to_register("/register", Default::default()));
-    let navigate_to_login = Callback::new(move |_| navigate("/login", Default::default()));
+    let navigate_to_login = navigate.clone();
+    let navigate_to_login = Callback::new(move |_| navigate_to_login("/login", Default::default()));
+    let navigate_to_node = Callback::new(move |node_id: NodeId| {
+        navigate(&format!("/{}", node_id), Default::default())
+    });
 
     let username_input_ref = ComponentRef::<InputRef>::new();
 
@@ -64,6 +70,8 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
                 .with_timeout(DEFAULT_TOAST_TIMEOUT),
         )
     };
+
+    let root_id: Option<NodeId> = SessionStorage::get("root_id").unwrap_or_default();
 
     let username = RwSignal::new(String::from(""));
     let password = RwSignal::new(String::from(""));
@@ -162,6 +170,22 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
                         LoginType::Login => "Login",
                     }}
                 </Text>
+
+                <Show when=move || root_id.is_some()>
+                    <Button
+                        appearance=ButtonAppearance::Primary
+                        class="mb-3"
+                        icon=icondata_mdi::MdiAccountCheck
+                        block=true
+                        on_click=move |e: web_sys::MouseEvent| {
+                            e.prevent_default();
+                            navigate_to_node.run(root_id.unwrap());
+                        }
+                    >
+                        "Already logged in! Go to files?"
+                    </Button>
+                </Show>
+
                 <Input
                     placeholder="Username"
                     comp_ref=username_input_ref
