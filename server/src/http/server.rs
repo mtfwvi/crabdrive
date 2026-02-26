@@ -8,7 +8,7 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::storage::vfs::backend::c3::C3;
-
+use crate::user::persistence::user_repository::UserRepository;
 use http_body_util::Full;
 use tempfile::TempDir;
 use tokio::sync::RwLock;
