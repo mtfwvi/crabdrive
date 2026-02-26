@@ -53,7 +53,7 @@ impl FromSql<Text, Sqlite> for UserType {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct UserKeys {
     pub public_key: Vec<u8>,
     pub private_key: EncryptionKey,
@@ -86,6 +86,22 @@ impl UserKeys {
             master_key: EncryptionKey::nil(),
             root_key: EncryptionKey::nil(),
             trash_key: EncryptionKey::nil(),
+        }
+    }
+
+    #[cfg(any(test, feature = "server-tests"))]
+    pub fn random() -> Self {
+        use rand::RngCore;
+
+        let mut public_key = vec![0u8; 32];
+        rand::rng().fill_bytes(&mut public_key);
+
+        Self {
+            public_key,
+            private_key: EncryptionKey::random(),
+            master_key: EncryptionKey::random(),
+            root_key: EncryptionKey::random(),
+            trash_key: EncryptionKey::random(),
         }
     }
 }

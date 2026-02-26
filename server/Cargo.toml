@@ -35,5 +35,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 axum-test = { workspace = true }
+crabdrive-common = { workspace = true, features = ["server", "server-tests"] }
 pretty_assertions = { workspace = true }
 rand = { workspace = true }
+sha2 = "0.10.9"

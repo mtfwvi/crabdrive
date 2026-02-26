@@ -38,6 +38,22 @@ impl EncryptedMetadata {
     pub fn new(data: Vec<u8>, iv: IV) -> Self {
         Self { data, iv }
     }
+
+    #[cfg(any(test, feature = "server-tests"))]
+    pub fn random() -> Self {
+        use rand::Rng;
+
+        let mut rng = rand::rng();
+        let len = rng.random_range(200..=6000);
+        let data: Vec<u8> = (0..len).map(|_| rng.random()).collect();
+        let mut iv_buf = [0u8; 12];
+        rng.fill(&mut iv_buf);
+
+        Self {
+            data,
+            iv: IV::new(iv_buf),
+        }
+    }
 }
 
 #[cfg(feature = "server")]

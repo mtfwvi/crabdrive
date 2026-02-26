@@ -1,23 +1,15 @@
-use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
-use crate::storage::node::persistence::node_repository::NodeState;
-use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::vfs::backend::Sfs;
-
 use http_body_util::Full;
 
-use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::UserState;
+
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
-use axum::middleware;
+use axum::{Router, middleware};
 use axum::response::Response;
 use bytes::Bytes;
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::any::Any;
 use std::io::ErrorKind;
-use std::sync::Arc;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
@@ -27,47 +19,25 @@ async fn graceful_shutdown(state: AppState) {
     shutdown(state).await;
 }
 
-async fn shutdown(_state: AppState) {
-    info!("Stopping server");
-}
-
-pub async fn start(config: AppConfig) -> Result<(), ()> {
-    let pool = create_pool(&config.db.path, config.db.pool_size);
-
-    let vfs = Sfs::new(&config.storage.dir);
-
-    let node_repository = NodeState::new(Arc::new(pool.clone()));
-    let revision_repository = RevisionService::new(Arc::new(pool.clone()));
-    let user_repository = UserState::new(Arc::new(pool.clone()));
-
-    let keys = Keys::new(&config.auth.jwt_secret);
-
-    let state = AppState::new(
-        config.clone(),
-        pool,
-        vfs,
-        node_repository,
-        revision_repository,
-        user_repository,
-        keys,
-    );
-
-    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    {
-        let mut conn = state.db_pool.get().unwrap();
-        conn.run_pending_migrations(MIGRATIONS).unwrap();
-    }
+pub fn create_app(config: AppConfig) -> (Router, AppState) {
+    let state = AppState::new(config);
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission
         .allow_origin(tower_http::cors::Any)
         .allow_methods(tower_http::cors::Any)
         .allow_headers([AUTHORIZATION, CONTENT_TYPE]);
 
-    let app = routes::routes()
+    let router = routes::routes()
         .with_state(state.clone())
         .layer(middleware::from_fn(logging_middleware))
         .layer(CatchPanicLayer::custom(handle_panic))
         .layer(cors);
+
+    (router, state)
+}
+
+pub async fn start(config: AppConfig) -> Result<(), ()> {
+    let (app, state) = create_app(config.clone());
 
     let addr = config.addr();
 
@@ -97,6 +67,10 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         .unwrap();
 
     Ok(())
+}
+
+async fn shutdown(_state: AppState) {
+    info!("Stopping server");
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
