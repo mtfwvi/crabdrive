@@ -15,9 +15,9 @@ pub(crate) fn FolderSelectionDialog(
     on_confirm: Callback<NodeId>,
     #[prop(into)] title: Signal<String>,
     #[prop(into)] confirm_label: String,
-    current_node: Signal<NodeId>,
+    start_folder: Signal<NodeId>,
 ) -> impl IntoView {
-    let currently_open = RwSignal::new_local(current_node.get_untracked());
+    let currently_open = RwSignal::new_local(start_folder.get());
     let path_res = LocalResource::new(move || async move {
         let node_id = currently_open.get();
         path_to_root(node_id).await.map_err(|err| err.to_string())
@@ -25,7 +25,7 @@ pub(crate) fn FolderSelectionDialog(
 
     Effect::new(move || {
         if open.get() {
-            currently_open.set(current_node.get())
+            currently_open.set(start_folder.get())
         }
     });
 
@@ -101,7 +101,7 @@ pub(crate) fn FolderSelectionDialog(
                             appearance=ButtonAppearance::Primary
                             on_click=move |_| handle_confirm()
                             disabled=Signal::derive(move || {
-                                current_node.get() == currently_open.get()
+                                start_folder.get() == currently_open.get()
                             })
                         >
                             {confirm_label}

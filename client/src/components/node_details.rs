@@ -11,7 +11,6 @@ use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 #[component]
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] parent: Signal<DecryptedNode>,
     #[prop(into)] content_type: Signal<ContentViewType>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
@@ -66,9 +65,17 @@ pub(crate) fn NodeDetails(
                                 <FileDownloadButton node />
                             </Show>
 
-                            <ModifyNodeMenu node parent on_modified />
+                            <ModifyNodeMenu node on_modified />
                         </Space>
                     </Show>
+
+                    <Show when=move || {
+                        content_type.get() == ContentViewType::Shared
+                            && node.get().node_type == NodeType::File
+                    }>
+                        <FileDownloadButton node />
+                    </Show>
+
                     <Show when=move || content_type.get() == ContentViewType::Trash>
                         <Space vertical=true class="mt-4">
                             <Button
@@ -82,9 +89,6 @@ pub(crate) fn NodeDetails(
                                 "Delete forever"
                             </Button>
                         </Space>
-                    </Show>
-                    <Show when=move || content_type.get() == ContentViewType::Shared>
-                        <Text>TODO</Text>
                     </Show>
                 </Space>
             </Space>

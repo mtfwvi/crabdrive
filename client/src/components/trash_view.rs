@@ -7,7 +7,7 @@ use crate::components::trash_empty_button::TrashEmptyButton;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{Divider, Icon, Space, Text};
+use thaw::{Divider, Icon, Space, SpaceAlign, Text};
 
 #[component]
 pub(crate) fn TrashView(
@@ -48,7 +48,7 @@ pub(crate) fn TrashView(
         >
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
-                    <Space>
+                    <Space align=SpaceAlign::Center>
                         <Icon class="!text-2xl mr-1" icon=icondata_mdi::MdiTrashCanOutline />
                         <Text class="!text-2xl !font-bold">"Trash"</Text>
                     </Space>
@@ -69,7 +69,6 @@ pub(crate) fn TrashView(
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    parent=trash_node
                     content_type=ContentViewType::Trash
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {

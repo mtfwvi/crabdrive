@@ -85,7 +85,6 @@ pub(crate) fn FolderView(
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    parent=current_node
                     content_type=Signal::derive(move || ContentViewType::Folder(
                         current_node.get().id,
                     ))

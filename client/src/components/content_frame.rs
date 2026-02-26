@@ -1,5 +1,7 @@
+use crate::components::accepted_nodes_provider::AcceptedNodesProvider;
 use crate::components::folder_view::FolderView;
 use crate::components::path_provider::PathProvider;
+use crate::components::shared_view::SharedView;
 use crate::components::trash_provider::TrashProvider;
 use crate::components::trash_view::TrashView;
 use crabdrive_common::storage::NodeId;
@@ -29,11 +31,15 @@ pub(crate) fn ContentFrame(#[prop(into)] content_type: Signal<ContentViewType>) 
                 <FolderView path request_path_refetch=refetch />
             </PathProvider>
         </Show>
-        // TODO: Add SharedView
         <Show when=move || content_type.get() == ContentViewType::Trash>
             <TrashProvider let:trash_node let:refetch>
                 <TrashView trash_node request_trash_node_refetch=refetch />
             </TrashProvider>
+        </Show>
+        <Show when=move || content_type.get() == ContentViewType::Shared>
+            <AcceptedNodesProvider let:accepted_nodes let:refetch>
+                <SharedView accepted_nodes request_accepted_nodes_refetch=refetch />
+            </AcceptedNodesProvider>
         </Show>
     }
 }
