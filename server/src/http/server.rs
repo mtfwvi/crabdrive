@@ -13,8 +13,8 @@ use http_body_util::Full;
 use tempfile::TempDir;
 use tokio::sync::RwLock;
 
-use crate::auth::secrets::Keys;
-use crate::user::persistence::user_repository::{UserRepository, UserState};
+use crate::user::auth::secrets::Keys;
+use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;

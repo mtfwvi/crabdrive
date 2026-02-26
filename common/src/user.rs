@@ -1,3 +1,4 @@
+use crate::encryption_key::EncryptionKey;
 use crate::uuid::UUID;
 
 use serde::{Deserialize, Serialize};
@@ -48,6 +49,43 @@ impl FromSql<Text, Sqlite> for UserType {
             "ADMIN" => Ok(UserType::Admin),
             "RESTRICTED" => Ok(UserType::Restricted),
             _ => Err(format!("Invalid UserType: {}", s).into()),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UserKeys {
+    pub public_key: Vec<u8>,
+    pub private_key: EncryptionKey,
+    pub master_key: EncryptionKey,
+    pub root_key: EncryptionKey,
+    pub trash_key: EncryptionKey,
+}
+
+impl UserKeys {
+    pub fn new(
+        public_key: Vec<u8>,
+        private_key: EncryptionKey,
+        master_key: EncryptionKey,
+        root_key: EncryptionKey,
+        trash_key: EncryptionKey,
+    ) -> Self {
+        Self {
+            public_key,
+            private_key,
+            master_key,
+            root_key,
+            trash_key,
+        }
+    }
+
+    pub fn nil() -> Self {
+        Self {
+            public_key: vec![],
+            private_key: EncryptionKey::nil(),
+            master_key: EncryptionKey::nil(),
+            root_key: EncryptionKey::nil(),
+            trash_key: EncryptionKey::nil(),
         }
     }
 }
