@@ -36,7 +36,6 @@ dashmap = "6.1.0"
 
 [dev-dependencies]
 axum-test = { workspace = true }
-criterion = { version = "0.8", features = ["async_tokio"] }
 pretty_assertions = { workspace = true }
 rand = { workspace = true }
 test-case = { workspace = true }
