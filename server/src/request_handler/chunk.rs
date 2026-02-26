@@ -35,6 +35,18 @@ pub async fn post_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
+    if node_entity.id != revision_entity.file_id {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
     let Some(mut owning_user) = state
         .user_repository
         .get_user(node_entity.owner_id)
@@ -48,11 +60,7 @@ pub async fn post_chunk(
         .add(DataAmount::new(size, DataUnit::Byte));
 
     if owning_user_new_storage_used > owning_user.storage_limit {
-        return (StatusCode::INSUFFICIENT_STORAGE, Json(()));
-    }
-
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
-        return (StatusCode::NOT_FOUND, Json(()));
+        return (StatusCode::PAYLOAD_TOO_LARGE, Json(()));
     }
 
     if revision_entity.chunk_count < chunk_index || chunk_index <= 0 {
@@ -109,7 +117,15 @@ pub async fn get_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return StatusCode::NOT_FOUND.into_response();
     }
 
