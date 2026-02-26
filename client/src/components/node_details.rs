@@ -3,7 +3,9 @@ use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
-use crate::utils::ui::{format_date_time, shorten_file_name};
+use crate::utils::ui::{
+    format_date_time, get_owner_username, get_share_acceptor_usernames, shorten_file_name,
+};
 use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
@@ -57,6 +59,17 @@ pub(crate) fn NodeDetails(
                     <NodeAttribute
                         name="Created"
                         value=Signal::derive(move || format_date_time(metadata.get().created))
+                    />
+                    <OptionalNodeAttribute
+                        name="Owner"
+                        value=Signal::derive(move || get_owner_username(node.get()))
+                    />
+                    <OptionalNodeAttribute
+                        name="Access"
+                        value=Signal::derive(move || {
+                            get_share_acceptor_usernames(node.get())
+                                .map(|usernames| usernames.join(", "))
+                        })
                     />
 
                     <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>

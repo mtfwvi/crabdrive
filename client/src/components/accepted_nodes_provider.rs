@@ -1,3 +1,4 @@
+use crate::api::get_accepted_nodes;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
@@ -8,9 +9,9 @@ where
     C: Fn(Signal<Vec<DecryptedNode>>, Callback<()>) -> V + Send + Sync + 'static,
     V: IntoView + 'static,
 {
-    let accepted_nodes_res = LocalResource::new(
-        move || async move { Ok(vec![]) }, // TODO: Add real data
-    );
+    let accepted_nodes_res = LocalResource::new(move || async move {
+        get_accepted_nodes().await.map_err(|err| err.to_string())
+    });
 
     let refetch = Callback::new(move |_| accepted_nodes_res.refetch());
 

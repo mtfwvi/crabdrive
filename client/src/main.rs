@@ -21,9 +21,9 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_web::{MakeWebConsoleWriter, performance_layer};
 
+use crate::pages::accept_share_page::AcceptSharePage;
 use crate::pages::home_page::HomePageType;
 use crate::pages::login_page::LoginType;
-use crate::pages::accept_share_page::AcceptSharePage;
 #[cfg(test)]
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 
