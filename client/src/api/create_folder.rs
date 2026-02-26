@@ -13,8 +13,6 @@ use tracing::debug_span;
 /// Returns the freshly created node.
 pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result<DecryptedNode> {
     let _guard = debug_span!("api::createFile").entered();
-    let token = utils::auth::get_token()
-        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
 
     let folder_metadata = NodeMetadata::V1(MetadataV1 {
         name: folder_name,
@@ -57,7 +55,7 @@ pub async fn create_folder(parent: DecryptedNode, folder_name: String) -> Result
         node_id: new_node_id,
     };
 
-    let response = api::requests::folder::post_create_folder(parent.id, request_body, &token)
+    let response = api::requests::folder::post_create_folder(parent.id, request_body)
         .await
         .inspect_err(|e| tracing::error!("Failed to post to create_folder: {}", e))?;
 

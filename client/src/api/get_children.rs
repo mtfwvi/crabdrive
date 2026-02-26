@@ -1,6 +1,6 @@
+use crate::api;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption::node::decrypt_node;
-use crate::{api, utils};
 use anyhow::{Context, Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetNodeChildrenResponse;
 use tracing::debug_span;
@@ -8,10 +8,8 @@ use tracing::debug_span;
 /// Get all children of a node
 pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>> {
     let _guard = debug_span!("api::getChildren").entered();
-    let token = utils::auth::get_token()
-        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
 
-    let response = api::requests::node::get_node_children(parent.id, &token)
+    let response = api::requests::node::get_node_children(parent.id)
         .await
         .context("Failed to get children")
         .inspect_err(|_| tracing::error!("Failed to get children of node"))?;

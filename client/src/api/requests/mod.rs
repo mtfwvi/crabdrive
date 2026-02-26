@@ -5,9 +5,8 @@ pub mod folder;
 pub mod node;
 pub mod share;
 
-use crate::constants::API_BASE_PATH;
-use crate::utils::auth::get_token;
-use crate::utils::browser::get_window;
+use crate::utils::auth::{get_token, go_to_login};
+use crate::utils::browser::{LocalStorage, get_origin, get_window};
 use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
 use anyhow::{Result, anyhow};
 use leptos::wasm_bindgen::JsValue;
@@ -15,7 +14,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::fmt::Display;
 use web_sys::js_sys::{JsString, Uint8Array};
-use web_sys::{Request, RequestInit, Response, Url};
+use web_sys::{Request, RequestInit, Response};
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
@@ -40,11 +39,9 @@ enum RequestBody {
 }
 
 async fn request(
-    url: String,
+    url_path: &str,
     method: RequestMethod,
     body: RequestBody,
-    //TODO maybe remove query parameters as they are never used
-    query_parameters: Vec<(String, String)>,
     auth_token: Option<&String>,
     use_api_base_path: bool,
 ) -> Result<Response> {
@@ -61,47 +58,34 @@ async fn request(
         }
     }
 
-    let url = wrap_js_err(Url::new(&if use_api_base_path {
-        let mut url_string = API_BASE_PATH.to_string();
-        url_string.push_str(&url);
-        url_string
+    let url = if use_api_base_path {
+        let mut api_base_path: Option<String> = LocalStorage::get("api_base_path")?;
+
+        // if the api_base_path is not set, use origin
+        let origin = get_origin()?;
+
+        let url = api_base_path.get_or_insert(origin);
+        url.push_str(url_path);
+
+        url.to_string()
     } else {
-        url
-    }))?;
+        url_path.to_string()
+    };
 
-    for (key, value) in query_parameters {
-        url.search_params().append(&key, &value);
-    }
-
-    let request = wrap_js_err(Request::new_with_str_and_init(
-        &url.to_string().as_string().unwrap(),
-        &opts,
-    ))?;
+    let request = wrap_js_err(Request::new_with_str_and_init(&url, &opts))?;
 
     match &body {
         RequestBody::Empty => {}
         RequestBody::Json(_) => {
-            if let Err(js_error) = request.headers().set("Content-Type", "application/json") {
-                return Err(anyhow!("could not add header: {:?}", js_error));
-            };
+            add_header(&request, ("Content-Type", "application/json"))?;
         }
         RequestBody::Bytes(_) => {
-            if let Err(js_error) = request
-                .headers()
-                .set("Content-Type", "application/octet-stream")
-            {
-                return Err(anyhow!("could not add header: {:?}", js_error));
-            };
+            add_header(&request, ("Content-Type", "application/octet-stream"))?;
         }
     }
 
     if let Some(auth_token) = auth_token {
-        if let Err(js_error) = request
-            .headers()
-            .set("authorization", &format!("Bearer {auth_token}"))
-        {
-            return Err(anyhow!("could not add header: {:?}", js_error));
-        };
+        add_header(&request, ("authorization", &format!("Bearer {auth_token}")))?;
     }
 
     // obtain reference to the browser window object to use the request api
@@ -112,14 +96,20 @@ async fn request(
         future_from_js_promise(window.fetch_with_request(&request)).await?;
     let response: Response = dyn_into(response_value)?;
 
-    //TODO maybe here we should redirect to the login page in case of a 403
-
     Ok(response)
+}
+
+fn add_header(request: &Request, header: (&str, &str)) -> Result<()> {
+    if let Err(js_error) = request.headers().set(header.0, header.1) {
+        Err(anyhow!("could not add header: {:?}", js_error))
+    } else {
+        Ok(())
+    }
 }
 
 //TODO use this for all api requests
 async fn json_api_request<BodyT, ResponseT>(
-    url: String,
+    url: &str,
     request_method: RequestMethod,
     body: BodyT,
 ) -> Result<ResponseT>
@@ -138,7 +128,14 @@ where
         RequestBody::Json(json)
     };
 
-    let response: Response = request(url, request_method, body, vec![], token, true).await?;
+    let response: Response = request(url, request_method, body, token, true).await?;
+
+    // if the server returns Unauthorized, store the current url in the storage to be able to redirect to it on login
+    if response.status() == 401 {
+        go_to_login()?;
+    } else {
+        LocalStorage::unset("redirect_url")?;
+    }
 
     let response_string = string_from_response(response).await?;
 
@@ -189,19 +186,9 @@ mod test {
         let url = "https://jsonplaceholder.typicode.com/posts";
         let method = RequestMethod::GET;
         let body = RequestBody::Empty;
-        let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(
-            url.to_string(),
-            method,
-            body,
-            query_parameters,
-            auth_token,
-            false,
-        )
-        .await
-        .unwrap();
+        let response = request(url, method, body, auth_token, false).await.unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();
@@ -221,19 +208,9 @@ mod test {
         let url = "https://jsonplaceholder.typicode.com/posts/1";
         let method = RequestMethod::PUT;
         let body = RequestBody::Json(serde_json::to_string(&example_post).unwrap());
-        let query_parameters = vec![];
         let auth_token = None;
 
-        let response = request(
-            url.to_string(),
-            method,
-            body,
-            query_parameters,
-            auth_token,
-            false,
-        )
-        .await
-        .unwrap();
+        let response = request(url, method, body, auth_token, false).await.unwrap();
         assert_eq!(response.status(), 200);
 
         let response_text = string_from_response(response).await.unwrap();
