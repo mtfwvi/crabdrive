@@ -68,8 +68,8 @@ impl UserRepository for UserState {
             username: username.to_string(),
             password_hash: password_hash.to_string(),
             storage_limit,
-            // Currently unused. Maybe useful for admin routes.
             storage_used: da!(0 B),
+            // Currently unused. Maybe useful for admin routes.
             encryption_uninitialized: false,
             master_key: keys.master_key,
             private_key: keys.private_key,
