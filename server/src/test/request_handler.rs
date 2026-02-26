@@ -8,7 +8,7 @@ use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::UserState;
+use crate::user::persistence::user_repository::{UserRepository, UserState};
 use axum::http::StatusCode;
 use axum::{Router, middleware};
 use axum_test::TestServer;
