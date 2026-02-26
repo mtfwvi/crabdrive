@@ -56,6 +56,7 @@ pub(crate) fn TrashView(
 
                     <NodeList
                         nodes=children
+                        no_nodes_message="Trash is empty"
                         on_node_click=toggle_selection
                         on_folder_dblclick=navigate_to_node
                         folders_only=false

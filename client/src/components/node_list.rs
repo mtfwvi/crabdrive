@@ -12,6 +12,7 @@ use thaw::{
 pub(crate) fn NodeList(
     #[prop(into)] nodes: Signal<Vec<DecryptedNode>>,
     #[prop(into)] folders_only: Signal<bool>,
+    #[prop(optional, default = "Folder is empty")] no_nodes_message: &'static str,
     on_node_click: Callback<DecryptedNode>,
     on_folder_dblclick: Callback<NodeId>,
 ) -> impl IntoView {
@@ -64,7 +65,7 @@ pub(crate) fn NodeList(
     };
 
     view! {
-        <Show when=move || !is_empty() fallback=|| view! { <Text>"Folder is empty"</Text> }>
+        <Show when=move || !is_empty() fallback=move || view! { <Text>{no_nodes_message}</Text> }>
             <Flex vertical=true gap=FlexGap::Large justify=FlexJustify::FlexStart>
                 <For
                     each=move || {

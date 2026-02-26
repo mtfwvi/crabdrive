@@ -38,6 +38,7 @@ pub(crate) fn SharedView(
 
             <NodeList
                 nodes=accepted_nodes
+                no_nodes_message="No shares accepted so far"
                 on_node_click=toggle_selection
                 on_folder_dblclick=navigate_to_node
                 folders_only=false
