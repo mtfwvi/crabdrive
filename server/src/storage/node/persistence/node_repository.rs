@@ -1,7 +1,7 @@
 use crate::db::connection::DbPool;
 use crate::db::operations;
 use crate::db::operations::{
-    delete_node, get_access_list, get_all_children, get_path_between_nodes, has_access,
+    delete_node, get_access_list_parent_tree, get_all_children, get_path_between_nodes, has_access,
     insert_node, select_node, update_node,
 };
 
@@ -186,6 +186,6 @@ impl NodeRepository for NodeState {
     }
 
     fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>> {
-        get_access_list(&self.db_pool, node)
+        get_access_list_parent_tree(&self.db_pool, node)
     }
 }

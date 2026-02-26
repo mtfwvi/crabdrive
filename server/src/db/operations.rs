@@ -25,6 +25,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
     sql_query,
 };
+use std::collections::HashSet;
 
 // User Ops
 
@@ -431,7 +432,26 @@ pub fn get_share_by_node_id_and_accepted_user_id(
     })
 }
 
-pub fn get_access_list(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
+pub fn get_access_list_parent_tree(
+    db_pool: &DbPool,
+    node_id: NodeId,
+) -> Result<Vec<(UserId, String)>> {
+    let path_to_root = get_path_between_nodes(db_pool, NodeId::nil(), node_id)?;
+
+    let mut access_list = HashSet::new();
+
+    for node in path_to_root {
+        let node_access_list = get_access_list_node(db_pool, node.id)?;
+
+        for entry in node_access_list {
+            access_list.insert(entry);
+        }
+    }
+
+    Ok(access_list.into_iter().collect())
+}
+
+fn get_access_list_node(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
     let Some(node) = select_node(db_pool, node_id)? else {
         return Ok(vec![]);
     };
