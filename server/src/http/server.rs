@@ -7,7 +7,7 @@ use crate::storage::vfs::backend::Sfs;
 
 use http_body_util::Full;
 
-use crate::auth::secrets::Keys;
+use crate::user::auth::secrets::Keys;
 use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;

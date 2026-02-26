@@ -1,10 +1,10 @@
-use crate::auth::secrets::Keys;
 use crate::db::connection::create_pool;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState};
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::backend::Sfs;
+use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
 use axum::{Router, middleware};
@@ -17,7 +17,7 @@ use crabdrive_common::iv::IV;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
 use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
 use crabdrive_common::payloads::auth::response::info::GetSelfInfoResponse;
-use crabdrive_common::payloads::auth::response::login::{PostLoginResponse, UserKeys};
+use crabdrive_common::payloads::auth::response::login::PostLoginResponse;
 use crabdrive_common::payloads::auth::response::register::{
     PostRegisterResponse, RegisterConflictReason,
 };
@@ -33,6 +33,7 @@ use crabdrive_common::payloads::node::response::node::{
 };
 use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
+use crabdrive_common::user::UserKeys;
 use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
 use std::sync::Arc;

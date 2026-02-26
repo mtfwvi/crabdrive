@@ -35,8 +35,8 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
 
     let login_response = match response {
         PostLoginResponse::Ok(login_success) => Ok(login_success),
-        PostLoginResponse::Unauthorized(login_denied_reason) => {
-            debug!("Login denied: {:?}", login_denied_reason);
+        PostLoginResponse::Unauthorized(_) => {
+            debug!("Login denied (Invalid Username or Password)");
             Err(anyhow!("Invalid credentials"))
         }
     }?;
