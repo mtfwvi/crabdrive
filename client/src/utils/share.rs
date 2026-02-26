@@ -51,7 +51,7 @@ mod test {
 
     #[test]
     fn test_parse_url() {
-        let url = "http://localhost:2722/share/99202218-bee9-4c9d-b3b7-5bfb6ccc7862#AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=";
+        let url = "http://localhost:2722/shared/99202218-bee9-4c9d-b3b7-5bfb6ccc7862#AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=";
         let expected_encryption_key =
             decode_key("AW5TSC+Dp00T92iZsie4UjByeXg/vQPqTxztE4mo3es=").unwrap();
         let expected_share_id =
