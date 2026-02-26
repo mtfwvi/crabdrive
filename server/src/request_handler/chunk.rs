@@ -35,17 +35,21 @@ pub async fn post_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    let Some(mut owning_user) = state.user_repository.get_user(node_entity.owner_id).expect("db error") else {
+    let Some(mut owning_user) = state
+        .user_repository
+        .get_user(node_entity.owner_id)
+        .expect("db error")
+    else {
         panic!("db constraints not respected");
     };
 
-    let owning_user_new_storage_used = owning_user.storage_used
+    let owning_user_new_storage_used = owning_user
+        .storage_used
         .add(DataAmount::new(size, DataUnit::Byte));
 
     if owning_user_new_storage_used > owning_user.storage_limit {
         return (StatusCode::INSUFFICIENT_STORAGE, Json(()));
     }
-
 
     if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
         return (StatusCode::NOT_FOUND, Json(()));
