@@ -44,4 +44,18 @@ diesel::table! {
     }
 }
 
+diesel::table! {
+    #[allow(non_snake_case)]
+    Share(id) {
+        id -> Text,
+        node_id -> Text,
+        shared_by -> Text,
+        accepted_by -> Nullable<Text>,
+        time_shared -> Timestamp,
+        time_accepted -> Nullable<Timestamp>,
+        shared_encryption_key -> Nullable<Binary>,
+        accepted_encryption_key -> Nullable<Binary>
+    }
+}
+
 diesel::allow_tables_to_appear_in_same_query!(Revision, Node, User,);

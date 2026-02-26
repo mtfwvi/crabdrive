@@ -16,7 +16,7 @@ use thaw::{
 pub(crate) fn HomePage() -> impl IntoView {
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
         let parameter = use_params_map().get().get("id")?;
-        UUID::parse_string(parameter)
+        UUID::parse_string(&parameter)
     });
 
     let navigate = use_navigate();
