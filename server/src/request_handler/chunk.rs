@@ -12,7 +12,7 @@ use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use std::ops::Add;
 
 pub async fn post_chunk(
-    mut current_user: UserEntity,
+    current_user: UserEntity,
     State(state): State<AppState>,
     Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
     chunk: axum::body::Bytes,
@@ -34,6 +34,18 @@ pub async fn post_chunk(
     }
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
+
+    let Some(mut owning_user) = state.user_repository.get_user(node_entity.owner_id).expect("db error") else {
+        panic!("db constraints not respected");
+    };
+
+    let owning_user_new_storage_used = owning_user.storage_used
+        .add(DataAmount::new(size, DataUnit::Byte));
+
+    if owning_user_new_storage_used > owning_user.storage_limit {
+        return (StatusCode::INSUFFICIENT_STORAGE, Json(()));
+    }
+
 
     if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
         return (StatusCode::NOT_FOUND, Json(()));
@@ -62,12 +74,10 @@ pub async fn post_chunk(
 
     match result {
         Ok(_) => {
-            current_user.storage_used = current_user
-                .storage_used
-                .add(DataAmount::new(size, DataUnit::Byte));
+            owning_user.storage_used = owning_user_new_storage_used;
             state
                 .user_repository
-                .update_user(current_user)
+                .update_user(owning_user)
                 .expect("db error");
 
             (StatusCode::CREATED, Json(()))
