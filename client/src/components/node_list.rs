@@ -4,8 +4,8 @@ use crate::utils::ui::get_node_icon;
 use crabdrive_common::storage::{NodeId, NodeType};
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, ButtonSize, Flex, FlexGap, FlexJustify, Text, Toast, ToastIntent,
-    ToastOptions, ToastTitle, ToasterInjection,
+    Button, ButtonAppearance, ButtonSize, Flex, FlexGap, FlexJustify, Icon, Space, Text, Toast,
+    ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
 };
 
 #[component]
@@ -92,6 +92,9 @@ pub(crate) fn NodeList(
                                             metadata.name
                                         })
                                         node_type=Signal::derive(move || node.get().node_type)
+                                        is_shared=Signal::derive(move || {
+                                            node.get().has_access.len() > 1
+                                        })
                                         on:click=move |_| on_node_click.run(node.get())
                                         on:dblclick=move |e| {
                                             e.prevent_default();
@@ -112,6 +115,7 @@ pub(crate) fn NodeList(
 fn NodeListItem(
     #[prop(into)] name: Signal<String>,
     #[prop(into)] node_type: Signal<NodeType>,
+    #[prop(into)] is_shared: Signal<bool>,
 ) -> impl IntoView {
     view! {
         <Button
@@ -126,7 +130,12 @@ fn NodeListItem(
             })
             class="w-full flex !justify-start !px-4 !py-1"
         >
-            <Text>{name}</Text>
+            <Space>
+                <Text>{name}</Text>
+                <Show when=move || is_shared.get()>
+                    <Icon icon=icondata_mdi::MdiAccountCircleOutline />
+                </Show>
+            </Space>
         </Button>
     }
 }

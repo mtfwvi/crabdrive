@@ -12,6 +12,7 @@ mod folder_view;
 mod modify_node_menu;
 mod node_details;
 mod node_list;
+mod node_share_button;
 mod path_breadcrumb;
 mod path_provider;
 mod shared_view;

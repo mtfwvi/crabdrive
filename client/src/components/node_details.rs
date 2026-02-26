@@ -1,6 +1,7 @@
 use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
+use crate::components::node_share_button::NodeShareButton;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{
@@ -65,7 +66,7 @@ pub(crate) fn NodeDetails(
                         value=Signal::derive(move || get_owner_username(node.get()))
                     />
                     <OptionalNodeAttribute
-                        name="Access"
+                        name="Shared with"
                         value=Signal::derive(move || {
                             get_share_acceptor_usernames(node.get())
                                 .map(|usernames| usernames.join(", "))
@@ -79,6 +80,8 @@ pub(crate) fn NodeDetails(
                             </Show>
 
                             <ModifyNodeMenu node on_modified />
+
+                            <NodeShareButton node />
                         </Space>
                     </Show>
 

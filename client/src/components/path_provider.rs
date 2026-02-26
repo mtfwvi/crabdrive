@@ -1,4 +1,4 @@
-use crate::api::path_to_root;
+use crate::api::get_accessible_path;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::model::node::DecryptedNode;
 use crabdrive_common::storage::NodeId;
@@ -14,7 +14,7 @@ where
     V: IntoView + 'static,
 {
     let path_res = LocalResource::new(move || async move {
-        path_to_root(node_id.get())
+        get_accessible_path(node_id.get())
             .await
             .map_err(|err| err.to_string())
     });
