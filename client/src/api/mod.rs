@@ -4,6 +4,7 @@ mod create_folder;
 mod download_file;
 mod get_children;
 mod get_root_node;
+mod get_self_info;
 mod get_trash_node;
 mod path_between_nodes;
 mod path_to_root;
@@ -19,3 +20,6 @@ pub use get_trash_node::get_trash_node;
 pub use path_between_nodes::path_between_nodes;
 pub use path_to_root::path_to_root;
 pub use rename_node::rename_node;
+
+#[allow(unused_imports)]
+pub use get_self_info::get_self_info;

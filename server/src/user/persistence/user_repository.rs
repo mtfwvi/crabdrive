@@ -11,7 +11,7 @@ use argon2::{Argon2, PasswordHasher};
 use argon2::{PasswordHash, PasswordVerifier};
 use chrono::Utc;
 use crabdrive_common::user::{UserKeys, UserType};
-use crabdrive_common::{data::DataAmount, uuid::UUID};
+use crabdrive_common::{da, data::DataAmount, uuid::UUID};
 use std::sync::Arc;
 use tracing::instrument;
 
@@ -69,6 +69,7 @@ impl UserRepository for UserState {
             password_hash: password_hash.to_string(),
             storage_limit,
             // Currently unused. Maybe useful for admin routes.
+            storage_used: da!(0 B),
             encryption_uninitialized: false,
             master_key: keys.master_key,
             private_key: keys.private_key,

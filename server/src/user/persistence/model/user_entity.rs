@@ -18,6 +18,7 @@ pub(crate) struct UserEntity {
     pub username: String,
     pub password_hash: String,
     pub storage_limit: DataAmount,
+    pub storage_used: DataAmount,
     pub encryption_uninitialized: bool, // default: false
 
     // encrypted with key derived from user password

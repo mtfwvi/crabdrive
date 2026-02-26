@@ -7,6 +7,7 @@ diesel::table! {
         username -> Text,
         password_hash -> Text,
         storage_limit -> BigInt,
+        storage_used -> BigInt,
         encryption_uninitialized -> Bool,
         master_key -> Binary,
         private_key -> Binary,

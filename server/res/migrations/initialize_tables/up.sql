@@ -6,6 +6,7 @@ CREATE TABLE User (
     username TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     storage_limit INTEGER NOT NULL,
+    storage_used INTEGER NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     encryption_uninitialized INTEGER NOT NULL DEFAULT 0,
     master_key BLOB NOT NULL,

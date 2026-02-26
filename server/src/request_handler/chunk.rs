@@ -7,14 +7,18 @@ use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
+use crabdrive_common::data::{DataAmount, DataUnit};
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
+use std::ops::Add;
 
 pub async fn post_chunk(
-    current_user: UserEntity,
+    mut current_user: UserEntity,
     State(state): State<AppState>,
     Path((node_id, revision_id, chunk_index)): Path<(NodeId, RevisionId, ChunkIndex)>,
     chunk: axum::body::Bytes,
 ) -> (StatusCode, Json<()>) {
+    let size = chunk.len() as f64;
+
     let file_chunk = FileChunk {
         index: chunk_index,
         data: chunk,
@@ -57,7 +61,17 @@ pub async fn post_chunk(
         .await;
 
     match result {
-        Ok(_) => (StatusCode::CREATED, Json(())),
+        Ok(_) => {
+            current_user.storage_used = current_user
+                .storage_used
+                .add(DataAmount::new(size, DataUnit::Byte));
+            state
+                .user_repository
+                .update_user(current_user)
+                .expect("db error");
+
+            (StatusCode::CREATED, Json(()))
+        }
         Err(FileSystemError::AlreadyCommitted) => (StatusCode::BAD_REQUEST, Json(())),
         Err(FileSystemError::NotFound) => (StatusCode::NOT_FOUND, Json(())),
         Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),

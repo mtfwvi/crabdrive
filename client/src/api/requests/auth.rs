@@ -1,10 +1,12 @@
+use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+use crate::utils::auth::get_token;
 use anyhow::Result;
+use crabdrive_common::payloads::auth::response::info::SelfUserInfo;
 use crabdrive_common::payloads::auth::{
     request::{login::PostLoginRequest, register::PostRegisterRequest},
     response::{login::PostLoginResponse, register::PostRegisterResponse},
 };
-
-use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+use crabdrive_common::routes;
 
 pub async fn post_login(body: PostLoginRequest) -> Result<PostLoginResponse> {
     let url = crabdrive_common::routes::auth::login();
@@ -45,4 +47,24 @@ pub async fn post_logout() -> Result<()> {
 
     // TODO: Do anything with response?
     Ok(())
+}
+
+pub async fn get_self_user_info() -> Result<SelfUserInfo> {
+    let url = routes::auth::info();
+    let token = get_token()?;
+
+    let response = request(
+        url,
+        RequestMethod::GET,
+        RequestBody::Empty,
+        vec![],
+        Some(&token),
+        true,
+    )
+    .await?;
+
+    let response_string = string_from_response(response).await?;
+    let response_object = serde_json::from_str(&response_string)?;
+
+    Ok(response_object)
 }
