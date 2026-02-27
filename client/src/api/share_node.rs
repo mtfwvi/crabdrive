@@ -25,7 +25,7 @@ pub async fn share_node(node: &DecryptedNode) -> Result<String> {
         }
         PostShareNodeResponse::Ok(share_id) => {
             let url = create_share_url(&share_id, &encryption_key);
-            Ok(url)
+            Ok(url?)
         }
         PostShareNodeResponse::BadRequest(error) => {
             Err(anyhow::anyhow!("Server returned BadRequest: {:?}", error))

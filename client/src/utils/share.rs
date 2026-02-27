@@ -1,5 +1,5 @@
-use crate::constants::APPLICATION_BASE_PATH;
 use crate::model::encryption::RawEncryptionKey;
+use crate::utils::browser::get_origin;
 use crate::utils::encryption::{decode_key, encode_key};
 use anyhow::Result;
 use anyhow::anyhow;
@@ -24,17 +24,19 @@ pub fn parse_share_url(url: &str) -> Result<(ShareId, RawEncryptionKey)> {
     Ok((share_id, wrapping_encryption_key))
 }
 
-pub fn create_share_url(share_id: &ShareId, wrapped_key: &RawEncryptionKey) -> String {
+pub fn create_share_url(share_id: &ShareId, wrapped_key: &RawEncryptionKey) -> Result<String> {
     let encoded_key = encode_key(wrapped_key);
-    let url = format!("{APPLICATION_BASE_PATH}/shared/{share_id}#{encoded_key}");
-    url
+    let origin = get_origin()?;
+    let url = format!("{origin}/shared/{share_id}#{encoded_key}");
+    Ok(url)
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    use wasm_bindgen_test::wasm_bindgen_test;
 
-    #[test]
+    #[wasm_bindgen_test]
     fn test_create_parse_share_url() {
         let key = [
             1, 2, 5, 87, 58, 5, 4, 7, 8, 56, 64, 85, 63, 84, 53, 74, 7, 4, 2, 6, 7, 8, 9, 7, 56, 4,
@@ -42,7 +44,7 @@ mod test {
         ];
         let share_id = ShareId::random();
 
-        let url = create_share_url(&share_id, &key);
+        let url = create_share_url(&share_id, &key).unwrap();
         let parsed = parse_share_url(&url).unwrap();
 
         assert_eq!(parsed.0, share_id);

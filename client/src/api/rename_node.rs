@@ -1,6 +1,5 @@
 use crate::api::requests::node::patch_node;
 use crate::model::node::{DecryptedNode, MetadataV1, NodeMetadata};
-use crate::utils;
 use crate::utils::encryption::node::encrypt_metadata;
 use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::request::node::PatchNodeRequest;
@@ -13,8 +12,6 @@ pub async fn rename_node(
     new_name: String,
 ) -> Result<()> {
     let _guard = debug_span!("api::renameNode").entered();
-    let token = utils::auth::get_token()
-        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
 
     let metadata_key = match &parent.metadata {
         NodeMetadata::V1(metadata) => metadata.children_key.iter(),
@@ -38,7 +35,7 @@ pub async fn rename_node(
         node_change_count: node.change_count,
     };
 
-    let response = patch_node(node.id, request_body, &token)
+    let response = patch_node(node.id, request_body)
         .await
         .inspect_err(|e| tracing::error!("Failed to patch to rename node: {}", e))?;
 

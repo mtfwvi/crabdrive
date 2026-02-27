@@ -1,6 +1,5 @@
 use crate::api::requests::node::get_path_between_nodes;
 use crate::model::node::DecryptedNode;
-use crate::utils;
 use crate::utils::encryption::node::decrypt_node_path;
 use anyhow::{Result, anyhow};
 use crabdrive_common::payloads::node::response::node::GetPathBetweenNodesResponse;
@@ -12,10 +11,8 @@ pub async fn path_between_nodes(
     to_node_id: NodeId,
 ) -> Result<Vec<DecryptedNode>> {
     let _guard = debug_span!("api::pathBetweenNodes").entered();
-    let token = utils::auth::get_token()
-        .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
 
-    let path_response = get_path_between_nodes(from_node.id, to_node_id, &token)
+    let path_response = get_path_between_nodes(from_node.id, to_node_id)
         .await
         .inspect_err(|e| tracing::error!("Failed to get path between nodes: {}", e))?;
 
