@@ -1,4 +1,3 @@
-use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
 use crate::components::file_history_button::FileHistoryButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
@@ -12,10 +11,18 @@ use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
+#[derive(PartialEq, Clone, Copy, Debug)]
+pub(crate) enum DetailsViewType {
+    Folder,
+    Shared,
+    Trash,
+    ReadOnly,
+}
+
 #[component]
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] content_type: Signal<ContentViewType>,
+    #[prop(into)] content_type: Signal<DetailsViewType>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -74,7 +81,7 @@ pub(crate) fn NodeDetails(
                         })
                     />
 
-                    <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
+                    <Show when=move || content_type.get() == DetailsViewType::Folder>
                         <Space vertical=true class="mt-4">
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileDownloadButton node />
@@ -91,7 +98,7 @@ pub(crate) fn NodeDetails(
                     </Show>
 
                     <Show when=move || {
-                        content_type.get() == ContentViewType::Shared
+                        content_type.get() == DetailsViewType::Shared
                             && node.get().node_type == NodeType::File
                     }>
                         <Space vertical=true class="mt-4">
@@ -100,7 +107,7 @@ pub(crate) fn NodeDetails(
                         </Space>
                     </Show>
 
-                    <Show when=move || content_type.get() == ContentViewType::Trash>
+                    <Show when=move || content_type.get() == DetailsViewType::Trash>
                         <Space vertical=true class="mt-4">
                             <Button
                                 block=true

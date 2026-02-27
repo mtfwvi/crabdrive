@@ -1,11 +1,11 @@
 use crate::api::get_children;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
-use crate::components::content_frame::ContentViewType;
 use crate::components::folder_bottom_bar::FolderBottomBar;
-use crate::components::node_details::NodeDetails;
+use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::model::node::DecryptedNode;
+use crate::utils::browser::SessionStorage;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Space};
@@ -24,6 +24,12 @@ pub(crate) fn FolderView(
         path.get()
             .last()
             .expect("Failed to get current node due to empty path")
+            .clone()
+    });
+    let path_root_node = Signal::derive(move || {
+        path.get()
+            .first()
+            .expect("Failed to get path root due to empty path")
             .clone()
     });
     let children_res = LocalResource::new(move || {
@@ -85,9 +91,14 @@ pub(crate) fn FolderView(
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    content_type=Signal::derive(move || ContentViewType::Folder(
-                        current_node.get().id,
-                    ))
+                    content_type=Signal::derive(move || {
+                        let trash_id = SessionStorage::get("trash_id").unwrap_or_default();
+                        if trash_id == Some(path_root_node.get().id) {
+                            DetailsViewType::ReadOnly
+                        } else {
+                            DetailsViewType::Folder
+                        }
+                    })
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();

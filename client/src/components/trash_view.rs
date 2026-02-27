@@ -1,7 +1,6 @@
 use crate::api::get_children;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
-use crate::components::content_frame::ContentViewType;
-use crate::components::node_details::NodeDetails;
+use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
 use crate::components::trash_empty_button::TrashEmptyButton;
 use crate::model::node::DecryptedNode;
@@ -70,7 +69,7 @@ pub(crate) fn TrashView(
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    content_type=ContentViewType::Trash
+                    content_type=DetailsViewType::Trash
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();
