@@ -101,51 +101,6 @@ fn decode_jwt(claims: &str, decoding_key: &DecodingKey) -> jsonwebtoken::errors:
     Ok(token_data.claims)
 }
 
-#[cfg(test)]
-mod test {
-    use crate::user::SessionId;
-
-    use super::{create_jwt, decode_jwt};
-    use crabdrive_common::user::UserId;
-    use jsonwebtoken::errors::ErrorKind::ExpiredSignature;
-    use jsonwebtoken::{DecodingKey, EncodingKey};
-
-    #[test]
-    fn test_bearer_token() {
-        let secret = "CLASSIFIED";
-
-        let encoding_key = EncodingKey::from_secret(secret.as_bytes());
-        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
-
-        let id = UserId::random();
-        let session_id = SessionId::random();
-        let token = create_jwt(id, session_id, 60, &encoding_key).unwrap();
-
-        let claims = decode_jwt(&token, &decoding_key).unwrap();
-
-        assert_eq!(claims.user_id, id);
-        assert_eq!(claims.session_id, session_id);
-    }
-
-    #[test]
-    fn test_bearer_token_expiry() {
-        let secret = "CLASSIFIED";
-
-        let encoding_key = EncodingKey::from_secret(secret.as_bytes());
-        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
-
-        let id = UserId::random();
-
-        // default settings allow for 60 seconds of "leeway" so our expiry must be at least 60 seconds in the past
-        let token = create_jwt(id, SessionId::nil(), -61, &encoding_key).unwrap();
-
-        let claims_result_error: jsonwebtoken::errors::Error =
-            decode_jwt(&token, &decoding_key).err().unwrap();
-
-        assert_eq!(ExpiredSignature, claims_result_error.kind().clone());
-    }
-}
-
 fn create_new_refresh_token(
     user_id: UserId,
     session_id: Option<SessionId>,
@@ -353,5 +308,50 @@ impl UserRepository for UserState {
 
             Ok::<(), anyhow::Error>(())
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::user::SessionId;
+
+    use super::{create_jwt, decode_jwt};
+    use crabdrive_common::user::UserId;
+    use jsonwebtoken::errors::ErrorKind::ExpiredSignature;
+    use jsonwebtoken::{DecodingKey, EncodingKey};
+
+    #[test]
+    fn test_bearer_token() {
+        let secret = "CLASSIFIED";
+
+        let encoding_key = EncodingKey::from_secret(secret.as_bytes());
+        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
+
+        let id = UserId::random();
+        let session_id = SessionId::random();
+        let token = create_jwt(id, session_id, 60, &encoding_key).unwrap();
+
+        let claims = decode_jwt(&token, &decoding_key).unwrap();
+
+        assert_eq!(claims.user_id, id);
+        assert_eq!(claims.session_id, session_id);
+    }
+
+    #[test]
+    fn test_bearer_token_expiry() {
+        let secret = "CLASSIFIED";
+
+        let encoding_key = EncodingKey::from_secret(secret.as_bytes());
+        let decoding_key = DecodingKey::from_secret(secret.as_bytes());
+
+        let id = UserId::random();
+
+        // default settings allow for 60 seconds of "leeway" so our expiry must be at least 60 seconds in the past
+        let token = create_jwt(id, SessionId::nil(), -61, &encoding_key).unwrap();
+
+        let claims_result_error: jsonwebtoken::errors::Error =
+            decode_jwt(&token, &decoding_key).err().unwrap();
+
+        assert_eq!(ExpiredSignature, claims_result_error.kind().clone());
     }
 }
