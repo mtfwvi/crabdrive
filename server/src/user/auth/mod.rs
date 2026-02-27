@@ -58,7 +58,10 @@ impl FromRequestParts<AppState> for UserEntity {
         let user = state
             .user_repository
             .verify_jwt(bearer.token())
-            .map_err(|_| AuthError::ServerError)?
+            .map_err(|_| AuthError::ServerError)
+            .inspect_err(|e| {
+                tracing::error!("Database error while verifying user claims: {:?}", e)
+            })?
             .ok_or(AuthError::Unauthorized)?;
 
         debug!("Authenticated user: {}:{}", user.username, user.id);

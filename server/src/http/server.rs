@@ -78,11 +78,14 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             };
             let now = chrono::Local::now().naive_utc();
             // Ignore on error to prevent server crash
-            operations::token::delete_expired_blacklisted_tokens(&mut conn, now)
+            let count = operations::token::delete_expired_blacklisted_tokens(&mut conn, now)
                 .inspect_err(|e| {
                     tracing::error!("Unable to remove expired tokens: {e}");
                 })
-                .ok();
+                .ok()
+                .unwrap_or(0);
+
+            tracing::info!("Removed {count} tokens from blacklist!");
         }
     });
 

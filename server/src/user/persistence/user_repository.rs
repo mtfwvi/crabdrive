@@ -151,7 +151,7 @@ fn create_new_refresh_token(
     session_id: Option<SessionId>,
 ) -> (String, RefreshTokenEntity) {
     // Refresh tokens are valid for up to 7 days
-    let lifetime = TimeDelta::new(604800, 0).unwrap();
+    let lifetime = TimeDelta::new(60 * 60 * 24 * 7, 0).unwrap();
     let expiry_time = Local::now().naive_local() + lifetime;
 
     // Create a random ID for the refresh token
@@ -278,14 +278,15 @@ impl UserRepository for UserState {
         Ok((raw_tok, jwt))
     }
 
-    fn refresh_session(&self, rtoken: &str) -> Result<Option<(String, String)>> {
+    fn refresh_session(&self, refresh_token: &str) -> Result<Option<(String, String)>> {
         let mut conn = self.db_pool.get()?;
 
         let now = Local::now().naive_local();
 
-        let refresh_token_hash = Sha256::digest(rtoken.as_bytes()).to_vec();
+        let refresh_token_hash = Sha256::digest(refresh_token.as_bytes()).to_vec();
         let r_tok = select_refresh_token(&mut conn, refresh_token_hash)?;
         if r_tok.is_none() {
+            tracing::debug!("No matching refresh token found in DB!");
             return Ok(None);
         }
         let r_tok = r_tok.unwrap();
@@ -295,10 +296,10 @@ impl UserRepository for UserState {
             return Ok(None);
         }
 
-        // Check expiry time. Allows for 60 seconds of leeway. After this, using a token is considered abuse, and
-        // all the new session will be revoked.
+        // Check expiry time; Allows for 10 seconds of leeway. After this, using a token is considered abuse, and
+        // all active sessions will be revoked.
         if let Some(invalidated_at) = r_tok.invalidated_at {
-            let grace_period = invalidated_at + TimeDelta::try_seconds(60).unwrap();
+            let grace_period = invalidated_at + TimeDelta::try_seconds(10).unwrap();
 
             if now >= grace_period {
                 // The token has been refreshed after the grace period. Nuke all sessions.

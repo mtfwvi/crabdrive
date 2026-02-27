@@ -23,6 +23,7 @@ use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, R
 use crabdrive_common::payloads::auth::response::register::{
     PostRegisterResponse, RegisterConflictReason,
 };
+use crabdrive_common::routes::auth::ROUTE_REFRESH;
 use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::user::UserKeys;
 
@@ -59,9 +60,9 @@ pub async fn post_login(
 
     let cookie = Cookie::build(("refresh_token", rtoken))
         .http_only(true)
-        .secure(true)
+        .secure(state.config.is_prod())
         .same_site(SameSite::Strict)
-        .path("/api/")
+        .path(ROUTE_REFRESH)
         .build()
         .to_string();
 
@@ -169,6 +170,7 @@ pub async fn post_logout(
     _user: UserEntity,
     TypedHeader(auth): TypedHeader<Authorization<Bearer>>,
 ) -> (StatusCode, [(HeaderName, String); 1]) {
+    tracing::debug!("Logging out!");
     let jwt = auth.token().to_string();
     state
         .user_repository
@@ -188,6 +190,7 @@ pub async fn post_refresh(
     let refresh_token = match jar.get("refresh_token") {
         Some(cookie) => cookie.value().to_string(),
         None => {
+            tracing::debug!("Failed to refresh, (no refresh_token found)");
             return (
                 StatusCode::UNAUTHORIZED,
                 [(SET_COOKIE, "".to_string())],
@@ -199,6 +202,7 @@ pub async fn post_refresh(
     let res = state.user_repository.refresh_session(&refresh_token);
 
     if res.is_err() {
+        tracing::error!("Unable to invalidate token: {:?}", res);
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             [(SET_COOKIE, "".to_string())],
@@ -220,9 +224,9 @@ pub async fn post_refresh(
 
     let cookie = Cookie::build(("refresh_token", r_tok))
         .http_only(true)
-        .secure(true)
+        .secure(state.config.is_prod())
         .same_site(SameSite::Strict)
-        .path("/api/")
+        .path(ROUTE_REFRESH)
         .build()
         .to_string();
 
