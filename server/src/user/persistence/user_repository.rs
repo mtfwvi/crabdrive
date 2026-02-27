@@ -24,6 +24,8 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use nanoid::nanoid;
 use sha2::{Digest, Sha256};
 
+const JWT_EXPIRY: i64 = 60 * 9;
+
 type Jwt = String;
 type RefreshToken = String;
 
@@ -70,7 +72,7 @@ impl UserState {
     }
 }
 
-pub fn create_jwt(
+fn create_jwt(
     user_id: UserId,
     session_id: SessionId,
     expiry_time: i64,
@@ -93,10 +95,7 @@ pub fn create_jwt(
     Ok(jwt)
 }
 
-pub fn decode_jwt(
-    claims: &str,
-    decoding_key: &DecodingKey,
-) -> jsonwebtoken::errors::Result<Claims> {
+fn decode_jwt(claims: &str, decoding_key: &DecodingKey) -> jsonwebtoken::errors::Result<Claims> {
     let token_data = jsonwebtoken::decode::<Claims>(claims, decoding_key, &Validation::default())?;
 
     Ok(token_data.claims)
@@ -267,7 +266,12 @@ impl UserRepository for UserState {
         let mut conn = self.db_pool.get()?;
 
         let (raw_tok, tok) = create_new_refresh_token(user_id, None);
-        let jwt = create_jwt(user_id, tok.session_id, 600, &self.secrets.encoding_key)?;
+        let jwt = create_jwt(
+            user_id,
+            tok.session_id,
+            JWT_EXPIRY,
+            &self.secrets.encoding_key,
+        )?;
 
         insert_refresh_token(&mut conn, &tok)?;
 
@@ -280,10 +284,14 @@ impl UserRepository for UserState {
         let now = Local::now().naive_local();
 
         let refresh_token_hash = Sha256::digest(rtoken.as_bytes()).to_vec();
-        let r_tok = select_refresh_token(&mut conn, refresh_token_hash)?
-            .ok_or(anyhow::anyhow!("Unauthorized"))?;
+        let r_tok = select_refresh_token(&mut conn, refresh_token_hash)?;
+        if r_tok.is_none() {
+            return Ok(None);
+        }
+        let r_tok = r_tok.unwrap();
 
         if now >= r_tok.expires_at {
+            tracing::warn!("Already expired refresh token");
             anyhow::bail!("Unauthorized");
         }
 
@@ -308,7 +316,7 @@ impl UserRepository for UserState {
         let new_jwt = create_jwt(
             r_tok.user_id,
             r_tok.session_id,
-            600,
+            JWT_EXPIRY,
             &self.secrets.encoding_key,
         )?;
 

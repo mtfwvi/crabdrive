@@ -3,7 +3,7 @@ use crate::user::persistence::model::user_entity::UserEntity;
 
 use axum::Json;
 use axum::extract::State;
-use axum::http::header::{COOKIE, SET_COOKIE};
+use axum::http::header::SET_COOKIE;
 use axum::http::{HeaderName, StatusCode};
 use axum_extra::TypedHeader;
 use axum_extra::extract::CookieJar;
@@ -79,7 +79,7 @@ pub async fn post_login(
 
     (
         StatusCode::OK,
-        [(COOKIE, cookie)],
+        [(SET_COOKIE, cookie)],
         Json(PostLoginResponse::Ok(LoginSuccess::new(
             jwt,
             format!("/{}", &user_entity.root_node.unwrap()),
@@ -174,13 +174,12 @@ pub async fn post_logout(
         .user_repository
         .close_session(&jwt)
         .expect("Failed to close session");
-    (StatusCode::OK, [(COOKIE, "".to_string())])
+    (StatusCode::OK, [(SET_COOKIE, "".to_string())])
 }
 
 pub async fn post_refresh(
     State(state): State<AppState>,
     jar: CookieJar,
-    _user: UserEntity,
 ) -> (
     StatusCode,
     [(HeaderName, String); 1],
@@ -229,7 +228,7 @@ pub async fn post_refresh(
 
     (
         StatusCode::OK,
-        [(COOKIE, cookie)],
+        [(SET_COOKIE, cookie)],
         Json(PostRefreshResponse::Ok(RefreshBody { bearer_token: jwt })),
     )
 }

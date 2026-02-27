@@ -18,15 +18,15 @@ CREATE TABLE User (
 
 CREATE TABLE RefreshToken (
     token                       BLOB        NOT NULL PRIMARY KEY,
-    user_id                     TEXT        NOT NULL REFERENCES User(id) ON DELETE RESTRICT,
+    user_id                     TEXT        NOT NULL REFERENCES User(id) ON DELETE CASCADE,
     session_id                  TEXT        NOT NULL,
     expires_at                  TIMESTAMP   NOT NULL,
-    invalidated_at              TIMESTAMP       NULL,
+    invalidated_at              TIMESTAMP       NULL
 );
 
 CREATE TABLE TokenBlacklist (
     id                          TEXT        NOT NULL PRIMARY KEY,
-    expires_at                  TIMESTAMP   NOT NULL,
+    expires_at                  TIMESTAMP   NOT NULL
 );
 
 CREATE TABLE Node (
