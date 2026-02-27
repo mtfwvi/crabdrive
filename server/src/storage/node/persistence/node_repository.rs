@@ -1,5 +1,4 @@
 use crate::db::connection::DbPool;
-
 use crate::db::operations::node::*;
 use crate::db::operations::share::*;
 
@@ -203,6 +202,6 @@ impl NodeRepository for NodeState {
 
     fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>> {
         let mut conn = self.db_pool.get()?;
-        get_access_list(&mut conn, node)
+        get_access_list_parent_tree(&mut conn, node)
     }
 }

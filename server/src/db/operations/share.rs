@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::db::ShareDsl;
 use crate::db::operations::node::{get_path_between_nodes, select_node};
 use crate::db::operations::user::select_user;
@@ -101,16 +103,33 @@ pub fn get_share_by_node_id_and_accepted_user_id(
 }
 
 #[instrument(skip(conn), err)]
-pub fn get_access_list(
+pub fn get_access_list_parent_tree(
     conn: &mut SqliteConnection,
     node_id: NodeId,
 ) -> Result<Vec<(UserId, String)>> {
+    let path_to_root = get_path_between_nodes(conn, NodeId::nil(), node_id)?;
+
+    let mut access_list = HashSet::new();
+
+    for node in path_to_root {
+        let node_access_list = get_access_list_node(conn, node.id)?;
+
+        for entry in node_access_list {
+            access_list.insert(entry);
+        }
+    }
+
+    Ok(access_list.into_iter().collect())
+}
+
+#[instrument(skip(conn), err)]
+fn get_access_list_node(conn: &mut SqliteConnection, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
     let Some(node) = select_node(conn, node_id)? else {
         return Ok(vec![]);
     };
 
-    let owner = select_user(conn, node.owner_id)?
-        .ok_or(anyhow::anyhow!("db constraints are not respected"))?;
+    let owner =
+        select_user(conn, node.owner_id)?.ok_or(anyhow::anyhow!("db constraints are not respected"))?;
 
     let mut access_list = vec![(owner.id, owner.username)];
 
@@ -121,13 +140,14 @@ pub fn get_access_list(
             continue;
         };
 
-        let user = select_user(conn, user_id)?
-            .ok_or(anyhow::anyhow!("db constraints are not respected"))?;
+        let user =
+            select_user(conn, user_id)?.ok_or(anyhow::anyhow!("db constraints are not respected"))?;
         access_list.push((user.id, user.username));
     }
 
     Ok(access_list)
 }
+
 
 #[instrument(skip(conn), err)]
 pub fn has_access(conn: &mut SqliteConnection, node_id: NodeId, user_id: UserId) -> Result<bool> {
