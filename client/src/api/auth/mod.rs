@@ -67,17 +67,15 @@ async fn fetch_user_nodes(
     let _guard = debug_span!("fetchUserNodes").entered();
     // Check if root node or trash node contains NIL metadata. If so, both are uninitialized
     // and need to be initialized first.
-    let root_node_reponse =
-        match api::requests::node::get_node(root_node_id, &utils::auth::get_token()?).await? {
-            GetNodeResponse::Ok(node) => Ok(node),
-            GetNodeResponse::NotFound => Err(anyhow::anyhow!("Root node not found.")),
-        }?;
+    let root_node_reponse = match api::requests::node::get_node(root_node_id).await? {
+        GetNodeResponse::Ok(node) => Ok(node),
+        GetNodeResponse::NotFound => Err(anyhow::anyhow!("Root node not found.")),
+    }?;
 
-    let trash_node_response =
-        match api::requests::node::get_node(trash_node_id, &utils::auth::get_token()?).await? {
-            GetNodeResponse::Ok(node) => Ok(node),
-            GetNodeResponse::NotFound => Err(anyhow::anyhow!("Trash node not found.")),
-        }?;
+    let trash_node_response = match api::requests::node::get_node(trash_node_id).await? {
+        GetNodeResponse::Ok(node) => Ok(node),
+        GetNodeResponse::NotFound => Err(anyhow::anyhow!("Trash node not found.")),
+    }?;
 
     if root_node_reponse.encrypted_metadata == EncryptedMetadata::nil() {
         tracing::debug!("Root node uninitialized. Initializing.");
@@ -100,7 +98,6 @@ async fn fetch_user_nodes(
                 )
                 .await?,
             },
-            &utils::auth::get_token()?,
         )
         .await?;
     }
@@ -126,7 +123,6 @@ async fn fetch_user_nodes(
                 )
                 .await?,
             },
-            &utils::auth::get_token()?,
         )
         .await?;
     }

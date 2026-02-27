@@ -1,12 +1,12 @@
 mod model;
-mod utils;
 #[cfg(test)]
 mod test;
+mod utils;
 
 use crate::db::connection::DbPool;
-use crate::db::operations::get_all_uncommitted_revisions;
-use model::{CachedChunk, FileTransfer, FileTransferState};
+use crate::db::operations::revision::get_all_uncommitted_revisions;
 use crate::storage::vfs::{FileChunk, FileKey, FileRepository, FileStatus, FileSystemError};
+use model::{CachedChunk, FileTransfer, FileTransferState};
 
 use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::uuid::UUID;
@@ -61,9 +61,10 @@ impl C3 {
 
         tracing::info!("Checking for unfinished transfers");
         // If some transfers are lost (for example during restart), recreate them
-        let open_transfers = get_all_uncommitted_revisions(&db_pool)
-            .inspect_err(|e| tracing::warn!("Failed to recreate open file transfers ({e})"))
-            .ok();
+        let open_transfers =
+            get_all_uncommitted_revisions(&mut db_pool.get().expect("Failed to get DB Connection"))
+                .inspect_err(|e| tracing::warn!("Failed to recreate open file transfers ({e})"))
+                .ok();
 
         if let Some(open_transfers) = open_transfers {
             tracing::info!("Re-opened {} open transfers", open_transfers.len());
@@ -152,7 +153,11 @@ impl C3 {
                 }
             }
 
-            tracing::trace!("Prefetched {} chunks (seeked {})", byte_chunks.len(), cache_ahead);
+            tracing::trace!(
+                "Prefetched {} chunks (seeked {})",
+                byte_chunks.len(),
+                cache_ahead
+            );
 
             let is_eof = byte_chunks.len() < cache_ahead as usize;
 
@@ -267,12 +272,23 @@ impl FileRepository for C3 {
             .await
             .inspect_err(|e| {
                 tracing::error!("Failed to persist file: {e}");
-                tracing::info!("Operation that failed was rename {} to {}", transfer.path.display(), persistent_path.display());
-                tracing::info!("Folder {} exists: {}", transfer.path.display(), transfer.path.exists());
+                tracing::info!(
+                    "Operation that failed was rename {} to {}",
+                    transfer.path.display(),
+                    persistent_path.display()
+                );
+                tracing::info!(
+                    "Folder {} exists: {}",
+                    transfer.path.display(),
+                    transfer.path.exists()
+                );
                 transfer.try_set_state(FileTransferState::Ready).ok(); // Reset state if failed
             })?;
 
-        tracing::debug!("File chunks are now persisted in: {}", persistent_path.display());
+        tracing::debug!(
+            "File chunks are now persisted in: {}",
+            persistent_path.display()
+        );
 
         drop(transfer);
         self.transfers.remove(key);
@@ -364,9 +380,8 @@ impl FileRepository for C3 {
                     bytes,
                 })
             })
-            .await.inspect_err(|e| {
-                tracing::error!("An error occurred while reading the bytes: {e}")
-            })?;
+            .await
+            .inspect_err(|e| tracing::error!("An error occurred while reading the bytes: {e}"))?;
 
         if bytes.cached_at < 1 && bytes.cached_at != -1 {
             // If the next chunks are not cached & the following chunks are not cached

@@ -1,4 +1,4 @@
-use crate::utils::browser::{LocalStorage, SessionStorage};
+use crate::utils::browser::{LocalStorage, SessionStorage, get_current_url, get_origin, redirect};
 
 use crate::utils;
 use anyhow::{Result, anyhow};
@@ -49,9 +49,25 @@ pub async fn salt_from_username(username: &str) -> String {
     BASE64_STANDARD_NO_PAD.encode(username)
 }
 
-/// Get the JWT Bearer token. Will return `Err` if no token is present.
+/// Get the JWT Bearer token. Will return `Err` if no token is present but should redirect to the login page.
 pub fn get_token() -> Result<String> {
-    SessionStorage::get("bearer")?.ok_or(anyhow!("Bearer token not found."))
+    if let Some(token) = SessionStorage::get("bearer")? {
+        Ok(token)
+    } else {
+        go_to_login()?;
+        Err(anyhow!("Bearer token not found."))
+    }
+}
+
+pub fn go_to_login() -> Result<()> {
+    SessionStorage::clear()?;
+    let current_url = get_current_url()?;
+    LocalStorage::set("redirect_url", &current_url)?;
+
+    let mut login_url = get_origin()?;
+    login_url.push_str("/login");
+
+    redirect(&login_url, false)
 }
 
 #[cfg(test)]

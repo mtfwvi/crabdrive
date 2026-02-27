@@ -1,12 +1,13 @@
-use chrono::NaiveDateTime;
+use crate::storage::node::NodeEntity;
+
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
+
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
 
 #[derive(
     Associations,

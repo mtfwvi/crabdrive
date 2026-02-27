@@ -9,27 +9,28 @@ use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::storage::vfs::backend::c3::C3;
 use crate::user::persistence::user_repository::UserRepository;
-use http_body_util::Full;
-use tempfile::TempDir;
-use tokio::sync::RwLock;
 
 use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::UserState;
+
+use std::any::Any;
+use std::io::ErrorKind;
+use std::sync::Arc;
+use std::path::PathBuf;
+use std::str::FromStr;
+
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::middleware;
 use axum::response::Response;
 use bytes::Bytes;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-use std::any::Any;
-use std::io::ErrorKind;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::sync::Arc;
+use http_body_util::Full;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
-use tracing::{error, info};
+use tempfile::TempDir;
+use tokio::sync::RwLock;
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;
@@ -37,7 +38,7 @@ async fn graceful_shutdown(state: AppState) {
 }
 
 async fn shutdown(_state: AppState) {
-    info!("Stopping server");
+    tracing::info!("Stopping server");
 }
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
@@ -100,7 +101,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(listener) => Ok(listener),
         Err(err) => {
-            error!(
+            tracing::error!(
                 "Failed to bind to {}. {}",
                 addr,
                 match err.kind() {
@@ -115,7 +116,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         }
     }?;
 
-    info!("Server running on http://{}", &addr);
+    tracing::info!("Server running on http://{}", &addr);
 
     axum::serve(listener, app)
         .with_graceful_shutdown(graceful_shutdown(state.clone()))
@@ -135,7 +136,7 @@ pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<
         "Unknown panic message".to_string()
     };
 
-    error!("panic: {:?}", details);
+    tracing::error!("Request handler panicked!: {:?}", details);
 
     let body = serde_json::json!({
         "error": {

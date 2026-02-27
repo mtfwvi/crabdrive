@@ -1,19 +1,20 @@
-use crate::api::share_node;
+use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
+use crate::components::node_share_button::NodeShareButton;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
-use crate::utils::ui::{format_date_time, shorten_file_name};
+use crate::utils::ui::{
+    format_date_time, get_owner_username, get_share_acceptor_usernames, shorten_file_name,
+};
 use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
-use tracing::debug;
 
 #[component]
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] parent: Signal<DecryptedNode>,
-    is_trash: Signal<bool>,
+    #[prop(into)] content_type: Signal<ContentViewType>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -27,7 +28,7 @@ pub(crate) fn NodeDetails(
             <Space class="!gap-0 h-full">
                 <Divider vertical=true />
 
-                <Space vertical=true class="p-8 !max-w-[35vw]">
+                <Space vertical=true class="p-8 !min-w-[25vw] !max-w-[35vw]">
                     <Space class="my-3 content-center justify-between">
                         <Text class="!text-2xl !font-bold">
                             {move || shorten_file_name(metadata.get().name)}
@@ -60,44 +61,49 @@ pub(crate) fn NodeDetails(
                         name="Created"
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
-                    <NodeAttribute
-                        name="Access"
-                        value=Signal::derive(move || format!("{:?}", node.get().has_access))
+                    <OptionalNodeAttribute
+                        name="Owner"
+                        value=Signal::derive(move || get_owner_username(node.get()))
+                    />
+                    <OptionalNodeAttribute
+                        name="Shared with"
+                        value=Signal::derive(move || {
+                            get_share_acceptor_usernames(node.get())
+                                .map(|usernames| usernames.join(", "))
+                        })
                     />
 
-                    <Show
-                        when=move || !is_trash.get()
-                        fallback=move || {
-                            view! {
-                                <Space vertical=true class="mt-4">
-                                    <Button
-                                        block=true
-                                        icon=icondata_mdi::MdiRestore
-                                        appearance=ButtonAppearance::Primary
-                                    >
-                                        "Restore"
-                                    </Button>
-                                    <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
-                                        "Delete forever"
-                                    </Button>
-                                </Space>
-                            }
-                        }
-                    >
+                    <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
                         <Space vertical=true class="mt-4">
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileDownloadButton node />
                             </Show>
 
-                            <ModifyNodeMenu node parent on_modified />
+                            <ModifyNodeMenu node on_modified />
 
-                            <Text on:click=move |_| {
-                                let node = node.get();
-                                leptos::reactive::spawn_local(async move {
-                                    let url = share_node(&node).await.expect("fail");
-                                    debug!("{}" ,url);
-                                });
-                            }>"Share"</Text>
+                            <NodeShareButton node />
+                        </Space>
+                    </Show>
+
+                    <Show when=move || {
+                        content_type.get() == ContentViewType::Shared
+                            && node.get().node_type == NodeType::File
+                    }>
+                        <FileDownloadButton node />
+                    </Show>
+
+                    <Show when=move || content_type.get() == ContentViewType::Trash>
+                        <Space vertical=true class="mt-4">
+                            <Button
+                                block=true
+                                icon=icondata_mdi::MdiRestore
+                                appearance=ButtonAppearance::Primary
+                            >
+                                "Restore"
+                            </Button>
+                            <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
+                                "Delete forever"
+                            </Button>
                         </Space>
                     </Show>
                 </Space>

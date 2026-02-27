@@ -1,19 +1,18 @@
 use crate::db::connection::DbPool;
-use crate::db::operations::{
-    delete_user, insert_user, select_user, select_user_by_username, update_user,
-};
-use crate::user::persistence::model::user_entity::UserEntity;
-use anyhow::Context;
-use anyhow::Result;
+use crate::db::operations::user::*;
+use crate::user::UserEntity;
+
+use crabdrive_common::data::DataAmount;
+use crabdrive_common::user::{UserId, UserKeys, UserType};
+
+use std::sync::Arc;
+
+use anyhow::{Context, Result};
 use argon2::password_hash::SaltString;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHasher};
 use argon2::{PasswordHash, PasswordVerifier};
 use chrono::Utc;
-use crabdrive_common::user::{UserKeys, UserType};
-use crabdrive_common::{data::DataAmount, uuid::UUID};
-use std::sync::Arc;
-use tracing::instrument;
 
 pub(crate) trait UserRepository {
     /// Create a new user
@@ -25,7 +24,7 @@ pub(crate) trait UserRepository {
         keys: UserKeys,
     ) -> Result<UserEntity>;
     /// Get a user by ID
-    fn get_user(&self, id: UUID) -> Result<Option<UserEntity>>;
+    fn get_user(&self, id: UserId) -> Result<Option<UserEntity>>;
     /// Validate the password hash of a user
     fn authenticate_user(&self, username: &str, password: &str) -> Result<Option<UserEntity>>;
     /// Get a user by their username
@@ -33,7 +32,7 @@ pub(crate) trait UserRepository {
     /// Update a username
     fn update_user(&self, updated_entity: UserEntity) -> Result<UserEntity>;
     /// Hard-delete a user from the database
-    fn delete_user(&self, id: UUID) -> Result<UserEntity>;
+    fn delete_user(&self, id: UserId) -> Result<UserEntity>;
 }
 
 pub struct UserState {
@@ -47,7 +46,6 @@ impl UserState {
 }
 
 impl UserRepository for UserState {
-    #[instrument(skip(self, password), err)]
     fn create_user(
         &self,
         username: &str,
@@ -55,6 +53,8 @@ impl UserRepository for UserState {
         storage_limit: DataAmount,
         keys: UserKeys,
     ) -> Result<UserEntity> {
+        let mut conn = self.db_pool.get()?;
+
         let password_salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
             .hash_password(password.as_bytes(), &password_salt)
@@ -63,10 +63,10 @@ impl UserRepository for UserState {
 
         let user = UserEntity {
             user_type: UserType::User,
-            id: UUID::random(),
+            id: UserId::random(),
             created_at: Utc::now().naive_utc(),
             username: username.to_string(),
-            password_hash: password_hash.to_string(),
+            password_hash,
             storage_limit,
             // Currently unused. Maybe useful for admin routes.
             encryption_uninitialized: false,
@@ -80,11 +80,10 @@ impl UserRepository for UserState {
             trash_node: None,
         };
 
-        insert_user(&self.db_pool, &user).context("Failed to insert user")?;
+        insert_user(&mut conn, &user).context("Failed to insert user")?;
         Ok(user)
     }
 
-    #[instrument(skip(self, password), err)]
     fn authenticate_user(&self, username: &str, password: &str) -> Result<Option<UserEntity>> {
         let Some(user) = self.get_user_by_username(username)? else {
             tracing::debug!("User not found");
@@ -103,24 +102,23 @@ impl UserRepository for UserState {
         Ok(Some(user))
     }
 
-    #[instrument(skip(self), err)]
-    fn get_user(&self, id: UUID) -> Result<Option<UserEntity>> {
-        select_user(&self.db_pool, id).context("Failed to select user")
+    fn get_user(&self, id: UserId) -> Result<Option<UserEntity>> {
+        let mut conn = self.db_pool.get()?;
+        select_user(&mut conn, id).context("Failed to select user")
     }
 
-    #[instrument(skip(self), err)]
     fn get_user_by_username(&self, username: &str) -> Result<Option<UserEntity>> {
-        select_user_by_username(&self.db_pool, username)
-            .context("Failed to select user by username")
+        let mut conn = self.db_pool.get()?;
+        select_user_by_username(&mut conn, username).context("Failed to select user by username")
     }
 
-    #[instrument(skip(self), err)]
     fn update_user(&self, updated_entity: UserEntity) -> Result<UserEntity> {
-        update_user(&self.db_pool, &updated_entity).context("Failed to update user")
+        let mut conn = self.db_pool.get()?;
+        update_user(&mut conn, &updated_entity).context("Failed to update user")
     }
 
-    #[instrument(skip(self), err)]
-    fn delete_user(&self, id: UUID) -> Result<UserEntity> {
-        delete_user(&self.db_pool, id).context("Failed to delete user")
+    fn delete_user(&self, id: UserId) -> Result<UserEntity> {
+        let mut conn = self.db_pool.get()?;
+        delete_user(&mut conn, id).context("Failed to delete user")
     }
 }
