@@ -1,23 +1,16 @@
+use crate::db::connection::DbPool;
+use crate::db::operations::revision::*;
+use crate::storage::revision::RevisionEntity;
+
+use crabdrive_common::iv::IV;
+use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
+
 use std::sync::Arc;
 
-use crate::db;
-use crate::db::connection::DbPool;
-use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use anyhow::Result;
 use chrono::NaiveDateTime;
-use crabdrive_common::iv::IV;
-use crabdrive_common::storage::ChunkIndex;
-use crabdrive_common::storage::NodeId;
-use crabdrive_common::storage::RevisionId;
-use crabdrive_common::uuid::UUID;
 
 pub(crate) trait RevisionRepository {
-    /// Query a revision by its ID
-    fn get_revision(&self, revision_id: RevisionId) -> Result<Option<RevisionEntity>>;
-
-    /// Query all revisions associated with a node.
-    fn get_all_revisions_by_node(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>>;
-
     /// Creates a new (unfinished) revision, associated with a node.
     fn create_revision(
         &self,
@@ -26,6 +19,12 @@ pub(crate) trait RevisionRepository {
         iv: IV,
         chunk_count: ChunkIndex,
     ) -> Result<RevisionEntity>;
+
+    /// Query a revision by its ID
+    fn get_revision(&self, revision_id: RevisionId) -> Result<Option<RevisionEntity>>;
+
+    /// Query all revisions associated with a node.
+    fn get_all_revisions_by_node(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>>;
 
     /// Patches an existing revision
     fn update_revision(&self, revision_entity: RevisionEntity) -> Result<()>;
@@ -52,31 +51,38 @@ impl RevisionRepository for RevisionService {
         iv: IV,
         chunk_count: ChunkIndex,
     ) -> Result<RevisionEntity> {
+        let mut conn = self.db_pool.get()?;
+
         let revision = RevisionEntity {
-            id: UUID::random(),
+            id: RevisionId::random(),
             file_id,
             upload_started_on,
             upload_ended_on: None,
             iv,
             chunk_count,
         };
-        db::operations::insert_revision(&self.db_pool, &revision)
+
+        insert_revision(&mut conn, &revision)
     }
 
     fn update_revision(&self, file_version: RevisionEntity) -> Result<()> {
-        db::operations::update_revision(&self.db_pool, &file_version)?;
+        let mut conn = self.db_pool.get()?;
+        update_revision(&mut conn, &file_version)?;
         Ok(())
     }
 
     fn get_revision(&self, id: RevisionId) -> Result<Option<RevisionEntity>> {
-        db::operations::select_revision(&self.db_pool, id)
+        let mut conn = self.db_pool.get()?;
+        select_revision(&mut conn, id)
     }
 
     fn delete_revision(&self, id: RevisionId) -> Result<RevisionEntity> {
-        db::operations::delete_revision(&self.db_pool, id)
+        let mut conn = self.db_pool.get()?;
+        delete_revision(&mut conn, id)
     }
 
     fn get_all_revisions_by_node(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>> {
-        db::operations::get_all_revisions_by_node(&self.db_pool, node_id)
+        let mut conn = self.db_pool.get()?;
+        get_all_revisions_by_node(&mut conn, node_id)
     }
 }

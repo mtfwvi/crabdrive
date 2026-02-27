@@ -1,5 +1,6 @@
-use crate::payloads::auth::response::login::UserKeys;
 use serde::{Deserialize, Serialize};
+
+use crate::user::UserKeys;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct PostRegisterRequest {

@@ -1,13 +1,12 @@
 use crate::http::AppState;
 use crate::storage::vfs::FileChunk;
-use crate::storage::vfs::model::{FileError, new_filekey};
+use crate::storage::vfs::model::FileSystemError;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
-use crabdrive_common::data::DataAmount;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 
 pub async fn post_chunk(
@@ -32,7 +31,15 @@ pub async fn post_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(()));
     }
 
@@ -40,25 +47,28 @@ pub async fn post_chunk(
         return (StatusCode::BAD_REQUEST, Json(()));
     }
 
-    let file_key = new_filekey(node_id, revision_id);
-
     if state
         .vfs
         .read()
-        .unwrap()
-        .chunk_exists(&file_key, chunk_index)
+        .await
+        .chunk_exists(&revision_id, chunk_index)
+        .await
     {
         return (StatusCode::BAD_REQUEST, Json(()));
     }
 
-    let result = state.vfs.read().unwrap().write_chunk(&file_key, file_chunk);
+    let result = state
+        .vfs
+        .write()
+        .await
+        .write_chunk(&revision_id, file_chunk)
+        .await;
 
     match result {
         Ok(_) => (StatusCode::CREATED, Json(())),
-        Err(FileError::InvalidLength) => (StatusCode::BAD_REQUEST, Json(())),
-        Err(FileError::InvalidSession) => (StatusCode::BAD_REQUEST, Json(())),
-        Err(FileError::Io(_err)) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
-        Err(FileError::KeyNotFound) => (StatusCode::NOT_FOUND, Json(())),
+        Err(FileSystemError::AlreadyCommitted) => (StatusCode::BAD_REQUEST, Json(())),
+        Err(FileSystemError::NotFound) => (StatusCode::NOT_FOUND, Json(())),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
     }
 }
 
@@ -72,34 +82,39 @@ pub async fn get_chunk(
         .revision_repository
         .get_revision(revision_id)
         .expect("db error");
+
     if revision_entity.is_none() || node_entity.is_none() {
         return StatusCode::NOT_FOUND.into_response();
     }
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
         return StatusCode::NOT_FOUND.into_response();
     }
 
-    let file_key = new_filekey(node_id, revision_id);
-
-    let chunk_size = DataAmount::zero(); // Inferred from actual file for now, may be set manually later
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
+        return StatusCode::NOT_FOUND.into_response();
+    }
 
     let result = state
         .vfs
         .read()
-        .expect("someone panicked while holding vfs?")
-        .get_chunk(file_key, chunk_index, chunk_size);
+        .await
+        .read_chunk(&revision_id, chunk_index)
+        .await;
 
     if let Ok(data) = result {
         return (StatusCode::OK, data.data).into_response();
     }
 
     match result.err().unwrap() {
-        FileError::InvalidLength => StatusCode::BAD_REQUEST.into_response(),
-        FileError::InvalidSession => StatusCode::BAD_REQUEST.into_response(),
-        FileError::Io(_err) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
-        FileError::KeyNotFound => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        FileSystemError::AlreadyCommitted => StatusCode::BAD_REQUEST.into_response(),
+        FileSystemError::NotFound => StatusCode::NOT_FOUND.into_response(),
+        _ => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
     }
 }

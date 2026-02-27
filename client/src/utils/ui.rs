@@ -1,3 +1,4 @@
+use crate::model::node::DecryptedNode;
 use chrono::NaiveDateTime;
 use crabdrive_common::storage::NodeType;
 
@@ -46,6 +47,32 @@ pub(crate) fn get_node_icon(node_type: NodeType, name: String) -> &'static icond
             "csv" | "tsv" => icondata_mdi::MdiFileTableOutline,
             _ => icondata_mdi::MdiFileOutline,
         },
+    }
+}
+
+pub(crate) fn get_owner_username(node: DecryptedNode) -> Option<String> {
+    let owner_id = node.owner_id;
+
+    node.has_access
+        .into_iter()
+        .find(|(user_id, _)| user_id == &owner_id)
+        .map(|(_, username)| username)
+}
+
+pub(crate) fn get_share_acceptor_usernames(node: DecryptedNode) -> Option<Vec<String>> {
+    let owner_id = node.owner_id;
+
+    let share_acceptor_usernames: Vec<String> = node
+        .has_access
+        .into_iter()
+        .filter(|(user_id, _)| user_id != &owner_id)
+        .map(|(_, username)| username)
+        .collect();
+
+    if share_acceptor_usernames.is_empty() {
+        None
+    } else {
+        Some(share_acceptor_usernames)
     }
 }
 

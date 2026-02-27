@@ -6,7 +6,7 @@ use thaw::{
 
 // TODO: Extract these kinds of buttons to component with only success and error toast + action content
 #[component]
-pub(crate) fn TrashEmptyButton() -> impl IntoView {
+pub(crate) fn TrashEmptyButton(on_emptied: Callback<()>) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
     let add_toast = move |text: String, intent: ToastIntent| {
@@ -32,7 +32,7 @@ pub(crate) fn TrashEmptyButton() -> impl IntoView {
     Effect::new(move || {
         let status = empty_action.value().get();
         if status.is_some() {
-            add_toast("TODO".to_string(), ToastIntent::Info)
+            add_toast("TODO".to_string(), ToastIntent::Info);
             // match status.unwrap() {
             //     Ok(_) => add_toast("Emptied trash".to_string(), ToastIntent::Success),
             //     Err(e) => add_toast(
@@ -40,6 +40,7 @@ pub(crate) fn TrashEmptyButton() -> impl IntoView {
             //         ToastIntent::Error,
             //     )
             // }
+            on_emptied.run(());
         }
     });
 

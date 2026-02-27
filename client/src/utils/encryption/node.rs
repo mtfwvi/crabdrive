@@ -9,7 +9,7 @@ use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::EncryptedNode;
 
-use anyhow::{Error, anyhow};
+use anyhow::{Error, Result, anyhow};
 use tracing::debug_span;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
@@ -36,6 +36,7 @@ pub async fn decrypt_node(
         current_revision: node.current_revision,
         metadata: decrypted_metadata,
         encryption_key: metadata_key,
+        has_access: node.has_access,
     };
 
     Ok(decrypted_node)
@@ -139,6 +140,28 @@ pub async fn decrypt_node_with_parent(
         .ok_or(anyhow!("Key not found"))
         .inspect_err(|e| tracing::error!("Failed to get metadata child key: {}", e))?;
     decrypt_node(child, key.1).await
+}
+
+pub async fn decrypt_node_path(
+    start_node: DecryptedNode,
+    path: Vec<EncryptedNode>,
+) -> Result<Vec<DecryptedNode>> {
+    let mut decrypted_nodes: Vec<DecryptedNode> = Vec::with_capacity(path.len());
+    decrypted_nodes.push(start_node);
+
+    for encrypted_node in path.iter().skip(1) {
+        let decrypted_node = decrypt_node_with_parent(
+            // last cannot be None, as the vec contains from node
+            decrypted_nodes.last().unwrap(),
+            encrypted_node.clone(),
+        )
+        .await
+        .inspect_err(|e| tracing::error!("Failed to decrypt node with parent: {}", e))?;
+
+        decrypted_nodes.push(decrypted_node);
+    }
+
+    Ok(decrypted_nodes)
 }
 
 #[cfg(test)]

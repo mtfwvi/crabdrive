@@ -1,4 +1,4 @@
-use crate::utils::browser::{LocalStorage, SessionStorage};
+use crate::utils::browser::{LocalStorage, SessionStorage, redirect};
 use crate::{api, utils};
 
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
@@ -18,6 +18,8 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
         return Err(anyhow!("Please sign out first and try again"));
     }
 
+    let local_redirect_url = LocalStorage::get::<String>("redirect_url")?;
+
     SessionStorage::clear().context("Failed to clear SessionStore")?;
 
     let salt = utils::auth::salt_from_username(username).await;
@@ -35,8 +37,8 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
 
     let login_response = match response {
         PostLoginResponse::Ok(login_success) => Ok(login_success),
-        PostLoginResponse::Unauthorized(login_denied_reason) => {
-            debug!("Login denied: {:?}", login_denied_reason);
+        PostLoginResponse::Unauthorized(_) => {
+            debug!("Login denied (Invalid Username or Password)");
             Err(anyhow!("Invalid credentials"))
         }
     }?;
@@ -93,10 +95,14 @@ pub async fn login(username: &str, password: &str, remember_username: bool) -> R
     SessionStorage::set("root_id", &login_response.root_node_id)?;
     SessionStorage::set("trash_id", &login_response.trash_node_id)?;
 
-    utils::browser::redirect(&login_response.redirect_url, true).inspect_err(|_| {
-        // Clear session storage on error
-        SessionStorage::clear().expect("Failed to clear session storage!");
-    })?;
+    if let Some(local_redirect_url) = local_redirect_url {
+        redirect(&local_redirect_url, false)?;
+    } else {
+        redirect(&login_response.redirect_url, true).inspect_err(|_| {
+            // Clear session storage on error
+            SessionStorage::clear().expect("Failed to clear session storage!");
+        })?;
+    }
 
     Ok(())
 }

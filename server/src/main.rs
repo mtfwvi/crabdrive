@@ -1,5 +1,4 @@
 #![allow(dead_code)] // TODO: Remove before submission
-mod auth;
 mod db;
 mod http;
 mod request_handler;

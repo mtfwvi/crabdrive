@@ -1,7 +1,6 @@
 use crate::http::AppState;
 use crate::request_handler::node::{entity_to_encrypted_node, entity_to_file_revision};
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::vfs::model::new_filekey;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};
@@ -18,13 +17,22 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::storage::{NodeId, RevisionId};
+use crabdrive_common::uuid::UUID;
 
+#[axum::debug_handler]
 pub async fn post_create_file(
     current_user: UserEntity,
     State(state): State<AppState>,
     Path(parent_id): Path<NodeId>,
     Json(payload): Json<PostCreateFileRequest>,
 ) -> (StatusCode, Json<PostCreateFileResponse>) {
+    if payload.node_id.eq(&UUID::nil()) {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostCreateFileResponse::BadRequest),
+        );
+    }
+
     let parent_node = state.node_repository.get_node(parent_id).expect("db error");
 
     if parent_node.is_none() {
@@ -36,7 +44,11 @@ pub async fn post_create_file(
 
     let parent_node = parent_node.unwrap();
 
-    if parent_node.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(parent_node.id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCreateFileResponse::NotFound),
@@ -77,7 +89,8 @@ pub async fn post_create_file(
         .create_node(
             Some(parent_id),
             payload.node_metadata,
-            current_user.id,
+            // a node should always have the same owner as its parent
+            parent_node.owner_id,
             NodeType::File,
             payload.node_id,
         )
@@ -103,13 +116,12 @@ pub async fn post_create_file(
         .update_node(&node_with_revision)
         .expect("db error");
 
-    let file_key = new_filekey(node.id, revision.id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
+        let mut vfs = state.vfs.write().await;
+
+        vfs.create_file(&revision.id)
+            .await
+            .expect("how does that happen? - File system error!");
     }
 
     let response_node =
@@ -120,6 +132,7 @@ pub async fn post_create_file(
     )
 }
 
+#[axum::debug_handler]
 pub async fn post_update_file(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -137,7 +150,11 @@ pub async fn post_update_file(
 
     let node_entity = node_entity.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostUpdateFileResponse::NotFound),
@@ -161,13 +178,12 @@ pub async fn post_update_file(
         )
         .expect("db error");
 
-    let file_key = new_filekey(node_entity.id, revision.id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        let _ = vfs.start_transfer(file_key).expect("how does that happen?");
+        let mut vfs = state.vfs.write().await;
+
+        vfs.create_file(&revision.id)
+            .await
+            .expect("how does that happen?");
     }
 
     (
@@ -178,6 +194,7 @@ pub async fn post_update_file(
     )
 }
 
+#[axum::debug_handler]
 pub async fn post_commit_file(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -199,7 +216,12 @@ pub async fn post_commit_file(
     let (mut revision, mut node_entity) = (revision.unwrap(), node_entity.unwrap());
 
     // check if node belongs to user and if the revision belongs to the node
-    if node_entity.owner_id != current_user.id || revision.file_id != node_entity.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+        || revision.file_id != node_entity.id
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(PostCommitFileResponse::NotFound),
@@ -213,11 +235,9 @@ pub async fn post_commit_file(
         );
     }
 
-    let file_key = new_filekey(file_id, revision.id);
-
     let mut missing_chunks = vec![];
     for i in 1..revision.chunk_count {
-        if !state.vfs.read().unwrap().chunk_exists(&file_key, i) {
+        if !state.vfs.read().await.chunk_exists(&revision_id, i).await {
             missing_chunks.push(i);
         }
     }
@@ -246,13 +266,9 @@ pub async fn post_commit_file(
 
     let node = entity_to_encrypted_node(node_entity, &state).expect("db error");
 
-    let file_key = new_filekey(node.id, revision_id);
     {
-        let mut vfs = state
-            .vfs
-            .write()
-            .expect("someone panicked while holding vfs?");
-        vfs.end_transfer(&file_key).unwrap()
+        let mut vfs = state.vfs.write().await;
+        vfs.commit_file(&revision_id).await.unwrap()
     }
 
     (StatusCode::OK, Json(PostCommitFileResponse::Ok(node)))
@@ -265,7 +281,15 @@ pub async fn get_file_versions(
 ) -> (StatusCode, Json<GetVersionsResponse>) {
     let node_entity = state.node_repository.get_node(file_id).expect("db error");
 
-    if node_entity.is_none() || node_entity.unwrap().owner_id != current_user.id {
+    if node_entity.is_none() {
+        return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.unwrap().id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(GetVersionsResponse::NotFound));
     }
 
