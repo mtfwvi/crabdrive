@@ -10,4 +10,4 @@ target/
 .devcontainer/
 Dockerfile
 compose.yaml
-docker-data
+client/dist/
