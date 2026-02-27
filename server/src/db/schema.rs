@@ -59,4 +59,4 @@ diesel::table! {
     }
 }
 
-diesel::allow_tables_to_appear_in_same_query!(Revision, Node, User,);
+diesel::allow_tables_to_appear_in_same_query!(Revision, Node, User, Share);
