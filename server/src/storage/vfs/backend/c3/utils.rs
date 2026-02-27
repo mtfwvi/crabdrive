@@ -1,8 +1,8 @@
-use bytes::{Bytes, BytesMut};
-use crabdrive_common::{storage::ChunkIndex, uuid::UUID};
-use tracing::instrument;
+use crabdrive_common::{storage::{ChunkIndex}, uuid::UUID};
+
 use std::path::PathBuf;
-use tokio::io::AsyncReadExt;
+
+use bytes::{Bytes};
 use uuid::Uuid;
 
 use crate::storage::vfs::FileSystemError;
@@ -13,7 +13,6 @@ use crate::storage::vfs::FileSystemError;
 /// `[base_path]/[chars 0-1]/[chars 2-3]/[chars 4-5]/[chars 6-31]`
 ///
 // The idea is stolen from git :)
-#[instrument(ret(level = "trace"))]
 pub fn shard_path(id: UUID, base_path: &PathBuf) -> PathBuf {
     let mut buffer = Uuid::encode_buffer();
     let hex = id.get().simple().encode_lower(&mut buffer);
@@ -41,36 +40,14 @@ pub fn push_index(path: &mut PathBuf, index: ChunkIndex) {
 }
 
 pub async fn read_chunk(path: &PathBuf) -> Result<Bytes, FileSystemError> {
-    let mut file = tokio::fs::File::open(path)
+    let data = tokio::fs::read(path)
         .await
         .map_err(|e| match e.kind() {
             std::io::ErrorKind::NotFound => FileSystemError::NotFound,
-            _ => {
-                tracing::info!("Failed to read path: {e}");
-                e.into()
-            },
+            _ => e.into(),
         })?;
 
-    let size = file.metadata().await?.len();
-    assert!(size < crabdrive_common::da!(20 MiB).as_bytes());
-
-    let mut buffer = BytesMut::with_capacity(size as usize);
-
-    while buffer.len() < size as usize {
-        let bytes_read = file.read_buf(&mut buffer).await.inspect_err(|e| {
-            tracing::error!("Failed to fill buffer: {e}");
-        })?;
-
-        if bytes_read == 0 {
-            tracing::error!("Unexpected EOF before chunk was fully read");
-            break;
-        }
-    }
-
-    tracing::warn!("Buffer: L {} C {}", buffer.len(), buffer.capacity());
-    tracing::info!("Reading {} into buffer", crabdrive_common::da!(size));
-
-    Ok(buffer.into())
+    Ok(Bytes::from(data))
 }
 
 #[cfg(test)]

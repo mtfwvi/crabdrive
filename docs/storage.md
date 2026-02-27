@@ -2,7 +2,7 @@
 
 Crabdrive currently supports two storage backends:
 - The `SFS` (S~~tupid~~imple File System) is a very basic, synchronous storage backend, which implements minimal functionality.
-- `C3` (please don't sue us) is an asynchronous, (hopefully) high-performance, storage backend which also includes caching.
+- `C3` (please don't sue us) is an asynchronous, (hopefully) high-performance, storage backend which also includes caching. In some of my personal benchmarks, it outperforms `SFS` in downloading by 3-4 seconds (on a 750MB file). Keep in mind, that these tests are however not reliable.
 
 ## Configuration
 

@@ -1,7 +1,7 @@
-use bytes::Bytes;
 use std::path::PathBuf;
 use std::sync::atomic::AtomicU8;
-use tracing::instrument;
+
+use bytes::Bytes;
 
 // There is no way of using atomics and enums representations, so this is just a "lookup"
 #[repr(u8)]
@@ -35,7 +35,7 @@ pub struct FileTransfer {
     /// The current state of the transfer. See [`FileTransferStatus`] for possible values. Never access this
     /// directly, instead use [`FileTransfer::get_state()`] and [`FileTransfer::set_state()`]!
     // There may be a race condition, where the gc is deleting a chunk, even though a chunk is currently getting
-    // written.
+    // written. To prevent this, use a simple spin lock, which waits until the writer finishes.
     state: AtomicU8,
     /// Reference counter for checking if an upload has staled and is to be garbage collected.
     /// Every minute, a task goes over all active transfers, and increments `reference` by one. If
@@ -65,10 +65,7 @@ impl FileTransfer {
             .expect("also impossible")
     }
 
-    #[instrument(skip(self), ret(level = "trace"))]
     pub fn try_set_state(&self, target: FileTransferState) -> Result<(), ()> {
-        tracing::trace!("Try_Set transfer state to {:?}", target);
-
         // The lockfree state machine is inspired by https://mara.nl/atomics/atomics.html#example-handle-overflow
         let mut current = self.state.load(std::sync::atomic::Ordering::Acquire);
 
@@ -82,6 +79,7 @@ impl FileTransfer {
                 (FileTransferState::Ready, FileTransferState::Writing) => 3, // First writer
                 // if setting from Writing -> Writing: Increase writers by one and succeed
                 (FileTransferState::Writing, FileTransferState::Writing) => {
+                    tracing::trace!("Incrementing writers by one");
                     if current == 255 {
                         tracing::warn!("Maximum concurrent chunk writers (252) exceeded");
                         return Err(());

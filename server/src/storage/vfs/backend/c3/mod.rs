@@ -55,18 +55,18 @@ impl C3 {
             .await
             .expect("Failed to create staging directory");
 
-        tracing::info!("Stage Directory: {}", staging_path.display());
-        tracing::info!("Persistent Directory: {}", persistent_path.display());
+        tracing::info!("C3 will store files inside {}", storage_directory.display());
 
         let transfers = DashMap::new();
 
+        tracing::info!("Checking for unfinished transfers");
         // If some transfers are lost (for example during restart), recreate them
         let open_transfers = get_all_uncommitted_revisions(&db_pool)
             .inspect_err(|e| tracing::warn!("Failed to recreate open file transfers ({e})"))
             .ok();
 
         if let Some(open_transfers) = open_transfers {
-            tracing::info!("Re-opening {} open transfers", open_transfers.iter().len());
+            tracing::info!("Re-opened {} open transfers", open_transfers.len());
             for id in open_transfers {
                 let path = utils::shard_path(id, &staging_path);
                 let transfer = FileTransfer::new(path);
@@ -152,7 +152,7 @@ impl C3 {
                 }
             }
 
-            tracing::debug!("Prefetched {} chunks (seeked {})", byte_chunks.len(), cache_ahead);
+            tracing::trace!("Prefetched {} chunks (seeked {})", byte_chunks.len(), cache_ahead);
 
             let is_eof = byte_chunks.len() < cache_ahead as usize;
 
@@ -160,6 +160,7 @@ impl C3 {
                 let current_index = original_index + advance as i64;
 
                 let cached_at = if is_eof {
+                    // If we reached EOF (no more chunks), indicate this to future tasks attempting to prefetch chunks
                     -1
                 } else {
                     (cache_ahead as i8) - (advance as i8)
@@ -219,7 +220,7 @@ impl FileRepository for C3 {
         let path = utils::shard_path(*key, &self.staging_path);
         fs::create_dir_all(&path).await?;
 
-        tracing::debug!("Uploaded chunks will be stored in: {}", path.display());
+        tracing::debug!("File chunks will be staged in {}", path.display());
 
         let transfer = FileTransfer::new(path);
         self.transfers.insert(*key, transfer);
@@ -238,8 +239,6 @@ impl FileRepository for C3 {
 
         let mut path = transfer.path.clone();
         utils::push_index(&mut path, contents.index);
-
-        tracing::debug!("Chunk #{} will be stored at {}", contents.index, path.display());
 
         transfer
             .reference
@@ -314,7 +313,7 @@ impl FileRepository for C3 {
             return Err(FileSystemError::NotFound);
         };
 
-        let original_path = utils::shard_path(*key, &self.staging_path);
+        let original_path = utils::shard_path(*key, &self.persistent_path);
         let mut safe_path = original_path.clone();
         // Rename the dictionary, so a call to read() directly returns Not Found
         if let Some(name) = original_path.file_name() {
@@ -323,9 +322,9 @@ impl FileRepository for C3 {
             safe_path.set_file_name(last_shard);
         }
 
+        // Try 3 times to rename the folder and (if not successful) finally give up
         let mut c = 0;
         while let Err(e) = fs::rename(&original_path, &safe_path).await {
-            // Try 3 times to rename the folder
             if c > 2 {
                 return Err(e.into());
             }
@@ -371,7 +370,6 @@ impl FileRepository for C3 {
 
         if bytes.cached_at < 1 && bytes.cached_at != -1 {
             // If the next chunks are not cached & the following chunks are not cached
-            tracing::debug!("Caching next chunks");
             self.spawn_prefetch(*key, index);
         }
 
