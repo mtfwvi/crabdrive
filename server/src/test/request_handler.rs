@@ -41,6 +41,7 @@ use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
@@ -631,9 +632,9 @@ pub async fn test_token_refresh_flow() {
         .await;
 
     refresh_res.assert_status_ok();
-    let body: crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse = refresh_res.json();
+    let body: PostRefreshResponse = refresh_res.json();
 
-    if let crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse::Ok(refresh_body) = body {
+    if let PostRefreshResponse::Ok(refresh_body) = body {
         let new_jwt = refresh_body.bearer_token;
         assert_ne!(new_jwt, "".to_string());
 
