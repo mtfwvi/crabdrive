@@ -57,13 +57,13 @@ pub fn invalidate_refresh_token(
 #[instrument(skip(conn), err)]
 pub fn invalidate_token_family(
     conn: &mut SqliteConnection,
-    family_id: SessionId,
+    session_id: SessionId,
     invalidated_at_time: NaiveDateTime,
 ) -> Result<usize> {
     conn.transaction(|conn| {
         // Return only the count for logs, the tokens are not required anymore
         let deleted_count = diesel::update(RefreshTokenDsl::RefreshToken)
-            .filter(RefreshTokenDsl::session_id.eq(family_id))
+            .filter(RefreshTokenDsl::session_id.eq(session_id))
             .filter(RefreshTokenDsl::invalidated_at.is_null())
             .set(RefreshTokenDsl::invalidated_at.eq(Some(invalidated_at_time)))
             .execute(conn)?;

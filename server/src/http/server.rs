@@ -1,3 +1,4 @@
+use crate::db::operations;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use http_body_util::Full;
@@ -8,8 +9,10 @@ use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::{Router, middleware};
 use axum::response::Response;
 use bytes::Bytes;
+use tokio::{task, time};
 use std::any::Any;
 use std::io::ErrorKind;
+use tokio::time::{Duration, Interval};
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
@@ -38,6 +41,7 @@ pub fn create_app(config: AppConfig) -> (Router, AppState) {
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
     let (app, state) = create_app(config.clone());
+    let db_pool = state.db_pool.clone();
 
     let addr = config.addr();
 
@@ -60,6 +64,26 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     }?;
 
     info!("Server running on http://{}", &addr);
+
+    task::spawn(async move {
+        let mut duration = time::interval(Duration::from_secs(60 * 15));
+        loop {
+            duration.tick().await;
+            tracing::info!("Removing expired tokens from blacklist");
+            let mut conn = match db_pool.get() {
+                Ok(conn) => conn,
+                Err(e) => {
+                    tracing::error!("Unable to remove expired tokens: {e}");
+                    break;
+                },
+            };
+            let now = chrono::Local::now().naive_utc();
+            // Ignore on error to prevent server crash
+            operations::token::delete_expired_blacklisted_tokens(&mut conn, now).inspect_err(|e| {
+                tracing::error!("Unable to remove expired tokens: {e}");
+            }).ok();
+        }
+    });
 
     axum::serve(listener, app)
         .with_graceful_shutdown(graceful_shutdown(state.clone()))
