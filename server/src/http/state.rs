@@ -1,9 +1,14 @@
+use crate::db::connection::create_pool;
 use crate::storage::node::NodeRepository;
+use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::RevisionRepository;
-use crate::storage::share::persistence::share_repository::ShareRepository;
+use crate::storage::revision::persistence::revision_repository::RevisionService;
 use crate::storage::vfs::FileRepository;
+use crate::storage::share::persistence::share_repository::ShareRepository;
+use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
+use crate::storage::vfs::backend::Sfs;
 use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::UserRepository;
+use crate::user::persistence::user_repository::{UserRepository, UserState};
 use crate::{db::connection::DbPool, http::AppConfig};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -21,28 +26,22 @@ pub struct AppState {
 }
 
 impl AppState {
-    // grouping some parameters won't help with readability
-    #[allow(clippy::too_many_arguments)]
-    pub fn new<FileRepo, NodeRepo, RevisionRepo, UserRepo, ShareRepo>(
-        config: AppConfig,
-        db_pool: DbPool,
-        vfs: FileRepo,
-        node_repository: NodeRepo,
-        revision_repository: RevisionRepo,
-        user_repository: UserRepo,
-        share_repository: ShareRepo,
-        keys: Keys,
-    ) -> Self
-    where
-        FileRepo: FileRepository + Send + Sync + 'static,
-        NodeRepo: NodeRepository + Send + Sync + 'static,
-        RevisionRepo: RevisionRepository + Send + Sync + 'static,
-        UserRepo: UserRepository + Send + Sync + 'static,
-        ShareRepo: ShareRepository + Send + Sync + 'static,
-    {
+    pub fn new(
+        config: AppConfig
+    ) -> AppState {
+        let pool = create_pool(&config.db.path, config.db.pool_size);
+
+        let vfs = Sfs::new(&config.storage.dir);
+        let keys = Keys::new(&config.auth.jwt_secret);
+
+        let node_repository = NodeState::new(Arc::new(pool.clone()));
+        let revision_repository = RevisionService::new(Arc::new(pool.clone()));
+        let user_repository = UserState::new(Arc::new(pool.clone()), keys.clone());
+        let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
+
         Self {
             config: Arc::new(config),
-            db_pool: Arc::new(db_pool),
+            db_pool: Arc::new(pool),
             vfs: Arc::new(RwLock::new(vfs)),
             node_repository: Arc::new(node_repository),
             revision_repository: Arc::new(revision_repository),
