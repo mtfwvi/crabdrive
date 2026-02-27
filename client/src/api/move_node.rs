@@ -11,7 +11,7 @@ use crabdrive_common::payloads::node::response::node::{
     PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse,
 };
 
-async fn create_mode_node_request(
+async fn create_move_node_request(
     from: &mut DecryptedNode,
     to: &mut DecryptedNode,
     node: &DecryptedNode,
@@ -52,7 +52,7 @@ pub async fn move_node(
     mut from: DecryptedNode,
     mut to: DecryptedNode,
 ) -> Result<()> {
-    let move_node_data = create_mode_node_request(&mut from, &mut to, &node).await?;
+    let move_node_data = create_move_node_request(&mut from, &mut to, &node).await?;
 
     let response = post_move_node(node.id, move_node_data).await?;
 
@@ -78,7 +78,7 @@ pub async fn move_node_to_trash(node: DecryptedNode) -> Result<()> {
 
     let parent = &mut path_to_node[1];
 
-    let move_node_data = create_mode_node_request(parent, &mut trash_node, &node).await?;
+    let move_node_data = create_move_node_request(parent, &mut trash_node, &node).await?;
 
     let response = post_move_node_to_trash(node.id, move_node_data).await?;
     match response {
@@ -93,7 +93,7 @@ pub async fn move_node_to_trash(node: DecryptedNode) -> Result<()> {
 pub async fn move_node_out_of_trash(node: DecryptedNode, mut to: DecryptedNode) -> Result<()> {
     let mut trash_node = get_trash_node().await?;
 
-    let move_node_data = create_mode_node_request(&mut trash_node, &mut to, &node).await?;
+    let move_node_data = create_move_node_request(&mut trash_node, &mut to, &node).await?;
 
     let response = post_move_node_out_of_trash(node.id, move_node_data).await?;
     match response {
