@@ -18,8 +18,8 @@ use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::any::Any;
 use std::io::ErrorKind;
 use std::sync::Arc;
-use tower_http::catch_panic::CatchPanicLayer;
 use tokio::signal;
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
