@@ -1,5 +1,6 @@
 use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
+use crate::components::file_history_button::FileHistoryButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::components::node_share_button::NodeShareButton;
 use crate::model::node::DecryptedNode;
@@ -81,6 +82,10 @@ pub(crate) fn NodeDetails(
 
                             <ModifyNodeMenu node on_modified />
 
+                            <Show when=move || node.get().node_type == NodeType::File>
+                                <FileHistoryButton node />
+                            </Show>
+
                             <NodeShareButton node />
                         </Space>
                     </Show>
@@ -89,7 +94,10 @@ pub(crate) fn NodeDetails(
                         content_type.get() == ContentViewType::Shared
                             && node.get().node_type == NodeType::File
                     }>
-                        <FileDownloadButton node />
+                        <Space vertical=true class="mt-4">
+                            <FileDownloadButton node />
+                            <FileHistoryButton node />
+                        </Space>
                     </Show>
 
                     <Show when=move || content_type.get() == ContentViewType::Trash>
