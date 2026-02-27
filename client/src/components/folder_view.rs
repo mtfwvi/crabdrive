@@ -1,5 +1,4 @@
-use crate::api::get_children;
-use crate::components::basic::resource_wrapper::ResourceWrapper;
+use crate::components::data_provider::children_provider::ChildrenProvider;
 use crate::components::folder_bottom_bar::FolderBottomBar;
 use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
@@ -32,14 +31,6 @@ pub(crate) fn FolderView(
             .expect("Failed to get path root due to empty path")
             .clone()
     });
-    let children_res = LocalResource::new(move || {
-        let current_node = current_node.get();
-        async move {
-            get_children(current_node)
-                .await
-                .map_err(|err| err.to_string())
-        }
-    });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
 
@@ -61,16 +52,7 @@ pub(crate) fn FolderView(
     });
 
     view! {
-        <ResourceWrapper
-            resource=children_res
-            error_text=Signal::derive(move || {
-                format!(
-                    "The children of '{}' could not be loaded from the server",
-                    current_node.get().id,
-                )
-            })
-            let:children
-        >
+        <ChildrenProvider node=current_node let:children let:refetch_children>
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
                     <PathBreadcrumb path on_select=navigate_to_node />
@@ -101,11 +83,11 @@ pub(crate) fn FolderView(
                     })
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
-                        children_res.refetch();
+                        refetch_children.run(());
                         selection.set(None);
                     })
                 />
             </Show>
-        </ResourceWrapper>
+        </ChildrenProvider>
     }
 }

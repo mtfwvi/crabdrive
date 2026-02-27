@@ -1,6 +1,6 @@
 use crate::api::download_file;
+use crate::components::data_provider::revisions_provider::RevisionsProvider;
 use crate::components::revision_list::RevisionList;
-use crate::components::revisions_provider::RevisionsProvider;
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crabdrive_common::storage::RevisionId;
