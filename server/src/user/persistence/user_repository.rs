@@ -292,7 +292,7 @@ impl UserRepository for UserState {
 
         if now >= r_tok.expires_at {
             tracing::warn!("Already expired refresh token");
-            return Ok(None)
+            return Ok(None);
         }
 
         // Check expiry time. Allows for 60 seconds of leeway. After this, using a token is considered abuse, and

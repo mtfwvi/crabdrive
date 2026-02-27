@@ -3,9 +3,9 @@ use crate::storage::node::NodeRepository;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::RevisionRepository;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::vfs::FileRepository;
 use crate::storage::share::persistence::share_repository::ShareRepository;
 use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
+use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::{UserRepository, UserState};
@@ -26,9 +26,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(
-        config: AppConfig
-    ) -> AppState {
+    pub fn new(config: AppConfig) -> AppState {
         let pool = create_pool(&config.db.path, config.db.pool_size);
 
         let vfs = Sfs::new(&config.storage.dir);

@@ -3,16 +3,15 @@ use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 use http_body_util::Full;
 
-
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
-use axum::{Router, middleware};
 use axum::response::Response;
+use axum::{Router, middleware};
 use bytes::Bytes;
-use tokio::{task, time};
 use std::any::Any;
 use std::io::ErrorKind;
-use tokio::time::{Duration, Interval};
+use tokio::time::Duration;
+use tokio::{task, time};
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
@@ -75,13 +74,15 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
                 Err(e) => {
                     tracing::error!("Unable to remove expired tokens: {e}");
                     break;
-                },
+                }
             };
             let now = chrono::Local::now().naive_utc();
             // Ignore on error to prevent server crash
-            operations::token::delete_expired_blacklisted_tokens(&mut conn, now).inspect_err(|e| {
-                tracing::error!("Unable to remove expired tokens: {e}");
-            }).ok();
+            operations::token::delete_expired_blacklisted_tokens(&mut conn, now)
+                .inspect_err(|e| {
+                    tracing::error!("Unable to remove expired tokens: {e}");
+                })
+                .ok();
         }
     });
 

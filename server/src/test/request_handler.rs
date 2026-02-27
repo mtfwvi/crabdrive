@@ -30,6 +30,7 @@ use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
 
 use crabdrive_common::encryption_key::EncryptionKey;
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
@@ -41,7 +42,6 @@ use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
@@ -600,14 +600,23 @@ pub async fn test_logout_invalidates_session() {
     let (jwt, _) = login1(&server).await;
 
     let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
-    let res = server.get(&info_url).add_header("Authorization", format!("Bearer {}", jwt)).await;
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
     res.assert_status_ok();
 
     let logout_url = API_BASE_PATH.to_owned() + &routes::auth::logout();
-    let res = server.post(&logout_url).add_header("Authorization", format!("Bearer {}", jwt)).await;
+    let res = server
+        .post(&logout_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
     res.assert_status_ok();
 
-    let res = server.get(&info_url).add_header("Authorization", format!("Bearer {}", jwt)).await;
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
     res.assert_status_unauthorized();
 }
 
@@ -620,16 +629,15 @@ pub async fn test_token_refresh_flow() {
         password: TEST_USERNAME1.to_string(),
     };
 
-    let login_res = server.post(&(API_BASE_PATH.to_owned() + ROUTE_LOGIN))
+    let login_res = server
+        .post(&(API_BASE_PATH.to_owned() + ROUTE_LOGIN))
         .json(&login_payload)
         .await;
 
     let refresh_cookie = login_res.cookie("refresh_token");
 
     let refresh_url = API_BASE_PATH.to_owned() + &routes::auth::refresh();
-    let refresh_res = server.post(&refresh_url)
-        .add_cookie(refresh_cookie)
-        .await;
+    let refresh_res = server.post(&refresh_url).add_cookie(refresh_cookie).await;
 
     refresh_res.assert_status_ok();
     let body: PostRefreshResponse = refresh_res.json();
@@ -639,7 +647,8 @@ pub async fn test_token_refresh_flow() {
         assert_ne!(new_jwt, "".to_string());
 
         let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
-        server.get(&info_url)
+        server
+            .get(&info_url)
             .add_header("Authorization", format!("Bearer {}", new_jwt))
             .await
             .assert_status_ok();
@@ -655,7 +664,8 @@ pub async fn test_unauthorized_access() {
 
     server.get(&info_url).await.assert_status_unauthorized();
 
-    server.get(&info_url)
+    server
+        .get(&info_url)
         .add_header("Authorization", "Bearer this.is.not.a.jwt")
         .await
         .assert_status_unauthorized();

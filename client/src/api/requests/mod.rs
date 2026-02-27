@@ -106,7 +106,6 @@ async fn request(
     auth_token: Option<&String>,
     use_api_base_path: bool,
 ) -> Result<Response> {
-
     let (response, resolved_url) = execute_request(
         url_path,
         &method,
