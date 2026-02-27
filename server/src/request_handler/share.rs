@@ -1,6 +1,5 @@
 use crate::http::AppState;
 use crate::request_handler::node::entity_to_encrypted_node;
-use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};
@@ -58,20 +57,13 @@ pub async fn post_share_node(
         );
     }
 
-    let share_entity = ShareEntity {
-        id: NodeId::random(),
-        node_id: node.id,
-        shared_by: current_user.id,
-        accepted_by: None,
-        time_shared: Utc::now().naive_utc(),
-        time_accepted: None,
-        shared_encryption_key: Some(payload.wrapped_metadata_key),
-        accepted_encryption_key: None,
-    };
-
     let share_entity = state
         .share_repository
-        .insert_share(share_entity)
+        .create_share(
+            node.id,
+            current_user.id,
+            payload.wrapped_metadata_key.clone(),
+        )
         .expect("db error");
 
     (
