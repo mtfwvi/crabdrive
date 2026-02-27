@@ -1,8 +1,8 @@
-FROM rust:alpine as build
+FROM rust:1.93.1-alpine3.23 as build
 
 # add dev dependencies
-RUN apk update && apk add sqlite-dev trunk
-run rustup install 1.85.0
+RUN apk update && apk add trunk
+RUN rustup install 1.85.0
 RUN rustup default 1.85.0
 RUN rustc --version
 
@@ -35,9 +35,6 @@ WORKDIR /usr/src/crabdrive/client
 RUN trunk build --release
 
 FROM alpine
-
-#add runtime dependencies
-RUN apk update && apk add sqlite
 
 COPY --from=build /usr/src/crabdrive/client/dist/ /usr/bin/crabdrive/client/dist/
 COPY --from=build /usr/src/crabdrive/target/release/crabdrive-server/ /usr/bin/crabdrive/crabdrive-server
