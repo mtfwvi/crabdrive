@@ -246,12 +246,12 @@ impl UserRepository for UserState {
         delete_user(&mut conn, id).context("Failed to delete user")
     }
 
-    fn verify_jwt(&self, claims: &str) -> Result<Option<UserEntity>> {
+    fn verify_jwt(&self, jwt: &str) -> Result<Option<UserEntity>> {
         let mut conn = self.db_pool.get()?;
 
-        let claims = decode_jwt(claims, &self.secrets.decoding_key)?;
+        let claims = decode_jwt(jwt, &self.secrets.decoding_key)?;
         if selected_blacklisted_token(&mut conn, &claims.jti)?.is_some() {
-            anyhow::bail!("Token blacklisted");
+            return Ok(None);
         }
 
         let user = self.get_user(claims.user_id)?.or_else(|| {
@@ -292,7 +292,7 @@ impl UserRepository for UserState {
 
         if now >= r_tok.expires_at {
             tracing::warn!("Already expired refresh token");
-            anyhow::bail!("Unauthorized");
+            return Ok(None)
         }
 
         // Check expiry time. Allows for 60 seconds of leeway. After this, using a token is considered abuse, and
