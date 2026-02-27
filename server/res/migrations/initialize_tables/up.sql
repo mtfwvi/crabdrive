@@ -19,7 +19,7 @@ CREATE TABLE User (
 CREATE TABLE Node (
     id                          TEXT        NOT NULL PRIMARY KEY,
     parent_id                   TEXT            NULL REFERENCES Node(id),
-    owner_id                    TEXT        NOT NULL REFERENCES User(id),
+    owner_id                    TEXT        NOT NULL REFERENCES User(id) ON DELETE RESTRICT,
     metadata                    BLOB        NOT NULL,
     deleted_on                  TIMESTAMP       NULL,
     metadata_change_counter     INTEGER     NOT NULL DEFAULT 0,
@@ -32,7 +32,7 @@ CREATE INDEX IdxNodeParent ON Node(parent_id);
 
 CREATE TABLE Revision (
     id                          TEXT        NOT NULL PRIMARY KEY,
-    file_id                     TEXT        NOT NULL REFERENCES Node(id),
+    file_id                     TEXT        NOT NULL REFERENCES Node(id) ON DELETE RESTRICT,
     upload_started_on           TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     upload_ended_on             TIMESTAMP       NULL,
     iv                          BLOB        NOT NULL,
@@ -41,7 +41,7 @@ CREATE TABLE Revision (
 
 CREATE TABLE Share (
     id                          TEXT        NOT NULL PRIMARY KEY,
-    node_id                     TEXT        NOT NULL REFERENCES Node(id),
+    node_id                     TEXT        NOT NULL REFERENCES Node(id) ON DELETE CASCADE,
     shared_by                   TEXT        NOT NULL REFERENCES User(id),
     accepted_by                 TEXT            NULL REFERENCES User(id),
     time_shared                 TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
