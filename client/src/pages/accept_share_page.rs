@@ -52,7 +52,7 @@ pub fn AcceptSharePage() -> impl IntoView {
         let current_node = current_node.unwrap();
 
         if current_node.node_type == NodeType::File {
-            let download_result = download_file(current_node).await;
+            let download_result = download_file(current_node, None).await;
             if let Err(err) = download_result {
                 add_toast(format!("Failed to download shared file: {}", err));
             }
