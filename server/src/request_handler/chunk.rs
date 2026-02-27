@@ -31,7 +31,15 @@ pub async fn post_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return (StatusCode::NOT_FOUND, Json(()));
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(()));
     }
 
@@ -81,7 +89,15 @@ pub async fn get_chunk(
 
     let (revision_entity, node_entity) = (revision_entity.unwrap(), node_entity.unwrap());
 
-    if node_entity.owner_id != current_user.id || node_entity.id != revision_entity.file_id {
+    if node_entity.id != revision_entity.file_id {
+        return StatusCode::NOT_FOUND.into_response();
+    }
+
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return StatusCode::NOT_FOUND.into_response();
     }
 

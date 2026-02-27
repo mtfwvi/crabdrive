@@ -110,7 +110,7 @@ mod tests {
         "33/55/cc/e40b314a4ca1bdf88b67bf4b2f"
     )]
     fn test_shard_path(id: &str, expected: &str) {
-        let id = UUID::parse_string(id.to_string()).expect("Failed to parse UUID!");
+        let id = UUID::parse_string(id).expect("Failed to parse UUID!");
         let base_path = PathBuf::from("/test/");
         let result = shard_path(id, &base_path).display().to_string();
         #[cfg(not(unix))] // Normalize strings for non-UNIX

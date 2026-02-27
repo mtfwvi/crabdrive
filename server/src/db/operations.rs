@@ -1,3 +1,5 @@
+use crate::db::ShareDsl;
+use crate::storage::share::persistence::model::share_entity::ShareEntity;
 use crate::{
     db::{
         NodeDsl, RevisionDsl,
@@ -11,8 +13,9 @@ use crate::{
     },
     user::persistence::model::user_entity::UserEntity,
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, anyhow};
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::storage::ShareId;
 use crabdrive_common::{
     storage::{NodeId, RevisionId},
     user::UserId,
@@ -23,6 +26,7 @@ use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
     sql_query,
 };
+
 // User Ops
 
 pub fn select_user(db_pool: &DbPool, user_id: UserId) -> Result<Option<UserEntity>> {
@@ -133,6 +137,12 @@ pub fn insert_node(
     parent_mdata: &EncryptedMetadata,
 ) -> Result<()> {
     // Insert Node
+
+    // check that the node id is not nil as it may break the path to root function
+    if node.id.eq(&UUID::nil()) {
+        return Err(anyhow!("illegal node id"));
+    }
+
     let mut conn = db_pool.get()?;
     conn.transaction(|conn| {
         let node = diesel::insert_into(NodeDsl::Node)
@@ -246,6 +256,38 @@ pub fn move_node(
     Ok(())
 }
 
+pub fn has_access(db_pool: &DbPool, node_id: NodeId, user_id: UserId) -> Result<bool> {
+    let node = if let Some(node) = select_node(db_pool, node_id)? {
+        node
+    } else {
+        return Ok(false);
+    };
+
+    if node.owner_id == user_id {
+        return Ok(true);
+    }
+
+    // this will return the path to between a root node and the current node as the nil node does not exist (probably)
+    let path_to_root = get_path_between_nodes(db_pool, NodeId::nil(), node_id)?;
+
+    let shared_with_user = get_all_shares_by_user(db_pool, user_id)?;
+
+    for node in path_to_root.iter().rev() {
+        // if the subtree containing the node was moved to the trash it should not be accessible anymore
+        if node.deleted_on.is_some() {
+            return Ok(false);
+        }
+
+        if shared_with_user
+            .iter()
+            .any(|share_entity| share_entity.node_id == node.id)
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
 // Revision Ops
 
 pub fn select_revision(
@@ -318,4 +360,112 @@ pub fn get_all_revisions_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Ve
             .load::<RevisionEntity>(conn)?;
         Ok(revisions)
     })
+}
+
+//Share ops
+
+pub fn select_share(db_pool: &DbPool, share_id: ShareId) -> Result<Option<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = ShareDsl::Share
+            .filter(ShareDsl::id.eq(share_id))
+            .first::<ShareEntity>(conn)
+            .optional()?;
+        Ok(share)
+    })
+}
+
+pub fn insert_share(db_pool: &DbPool, share: &ShareEntity) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share: ShareEntity = diesel::insert_into(ShareDsl::Share)
+            .values(share)
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn update_share(db_pool: &DbPool, share: &ShareEntity) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = diesel::update(ShareDsl::Share)
+            .filter(ShareDsl::id.eq(share.id))
+            .set(share)
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn delete_share(db_pool: &DbPool, share_id: ShareId) -> Result<ShareEntity> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share: ShareEntity = diesel::delete(ShareDsl::Share)
+            .filter(ShareDsl::id.eq(share_id))
+            .returning(ShareEntity::as_select())
+            .get_result(conn)?;
+        Ok(share)
+    })
+}
+
+pub fn get_all_shares_by_node(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let shares = ShareDsl::Share
+            .filter(ShareDsl::node_id.eq(node_id))
+            .load::<ShareEntity>(conn)?;
+        Ok(shares)
+    })
+}
+
+pub fn get_all_shares_by_user(db_pool: &DbPool, user_id: UserId) -> Result<Vec<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let shares = ShareDsl::Share
+            .filter(ShareDsl::accepted_by.eq(user_id))
+            .load::<ShareEntity>(conn)?;
+        Ok(shares)
+    })
+}
+
+pub fn get_share_by_node_id_and_accepted_user_id(
+    db_pool: &DbPool,
+    node_id: NodeId,
+    user_id: UserId,
+) -> Result<Option<ShareEntity>> {
+    let mut conn = db_pool.get()?;
+    conn.transaction(|conn| {
+        let share = ShareDsl::Share
+            .filter(ShareDsl::node_id.eq(node_id))
+            .filter(ShareDsl::accepted_by.eq(user_id))
+            .first::<ShareEntity>(conn)
+            .optional()?;
+        Ok(share)
+    })
+}
+
+pub fn get_access_list(db_pool: &DbPool, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
+    let Some(node) = select_node(db_pool, node_id)? else {
+        return Ok(vec![]);
+    };
+
+    let owner =
+        select_user(db_pool, node.owner_id)?.ok_or(anyhow!("db constraints are not respected"))?;
+
+    let mut access_list = vec![(owner.id, owner.username)];
+
+    let share_entities = get_all_shares_by_node(db_pool, node_id)?;
+
+    for share_entity in share_entities {
+        let Some(user_id) = share_entity.accepted_by else {
+            continue;
+        };
+
+        let user =
+            select_user(db_pool, user_id)?.ok_or(anyhow!("db constraints are not respected"))?;
+        access_list.push((user.id, user.username));
+    }
+
+    Ok(access_list)
 }

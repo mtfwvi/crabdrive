@@ -42,3 +42,15 @@ CREATE TABLE Revision(
     chunk_count INTEGER NOT NULL,
     FOREIGN KEY (file_id) REFERENCES Node(id)
 );
+
+CREATE TABLE Share
+(
+    id                      TEXT      NOT NULL PRIMARY KEY,
+    node_id                 TEXT      NOT NULL REFERENCES Node (id),
+    shared_by               TEXT REFERENCES User (id),
+    accepted_by             TEXT REFERENCES User (id),
+    time_shared             TIMESTAMP NOT NULL,
+    time_accepted           TIMESTAMP,
+    shared_encryption_key   BLOB,
+    accepted_encryption_key BLOB
+);

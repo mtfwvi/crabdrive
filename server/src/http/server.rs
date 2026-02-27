@@ -13,6 +13,7 @@ use http_body_util::Full;
 use tempfile::TempDir;
 use tokio::sync::RwLock;
 
+use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::UserState;
 use axum::http::StatusCode;
@@ -67,6 +68,8 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         Arc::new(RevisionService::new(Arc::new(pool.clone())));
     let user_repository: Arc<dyn UserRepository + Send + Sync> =
         Arc::new(UserState::new(Arc::new(pool.clone())));
+    let share_repository =
+        Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
@@ -77,6 +80,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         node_repository,
         revision_repository,
         user_repository,
+        share_repository,
         keys,
     );
 

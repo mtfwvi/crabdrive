@@ -11,7 +11,7 @@ use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::{UserRepository, UserState};
 use axum::http::StatusCode;
 use axum::{Router, middleware};
-use axum_test::TestServer;
+use axum_test::{TestRequest, TestServer};
 use bytes::Bytes;
 
 use crabdrive_common::da;
@@ -32,7 +32,7 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::payloads::node::response::node::{
-    GetNodeResponse, GetPathBetweenNodesResponse,
+    GetAccessiblePathResponse, GetNodeResponse, GetPathBetweenNodesResponse,
 };
 use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
@@ -42,6 +42,15 @@ use std::path::PathBuf;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
+use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
+use crabdrive_common::encryption_key::EncryptionKey;
+use crabdrive_common::payloads::node::request::share::{
+    PostAcceptShareRequest, PostShareNodeRequest,
+};
+use crabdrive_common::payloads::node::response::share::{
+    GetAcceptShareInfoResponse, GetAcceptedSharedResponse, PostAcceptShareResponse,
+    PostShareNodeResponse,
+};
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use pretty_assertions::assert_eq;
@@ -50,8 +59,9 @@ use rand::{RngCore, SeedableRng};
 use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
-const TEST_USERNAME: &str = "admin";
-const TEST_PASSWORD: &str = "admin";
+const TEST_USERNAME1: &str = "admin";
+
+const TEST_USERNAME2: &str = "admin2";
 
 pub fn random_metadata() -> EncryptedMetadata {
     let mut data = vec![0; 6403];
@@ -120,7 +130,7 @@ pub async fn test_register() {
 pub async fn test_folder() {
     let server = get_server().await;
 
-    let (jwt, root_node_id) = login(&server).await;
+    let (jwt, root_node_id) = login1(&server).await;
 
     let get_user_info_request = server
         .get(routes::auth::ROUTE_INFO)
@@ -161,6 +171,7 @@ pub async fn test_folder() {
         node_type: NodeType::Folder,
         current_revision: None,
         encrypted_metadata: node_metadata,
+        has_access: vec![(self_id, TEST_USERNAME1.to_string())],
     });
 
     assert_eq!(expected_response, create_folder_response);
@@ -169,7 +180,7 @@ pub async fn test_folder() {
 #[tokio::test]
 pub async fn test_path_between_nodes() {
     let server = get_server().await;
-    let (jwt, root_node_id) = login(&server).await;
+    let (jwt, root_node_id) = login1(&server).await;
     let create_node_request1 = PostCreateFolderRequest {
         parent_metadata_version: 0,
         parent_metadata: random_metadata(),
@@ -264,9 +275,207 @@ pub async fn test_path_between_nodes() {
 }
 
 #[tokio::test]
+pub async fn test_share() {
+    let server = get_server().await;
+    let (jwt1, root_node_id1) = login1(&server).await;
+    let (jwt2, _root_node_id2) = login2(&server).await;
+
+    // user 1 creates a folder
+    let (folder1_id, metadata1) = {
+        let id = NodeId::random();
+        let node_metadata = random_metadata();
+
+        let create_node_request1 = PostCreateFolderRequest {
+            parent_metadata_version: 0,
+            parent_metadata: random_metadata(),
+            node_metadata: node_metadata.clone(),
+            node_id: id,
+        };
+        let create_folder_in_root_url =
+            API_BASE_PATH.to_owned() + &routes::node::folder::create(root_node_id1);
+        let create_node_request1_response = server
+            .post(&create_folder_in_root_url)
+            .add_header("Authorization", format!("Bearer {}", jwt1))
+            .json(&create_node_request1)
+            .await;
+
+        assert_eq!(
+            create_node_request1_response.status_code(),
+            StatusCode::CREATED
+        );
+
+        (id, node_metadata)
+    };
+
+    // user2 should have zero shared nodes
+    {
+        let get_accepted_shared_nodes_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
+        let accepted_shared_node_response =
+            auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
+        let accepted_shared_node_response_body: GetAcceptedSharedResponse =
+            accepted_shared_node_response.json();
+        assert_eq!(
+            accepted_shared_node_response_body,
+            GetAcceptedSharedResponse::Ok(vec![])
+        );
+    }
+
+    // create the share "url"
+    let share_id = {
+        let share_node_url = API_BASE_PATH.to_owned() + &routes::node::share::share(folder1_id);
+        let post_share_node_request = PostShareNodeRequest {
+            wrapped_metadata_key: EncryptionKey::nil(),
+        };
+        let create_share_node_response = auth(server.post(&share_node_url), &jwt1)
+            .json(&post_share_node_request)
+            .await;
+        let create_share_node_response_body: PostShareNodeResponse =
+            create_share_node_response.json();
+
+        if let PostShareNodeResponse::Ok(share_id) = create_share_node_response_body {
+            share_id
+        } else {
+            panic!("unexpected response: {:?}", create_share_node_response);
+        }
+    };
+
+    // get share url info
+    {
+        let get_share_info_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_share_accept_info(share_id);
+        let get_share_info_response = auth(server.get(&get_share_info_url), &jwt2).await;
+        let get_share_info_response_body: GetAcceptShareInfoResponse =
+            get_share_info_response.json();
+
+        if let GetAcceptShareInfoResponse::Ok(share_info) = get_share_info_response_body {
+            assert_eq!(share_info.node_id, folder1_id)
+        } else {
+            panic!("unexpected response: {:?}", get_share_info_response);
+        }
+    }
+
+    // accept share
+    {
+        let accept_share_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::accept_share(share_id);
+        let accept_share_body = PostAcceptShareRequest {
+            new_wrapped_metadata_key: EncryptionKey::nil(),
+        };
+        let accept_share_response = auth(server.post(&accept_share_url), &jwt2)
+            .json(&accept_share_body)
+            .await;
+        let accept_share_response_body: PostAcceptShareResponse = accept_share_response.json();
+
+        assert_eq!(PostAcceptShareResponse::Ok, accept_share_response_body);
+    }
+
+    // user 2 should have one shared item
+    {
+        let get_accepted_shared_nodes_url =
+            API_BASE_PATH.to_owned() + &routes::node::share::get_accepted_shared();
+        let accepted_shared_node_response =
+            auth(server.get(&get_accepted_shared_nodes_url), &jwt2).await;
+        let accepted_shared_node_response_body: GetAcceptedSharedResponse =
+            accepted_shared_node_response.json();
+        let GetAcceptedSharedResponse::Ok(accepted_nodes) = accepted_shared_node_response_body;
+        assert_eq!(accepted_nodes.len(), 1);
+        assert_eq!(accepted_nodes[0].1.id, folder1_id);
+    }
+
+    // user 2 should be able to read the shared folder
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::by_id(folder1_id);
+
+        let test_request = auth(server.get(&url), &jwt2).await;
+
+        assert_eq!(test_request.status_code(), StatusCode::OK);
+        let response: GetNodeResponse = test_request.json();
+
+        if let GetNodeResponse::Ok(node) = response {
+            assert_eq!(node.encrypted_metadata, metadata1)
+        } else {
+            panic!("unexpected response: {:?}", response);
+        }
+    }
+
+    // user 2 should be able to add a folder to the shared folder
+    let (folder2_id, folder2_metadata) = {
+        let folder2_id = NodeId::random();
+        let folder2_metadata = random_metadata();
+        let create_node_request = PostCreateFolderRequest {
+            parent_metadata_version: 0,
+            parent_metadata: random_metadata(),
+            node_metadata: folder2_metadata.clone(),
+            node_id: folder2_id,
+        };
+
+        let url = API_BASE_PATH.to_owned() + &routes::node::folder::create(folder1_id);
+
+        let test_request = auth(server.post(&url), &jwt2)
+            .json(&create_node_request)
+            .await;
+
+        assert_eq!(test_request.status_code(), StatusCode::CREATED);
+        let _create_folder_response: PostCreateFolderResponse = test_request.json();
+
+        (folder2_id, folder2_metadata)
+    };
+
+    // user1 should see all folders
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt1).await.json();
+
+        if let GetAccessiblePathResponse::Ok(path) = test_request {
+            assert_eq!(path.len(), 3);
+            assert_eq!(path[0].id, root_node_id1);
+            assert_eq!(path[1].id, folder1_id);
+            assert_eq!(path[2].id, folder2_id);
+        } else {
+            panic!("unexpected response: {:?}", test_request);
+        }
+    }
+
+    // user2 should see the last two folders
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::accessible_path(folder2_id);
+        let test_request: GetAccessiblePathResponse = auth(server.get(&url), &jwt2).await.json();
+
+        if let GetAccessiblePathResponse::Ok(path) = test_request {
+            assert_eq!(path.len(), 2);
+            assert_eq!(path[0].id, folder1_id);
+            assert_eq!(path[1].id, folder2_id);
+        } else {
+            panic!("unexpected response: {:?}", test_request);
+        }
+    }
+
+    // user 1 should be able to read the folder that was created in his folder
+    {
+        let url = API_BASE_PATH.to_owned() + &routes::node::by_id(folder2_id);
+
+        let test_request = auth(server.get(&url), &jwt1).await;
+
+        assert_eq!(test_request.status_code(), StatusCode::OK);
+        let response: GetNodeResponse = test_request.json();
+
+        if let GetNodeResponse::Ok(node) = response {
+            assert_eq!(node.encrypted_metadata, folder2_metadata)
+        } else {
+            panic!("unexpected response: {:?}", response);
+        }
+    }
+}
+
+fn auth(request: TestRequest, jwt: &String) -> TestRequest {
+    request.add_header("Authorization", format!("Bearer {}", jwt))
+}
+
+#[tokio::test]
 pub async fn test_file() {
     let server = get_server().await;
-    let (jwt, root_node_id) = login(&server).await;
+    let (jwt, root_node_id) = login1(&server).await;
 
     let parent_metadata = random_metadata();
     let node_metadata = random_metadata();
@@ -417,6 +626,8 @@ pub async fn get_server() -> TestServer {
         Arc::new(RevisionService::new(Arc::new(pool.clone())));
     let user_repository: Arc<dyn UserRepository + Send + Sync> =
         Arc::new(UserState::new(Arc::new(pool.clone())));
+    let share_repository =
+        Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
@@ -427,6 +638,7 @@ pub async fn get_server() -> TestServer {
         node_repository,
         revision_repository,
         user_repository,
+        share_repository,
         keys,
     );
 
@@ -440,18 +652,31 @@ pub async fn get_server() -> TestServer {
 
     let server = TestServer::new(app).unwrap();
 
-    let register_admin_request_body = PostRegisterRequest {
-        username: TEST_USERNAME.to_string(),
-        password: TEST_PASSWORD.to_string(),
+    let register_user1_response_body = PostRegisterRequest {
+        username: TEST_USERNAME1.to_string(),
+        password: TEST_USERNAME1.to_string(),
         keys: UserKeys::nil(),
     };
 
-    let register_response = server
+    let register_response1 = server
         .post(ROUTE_REGISTER)
-        .json(&register_admin_request_body)
+        .json(&register_user1_response_body)
         .await;
 
-    assert_eq!(register_response.status_code(), StatusCode::CREATED);
+    assert_eq!(register_response1.status_code(), StatusCode::CREATED);
+
+    let register_user2_response_body = PostRegisterRequest {
+        username: TEST_USERNAME2.to_string(),
+        password: TEST_USERNAME2.to_string(),
+        keys: UserKeys::nil(),
+    };
+
+    let register_response2 = server
+        .post(ROUTE_REGISTER)
+        .json(&register_user2_response_body)
+        .await;
+
+    assert_eq!(register_response2.status_code(), StatusCode::CREATED);
 
     server
 }
@@ -465,17 +690,23 @@ fn prepare_db(state: &AppState) {
     }
 }
 
-pub async fn login(server: &TestServer) -> (String, NodeId) {
+pub async fn login1(server: &TestServer) -> (String, NodeId) {
+    login(server, TEST_USERNAME1.to_string()).await
+}
+
+pub async fn login2(server: &TestServer) -> (String, NodeId) {
+    login(server, TEST_USERNAME2.to_string()).await
+}
+
+pub async fn login(server: &TestServer, username: String) -> (String, NodeId) {
     let login = PostLoginRequest {
-        username: TEST_USERNAME.to_string(),
-        password: TEST_PASSWORD.to_string(),
+        username: username.clone(),
+        password: username,
     };
 
     let login_url = API_BASE_PATH.to_owned() + ROUTE_LOGIN;
 
     let login_request = server.post(&login_url).json(&login).await;
-
-    println!("login: {:?}", login_request);
 
     let login_response: PostLoginResponse = login_request.json();
 

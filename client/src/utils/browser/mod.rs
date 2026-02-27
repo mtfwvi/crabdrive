@@ -18,6 +18,10 @@ pub fn get_document() -> Result<Document> {
     ))
 }
 
+pub fn get_current_url() -> Result<String> {
+    wrap_js_err(get_window()?.location().href())
+}
+
 pub fn get_crypto() -> Result<Crypto> {
     wrap_js_err(get_window()?.crypto())
 }

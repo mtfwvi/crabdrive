@@ -1,5 +1,6 @@
 use crate::storage::node::NodeRepository;
 use crate::storage::revision::RevisionRepository;
+use crate::storage::share::persistence::share_repository::ShareRepository;
 use crate::storage::vfs::FileRepository;
 use crate::user::auth::secrets::Keys;
 use crate::user::persistence::user_repository::UserRepository;
@@ -15,6 +16,7 @@ pub struct AppState {
     pub node_repository: Arc<dyn NodeRepository + Send + Sync>,
     pub revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
     pub user_repository: Arc<dyn UserRepository + Send + Sync>,
+    pub share_repository: Arc<dyn ShareRepository + Send + Sync>,
     pub keys: Arc<Keys>,
 }
 
@@ -26,6 +28,7 @@ impl AppState {
         node_repository: Arc<dyn NodeRepository + Send + Sync>,
         revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
         user_repository: Arc<dyn UserRepository + Send + Sync>,
+        share_repository: Arc<dyn ShareRepository + Send + Sync>,
         keys: Keys,
     ) -> Self {
         Self {
@@ -35,6 +38,7 @@ impl AppState {
             node_repository,
             revision_repository,
             user_repository,
+            share_repository,
             keys: Arc::new(keys),
         }
     }
