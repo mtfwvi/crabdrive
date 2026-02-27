@@ -8,5 +8,5 @@ pub struct RefreshBody {
 #[derive(Debug, Serialize, Deserialize)]
 pub enum PostRefreshResponse {
     Ok(RefreshBody),
-    Err
+    Err,
 }

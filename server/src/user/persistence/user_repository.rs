@@ -1,6 +1,6 @@
 use crate::db::connection::DbPool;
-use crate::db::operations::user::*;
 use crate::db::operations::token::*;
+use crate::db::operations::user::*;
 
 use crate::user::auth::claims::Claims;
 use crate::user::auth::secrets::Keys;
@@ -24,7 +24,7 @@ use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use nanoid::nanoid;
 use sha2::{Digest, Sha256};
 
-type JWT = String;
+type Jwt = String;
 type RefreshToken = String;
 
 pub(crate) trait UserRepository {
@@ -49,9 +49,9 @@ pub(crate) trait UserRepository {
     /// Verify if a JWT is valid
     fn verify_jwt(&self, jwt: &str) -> Result<Option<UserEntity>>;
     /// Create a new session. This will create a new refresh token and JWT
-    fn create_session(&self, user_id: UserId) -> Result<(RefreshToken, JWT)>;
+    fn create_session(&self, user_id: UserId) -> Result<(RefreshToken, Jwt)>;
     /// Refresh a session with a refresh token. Returns `None` if the refresh token is invalid.
-    fn refresh_session(&self, rtoken: &str) -> Result<Option<(RefreshToken, JWT)>>;
+    fn refresh_session(&self, rtoken: &str) -> Result<Option<(RefreshToken, Jwt)>>;
     /// Invalidate session by ID. This will also blacklist the provided JWT.
     fn close_session(&self, jwt: &str) -> Result<()>;
 }
@@ -250,7 +250,7 @@ impl UserRepository for UserState {
     fn verify_jwt(&self, claims: &str) -> Result<Option<UserEntity>> {
         let mut conn = self.db_pool.get()?;
 
-        let claims = decode_jwt(&claims, &self.secrets.decoding_key)?;
+        let claims = decode_jwt(claims, &self.secrets.decoding_key)?;
         if selected_blacklisted_token(&mut conn, &claims.jti)?.is_some() {
             anyhow::bail!("Token blacklisted");
         }
@@ -303,7 +303,8 @@ impl UserRepository for UserState {
             }
         }
 
-        let (raw_new_r_tok, new_r_tok) = create_new_refresh_token(r_tok.user_id, Some(r_tok.session_id));
+        let (raw_new_r_tok, new_r_tok) =
+            create_new_refresh_token(r_tok.user_id, Some(r_tok.session_id));
         let new_jwt = create_jwt(
             r_tok.user_id,
             r_tok.session_id,
@@ -324,7 +325,7 @@ impl UserRepository for UserState {
     fn close_session(&self, jwt: &str) -> Result<()> {
         let mut conn = self.db_pool.get()?;
 
-        let jwt = decode_jwt(&jwt, &self.secrets.decoding_key)?;
+        let jwt = decode_jwt(jwt, &self.secrets.decoding_key)?;
         if selected_blacklisted_token(&mut conn, &jwt.jti)?.is_some() {
             anyhow::bail!("Token already blacklisted");
         }
@@ -339,11 +340,7 @@ impl UserRepository for UserState {
                 },
             )?;
             // Invalidate the session
-            invalidate_token_family(
-                conn,
-                jwt.session_id,
-                Local::now().naive_local()
-            )?;
+            invalidate_token_family(conn, jwt.session_id, Local::now().naive_local())?;
 
             Ok::<(), anyhow::Error>(())
         })

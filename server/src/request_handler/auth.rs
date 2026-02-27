@@ -7,10 +7,10 @@ use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::{HeaderName, StatusCode};
 use axum_extra::TypedHeader;
 use axum_extra::extract::CookieJar;
-use axum_extra::extract::cookie::{Cookie, Expiration, SameSite};
+use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
-use chrono::Duration;
+
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
@@ -181,25 +181,29 @@ pub async fn post_refresh(
     State(state): State<AppState>,
     jar: CookieJar,
     _user: UserEntity,
-) -> (StatusCode, [(HeaderName, String); 1], Json<PostRefreshResponse>) {
+) -> (
+    StatusCode,
+    [(HeaderName, String); 1],
+    Json<PostRefreshResponse>,
+) {
     let refresh_token = match jar.get("refresh_token") {
-            Some(cookie) => cookie.value().to_string(),
-            None => return (
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            return (
                 StatusCode::UNAUTHORIZED,
                 [(SET_COOKIE, "".to_string())],
-                Json(PostRefreshResponse::Err)
-            ),
-        };
+                Json(PostRefreshResponse::Err),
+            );
+        }
+    };
 
-    let res = state
-        .user_repository
-        .refresh_session(&refresh_token);
+    let res = state.user_repository.refresh_session(&refresh_token);
 
     if res.is_err() {
         return (
             StatusCode::INTERNAL_SERVER_ERROR,
             [(SET_COOKIE, "".to_string())],
-            Json(PostRefreshResponse::Err)
+            Json(PostRefreshResponse::Err),
         );
     }
 
@@ -209,7 +213,7 @@ pub async fn post_refresh(
         return (
             StatusCode::UNAUTHORIZED,
             [(SET_COOKIE, "".to_string())],
-            Json(PostRefreshResponse::Err)
+            Json(PostRefreshResponse::Err),
         );
     }
 
@@ -223,8 +227,9 @@ pub async fn post_refresh(
         .build()
         .to_string();
 
-
-    (StatusCode::OK, [(COOKIE, cookie)], Json(PostRefreshResponse::Ok(RefreshBody {
-        bearer_token: jwt,
-    })))
+    (
+        StatusCode::OK,
+        [(COOKIE, cookie)],
+        Json(PostRefreshResponse::Ok(RefreshBody { bearer_token: jwt })),
+    )
 }

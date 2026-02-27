@@ -622,7 +622,6 @@ pub async fn get_server() -> TestServer {
     let user_repository = UserState::new(Arc::new(pool.clone()), keys.clone());
     let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
 
-
     let state = AppState::new(
         config.clone(),
         pool,

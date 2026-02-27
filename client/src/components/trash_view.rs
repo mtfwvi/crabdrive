@@ -1,33 +1,26 @@
 use crate::api::get_children;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::components::content_frame::ContentViewType;
-use crate::components::folder_bottom_bar::FolderBottomBar;
 use crate::components::node_details::NodeDetails;
 use crate::components::node_list::NodeList;
-use crate::components::path_breadcrumb::PathBreadcrumb;
+use crate::components::trash_empty_button::TrashEmptyButton;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
-use thaw::{Divider, Space};
+use thaw::{Divider, Icon, Space, SpaceAlign, Text};
 
 #[component]
-pub(crate) fn FolderView(
-    path: Signal<Vec<DecryptedNode>>,
-    request_path_refetch: Callback<()>,
+pub(crate) fn TrashView(
+    trash_node: Signal<DecryptedNode>,
+    request_trash_node_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_node = Callback::new(move |node_id| {
         navigate(&format!("/{}", node_id), Default::default());
     });
 
-    let current_node = Signal::derive(move || {
-        path.get()
-            .last()
-            .expect("Failed to get current node due to empty path")
-            .clone()
-    });
     let children_res = LocalResource::new(move || {
-        let current_node = current_node.get();
+        let current_node = trash_node.get();
         async move {
             get_children(current_node)
                 .await
@@ -36,13 +29,6 @@ pub(crate) fn FolderView(
     });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
-
-    let _reset_selection_effect = Effect::watch(
-        move || path.get(),
-        move |_, _, _| selection.set(None),
-        false,
-    );
-
     let toggle_selection = Callback::new(move |file: DecryptedNode| {
         let selected = selection.get().clone();
         let is_selected = selected.is_some() && selected.unwrap().id == file.id;
@@ -57,21 +43,20 @@ pub(crate) fn FolderView(
     view! {
         <ResourceWrapper
             resource=children_res
-            error_text=Signal::derive(move || {
-                format!(
-                    "The children of '{}' could not be loaded from the server",
-                    current_node.get().id,
-                )
-            })
+            error_text="The items in trash could not be loaded from the server"
             let:children
         >
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
-                    <PathBreadcrumb path on_select=navigate_to_node />
+                    <Space align=SpaceAlign::Center>
+                        <Icon class="!text-2xl mr-1" icon=icondata_mdi::MdiTrashCanOutline />
+                        <Text class="!text-2xl !font-bold">"Trash"</Text>
+                    </Space>
                     <Divider class="mb-3" />
 
                     <NodeList
                         nodes=children
+                        no_nodes_message="Trash is empty"
                         on_node_click=toggle_selection
                         on_folder_dblclick=navigate_to_node
                         folders_only=false
@@ -79,15 +64,13 @@ pub(crate) fn FolderView(
                 </Space>
 
                 // Request refetch since parent metadata was modified
-                <FolderBottomBar current_node on_children_modified=request_path_refetch />
+                <TrashEmptyButton on_emptied=request_trash_node_refetch />
             </Space>
 
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    content_type=Signal::derive(move || ContentViewType::Folder(
-                        current_node.get().id,
-                    ))
+                    content_type=ContentViewType::Trash
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
                         children_res.refetch();

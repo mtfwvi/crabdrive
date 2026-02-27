@@ -1,7 +1,7 @@
 use crate::api::rename_node;
+use crate::components::basic::folder_selection_dialog::FolderSelectionDialog;
+use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::components::folder_selection_dialog::FolderSelectionDialog;
-use crate::components::input_dialog::InputDialog;
 use crate::constants::INFINITE_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
@@ -16,7 +16,6 @@ use web_sys::File;
 #[component]
 pub(crate) fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -54,7 +53,7 @@ pub(crate) fn ModifyNodeMenu(
     let rename_action = Action::new_local(move |input: &String| {
         let new_name = input.to_owned();
         async move {
-            rename_node(node.get_untracked(), parent.get_untracked(), new_name)
+            rename_node(node.get_untracked(), new_name)
                 .await
                 .map_err(|err| err.to_string())
         }
@@ -121,7 +120,8 @@ pub(crate) fn ModifyNodeMenu(
                 format!("Select destination for '{}'", shorten_file_name(metadata.get().name))
             })
             confirm_label="Move here"
-            current_node=Signal::derive(move || parent.get().id)
+            // parent_id should not be None, since modify-node-menu cannot be opened for root node
+            start_folder=Signal::derive(move || node.get().parent_id.unwrap())
         />
     }
 }

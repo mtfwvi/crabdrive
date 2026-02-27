@@ -1,8 +1,8 @@
 use crate::db::{RefreshTokenDsl, TokenBlacklistDsl};
 use crate::user::{BlacklistedTokenEntity, RefreshTokenEntity, SessionId};
 
-use chrono::NaiveDateTime;
 use anyhow::Result;
+use chrono::NaiveDateTime;
 use diesel::{
     Connection, ExpressionMethods, OptionalExtension, QueryDsl, RunQueryDsl, SelectableHelper,
     SqliteConnection,

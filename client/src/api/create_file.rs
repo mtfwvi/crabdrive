@@ -28,7 +28,6 @@ pub async fn create_file(
     file: File,
 ) -> Result<DecryptedNode> {
     let _guard = debug_span!("api::createFile").entered();
-    let token = utils::auth::get_token()?;
 
     // The key which is used for encrypting metadata. This will later be stored inside the encrypted
     // metadata of the parent.
@@ -88,7 +87,7 @@ pub async fn create_file(
         node_id: new_node_id,
     };
 
-    let response = api::requests::file::post_create_file(parent.id, request_body, &token)
+    let response = api::requests::file::post_create_file(parent.id, request_body)
         .await
         .inspect_err(|e| tracing::error!("Failed to post to create_file: {}", e))
         .map_err(|e| anyhow!("Could not create file: {:?}", e))?;
@@ -122,7 +121,6 @@ pub async fn create_file(
                 file_encryption_key,
                 &file_revision,
                 new_node_id,
-                &token,
             )
             .await
         }
@@ -141,7 +139,6 @@ async fn upload_file(
     file_key: FileKey,
     revision: &FileRevision,
     node_id: NodeId,
-    token: &String,
 ) -> Result<DecryptedNode> {
     //TODO test this
     let _guard = debug_span!("uploadFile").entered();
@@ -150,14 +147,13 @@ async fn upload_file(
         // this does not clone the actual arraybuffer, just the ref to it
         let chunk = chunk.clone();
         async move {
-            encrypt_and_upload_chunk(&chunk, revision.iv, &file_key, node_id, revision.id, token)
-                .await
+            encrypt_and_upload_chunk(&chunk, revision.iv, &file_key, node_id, revision.id).await
         }
     })
     .await
     .inspect_err(|e| tracing::error!("Failed to split file into chunks: {}", e))?;
 
-    let response = api::requests::file::post_commit_file(node_id, revision.id, token)
+    let response = api::requests::file::post_commit_file(node_id, revision.id)
         .await
         .inspect_err(|e| tracing::error!("Failed to post to commit_file: {}", e))?;
 
@@ -182,7 +178,6 @@ async fn encrypt_and_upload_chunk(
     file_key: &FileKey,
     node_id: NodeId,
     revision_id: RevisionId,
-    token: &String,
 ) -> Result<()> {
     let _guard = debug_span!("encryptAndUploadChunk").entered();
 
@@ -191,7 +186,7 @@ async fn encrypt_and_upload_chunk(
         .inspect_err(|e| tracing::error!("Failed to encrypt chunk: {}", e))?;
     let request_body = Uint8Array::new(&encrypted_chunk.chunk);
     let response =
-        api::requests::chunk::post_chunk(node_id, revision_id, chunk.index, request_body, token)
+        api::requests::chunk::post_chunk(node_id, revision_id, chunk.index, request_body)
             .await
             .inspect_err(|e| tracing::error!("Failed to post to create_file: {}", e))?;
 
