@@ -123,13 +123,16 @@ pub fn get_access_list_parent_tree(
 }
 
 #[instrument(skip(conn), err)]
-fn get_access_list_node(conn: &mut SqliteConnection, node_id: NodeId) -> Result<Vec<(UserId, String)>> {
+fn get_access_list_node(
+    conn: &mut SqliteConnection,
+    node_id: NodeId,
+) -> Result<Vec<(UserId, String)>> {
     let Some(node) = select_node(conn, node_id)? else {
         return Ok(vec![]);
     };
 
-    let owner =
-        select_user(conn, node.owner_id)?.ok_or(anyhow::anyhow!("db constraints are not respected"))?;
+    let owner = select_user(conn, node.owner_id)?
+        .ok_or(anyhow::anyhow!("db constraints are not respected"))?;
 
     let mut access_list = vec![(owner.id, owner.username)];
 
@@ -140,14 +143,13 @@ fn get_access_list_node(conn: &mut SqliteConnection, node_id: NodeId) -> Result<
             continue;
         };
 
-        let user =
-            select_user(conn, user_id)?.ok_or(anyhow::anyhow!("db constraints are not respected"))?;
+        let user = select_user(conn, user_id)?
+            .ok_or(anyhow::anyhow!("db constraints are not respected"))?;
         access_list.push((user.id, user.username));
     }
 
     Ok(access_list)
 }
-
 
 #[instrument(skip(conn), err)]
 pub fn has_access(conn: &mut SqliteConnection, node_id: NodeId, user_id: UserId) -> Result<bool> {
