@@ -3,7 +3,17 @@
 Prerequisites:
 
 - Rust 1.85.0 or later installed.
+- trunk installed (install with `cargo install trunk`)
+- available `wasm32-unknown-unknown` target (add with `rustup target add wasm32-unknown-unknown`)
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
+- (optional) `leptosfmt` (install with `cargo install leptosfmt`) to more easily format the view macros inside leptos.
+- (optional) `diesel_cli` (install with `cargo install diesel_cli`, requires sqlite installed) to manage db migrations
+
+To run the client on its own run `trunk server --open` from the `./client` folder - to build it for serving via the server run `trunk build --release`.
+
+The server can be run/built with `cargo run --bin crabdrive-server --release` / `cargo build --bin crabdrive-server --release`
+
+The server will try to server the files under `./client/target` (relative to the working directory)
 ## Podman/Docker
 To start the container run `podman compose up --build` `docker compose up --build`
 
@@ -174,9 +184,7 @@ You can also generate a template using `./crabdrive-server --generate-config-tem
 ```
 ## Client
 
-To run the client on its own run `trunk server --open` from `/client` - to build it for serving via the server run `trunk build --release`.
+
 
 Make sure `trunk` is installed (if not install it with `cargo install trunk`) and add the `wasm32-unknown-unknown` target with `rustup target add wasm32-unknown-unknown`.
 
-Optionally, you can install `leptosfmt` with `cargo install leptosfmt` to more easily format the view macros inside
-leptos.

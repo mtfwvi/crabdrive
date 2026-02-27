@@ -1,9 +1,9 @@
+# we need to start with a newer rust version because diesel cli needs rust 1.86
 FROM rust:1.93.1-alpine3.23
 
 LABEL authors="wi"
 
 RUN apk update && apk add trunk bash git sqlite-dev sqlite-libs sqlite-static
-
 
 RUN adduser crabdrive -s /bin/bash -D
 
