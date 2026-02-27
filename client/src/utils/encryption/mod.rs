@@ -3,7 +3,6 @@ pub mod chunk;
 pub mod node;
 pub mod random;
 
-use crate::hex_fmt;
 use crate::model::encryption::{DerivedKey, RawEncryptionKey, WrappedKey};
 use crate::utils::browser::get_subtle_crypto;
 use crate::utils::error::{future_from_js_promise, wrap_js_err};
