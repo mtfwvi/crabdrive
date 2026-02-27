@@ -22,6 +22,8 @@ use tracing_subscriber::util::SubscriberInitExt;
 use tracing_web::{MakeWebConsoleWriter, performance_layer};
 
 use crate::pages::accept_share_page::AcceptSharePage;
+use crate::pages::home_page::HomePageType;
+use crate::pages::login_page::LoginType;
 #[cfg(test)]
 use wasm_bindgen_test::wasm_bindgen_test_configure;
 
@@ -71,20 +73,34 @@ fn CrabDrive() -> impl IntoView {
             <ToasterProvider position=ToastPosition::BottomStart>
                 <Router>
                     <Routes fallback=|| "Frontend route not found">
-                        <Route path=path!("") view=HomePage />
                         <Route
-                            path=path!("/register")
-                            view=move || view! { <LoginPage register_new_account=true /> }
+                            path=path!("")
+                            view=move || view! { <HomePage view_type=HomePageType::Folder /> }
                         />
                         <Route
-                            path=path!("/login")
-                            view=move || view! { <LoginPage register_new_account=false /> }
+                            path=path!("/shared")
+                            view=move || view! { <HomePage view_type=HomePageType::Shared /> }
                         />
                         <Route
                             path=path!("/shared/:shareId")
                             view=move || view! { <AcceptSharePage /> }
                         />
-                        <Route path=path!("/:id") view=HomePage />
+                        <Route
+                            path=path!("/trash")
+                            view=move || view! { <HomePage view_type=HomePageType::Trash /> }
+                        />
+                        <Route
+                            path=path!("/register")
+                            view=move || view! { <LoginPage login_type=LoginType::Register /> }
+                        />
+                        <Route
+                            path=path!("/login")
+                            view=move || view! { <LoginPage login_type=LoginType::Login /> }
+                        />
+                        <Route
+                            path=path!("/:id")
+                            view=move || view! { <HomePage view_type=HomePageType::Folder /> }
+                        />
                     </Routes>
                 </Router>
             </ToasterProvider>

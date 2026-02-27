@@ -6,19 +6,8 @@ use crabdrive_common::payloads::node::request::node::PatchNodeRequest;
 use crabdrive_common::payloads::node::response::node::PatchNodeResponse;
 use tracing::debug_span;
 
-pub async fn rename_node(
-    node: DecryptedNode,
-    parent: DecryptedNode,
-    new_name: String,
-) -> Result<()> {
+pub async fn rename_node(node: DecryptedNode, new_name: String) -> Result<()> {
     let _guard = debug_span!("api::renameNode").entered();
-
-    let metadata_key = match &parent.metadata {
-        NodeMetadata::V1(metadata) => metadata.children_key.iter(),
-    }
-    .find(|(id, _)| *id == node.id)
-    .ok_or(anyhow!("Failed to get metadata key"))
-    .inspect_err(|_| tracing::error!("Failed to find key in parent metadata"))?;
 
     let NodeMetadata::V1(old_metadata) = node.metadata;
     let new_metadata = NodeMetadata::V1(MetadataV1 {
@@ -26,7 +15,7 @@ pub async fn rename_node(
         ..old_metadata
     });
 
-    let encrypted_metadata = encrypt_metadata(&new_metadata, &metadata_key.1)
+    let encrypted_metadata = encrypt_metadata(&new_metadata, &node.encryption_key)
         .await
         .inspect_err(|e| tracing::error!("Failed to encrypt metadata: {}", e))?;
 
