@@ -16,6 +16,19 @@ CREATE TABLE User (
     trash_node                  TEXT            NULL REFERENCES Node(id) DEFERRABLE INITIALLY DEFERRED
 );
 
+CREATE TABLE RefreshToken (
+    token                       BLOB        NOT NULL PRIMARY KEY,
+    user_id                     TEXT        NOT NULL REFERENCES User(id) ON DELETE RESTRICT,
+    session_id                  TEXT        NOT NULL,
+    expires_at                  TIMESTAMP   NOT NULL,
+    invalidated_at              TIMESTAMP       NULL,
+);
+
+CREATE TABLE TokenBlacklist (
+    id                          TEXT        NOT NULL PRIMARY KEY,
+    expires_at                  TIMESTAMP   NOT NULL,
+);
+
 CREATE TABLE Node (
     id                          TEXT        NOT NULL PRIMARY KEY,
     parent_id                   TEXT            NULL REFERENCES Node(id),

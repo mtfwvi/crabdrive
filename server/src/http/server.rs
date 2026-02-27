@@ -35,12 +35,12 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 
     let vfs = Sfs::new(&config.storage.dir);
 
+    let keys = Keys::new(&config.auth.jwt_secret);
+
     let node_repository = NodeState::new(Arc::new(pool.clone()));
     let revision_repository = RevisionService::new(Arc::new(pool.clone()));
-    let user_repository = UserState::new(Arc::new(pool.clone()));
+    let user_repository = UserState::new(Arc::new(pool.clone()), keys.clone());
     let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
-
-    let keys = Keys::new(&config.auth.jwt_secret);
 
     let state = AppState::new(
         config.clone(),
