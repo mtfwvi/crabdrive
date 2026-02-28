@@ -13,8 +13,8 @@ pub(crate) fn TrashView(
     request_trash_node_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
-    let navigate_to_node = Callback::new(move |node_id| {
-        navigate(&format!("/{}", node_id), Default::default());
+    let navigate_to_node = Callback::new(move |node: DecryptedNode| {
+        navigate(&format!("/{}", node.id), Default::default());
     });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);

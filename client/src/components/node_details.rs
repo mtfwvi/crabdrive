@@ -11,9 +11,9 @@ use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
-#[derive(PartialEq, Clone, Copy, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub(crate) enum DetailsViewType {
-    Folder,
+    Folder(DecryptedNode), // parent node
     Shared,
     Trash,
     ReadOnly,
@@ -81,13 +81,22 @@ pub(crate) fn NodeDetails(
                         })
                     />
 
-                    <Show when=move || content_type.get() == DetailsViewType::Folder>
+                    <Show when=move || matches!(content_type.get(), DetailsViewType::Folder(_))>
                         <Space vertical=true class="mt-4">
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileDownloadButton node />
                             </Show>
 
-                            <ModifyNodeMenu node on_modified />
+                            <ModifyNodeMenu
+                                node
+                                parent=Signal::derive(move || {
+                                    match content_type.get() {
+                                        DetailsViewType::Folder(parent) => parent,
+                                        _ => unreachable!(),
+                                    }
+                                })
+                                on_modified
+                            />
 
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileHistoryButton node />

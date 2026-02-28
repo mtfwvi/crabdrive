@@ -1,4 +1,4 @@
-use crate::api::rename_node;
+use crate::api::{move_node, rename_node};
 use crate::components::basic::folder_selection_dialog::FolderSelectionDialog;
 use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
@@ -16,6 +16,7 @@ use web_sys::File;
 #[component]
 pub(crate) fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
+    #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -68,6 +69,24 @@ pub(crate) fn ModifyNodeMenu(
         }
     });
 
+    let move_action = Action::new_local(move |input: &DecryptedNode| {
+        let target = input.to_owned();
+        async move {
+            move_node(node.get_untracked(), parent.get_untracked(), target)
+                .await
+                .map_err(|err| err.to_string())
+        }
+    });
+    Effect::new(move || {
+        let status = move_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => on_modified.run(()),
+                Err(e) => add_toast(format!("Failed to move: {}", e)),
+            }
+        }
+    });
+
     view! {
         <Menu on_select trigger_type=MenuTriggerType::Hover>
             <MenuTrigger slot>
@@ -75,17 +94,17 @@ pub(crate) fn ModifyNodeMenu(
                     "Modify"
                 </Button>
             </MenuTrigger>
-            <Show when=move || node.get().node_type == NodeType::File>
-                <MenuItem value="new_revision" icon=icondata_mdi::MdiFileReplaceOutline>
-                    "Upload new version"
-                </MenuItem>
-            </Show>
             <MenuItem value="rename" icon=icondata_mdi::MdiRenameOutline>
                 "Rename"
             </MenuItem>
             <MenuItem value="move" icon=icondata_mdi::MdiArrowAll>
                 "Move"
             </MenuItem>
+            <Show when=move || node.get().node_type == NodeType::File>
+                <MenuItem value="new_revision" icon=icondata_mdi::MdiFileReplaceOutline>
+                    "Upload new version"
+                </MenuItem>
+            </Show>
             <MenuItem value="move_to_trash" icon=icondata_mdi::MdiDeleteOutline>
                 "Move to trash"
             </MenuItem>
@@ -112,16 +131,15 @@ pub(crate) fn ModifyNodeMenu(
         />
         <FolderSelectionDialog
             open=folder_selection_dialog_open
-            on_confirm=Callback::new(move |selected_node| {
-                add_toast(format!("TODO: Move to {}", selected_node));
+            on_confirm=Callback::new(move |selected_node: DecryptedNode| {
+                move_action.dispatch(selected_node);
                 folder_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
                 format!("Select destination for '{}'", shorten_file_name(metadata.get().name))
             })
             confirm_label="Move here"
-            // parent_id should not be None, since modify-node-menu cannot be opened for root node
-            start_folder=Signal::derive(move || node.get().parent_id.unwrap())
+            start_folder=parent
         />
     }
 }

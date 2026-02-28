@@ -15,8 +15,8 @@ pub(crate) fn FolderView(
     request_path_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
-    let navigate_to_node = Callback::new(move |node_id| {
-        navigate(&format!("/{}", node_id), Default::default());
+    let navigate_to_node = Callback::new(move |node: DecryptedNode| {
+        navigate(&format!("/{}", node.id), Default::default());
     });
 
     let current_node = Signal::derive(move || {
@@ -78,7 +78,7 @@ pub(crate) fn FolderView(
                         if trash_id == Some(path_root_node.get().id) {
                             DetailsViewType::ReadOnly
                         } else {
-                            DetailsViewType::Folder
+                            DetailsViewType::Folder(current_node.get())
                         }
                     })
                     on_close=Callback::new(move |_| selection.set(None))

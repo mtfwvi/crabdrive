@@ -3,17 +3,17 @@ use crate::components::data_provider::children_provider::ChildrenProvider;
 use crate::components::data_provider::path_provider::PathProvider;
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
-use crabdrive_common::storage::NodeId;
+use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
 use thaw::Divider;
 
 #[component]
 pub(crate) fn FolderSelectionDialog(
     #[prop(into)] open: RwSignal<bool>,
-    on_confirm: Callback<NodeId>,
+    on_confirm: Callback<DecryptedNode>,
     #[prop(into)] title: Signal<String>,
     #[prop(into)] confirm_label: String,
-    start_folder: Signal<NodeId>,
+    start_folder: Signal<DecryptedNode>,
 ) -> impl IntoView {
     let currently_open = RwSignal::new_local(start_folder.get_untracked());
 
@@ -35,7 +35,7 @@ pub(crate) fn FolderSelectionDialog(
         >
             <div class="min-h-32 mt-2 p-6 rounded-sm outline outline-gray-300">
                 <PathProvider
-                    node_id=Signal::derive(move || currently_open.get())
+                    node_id=Signal::derive(move || currently_open.get().id)
                     children=move |path, refetch_path| {
                         let set_open = Callback::new(move |node_id| {
                             currently_open.set(node_id);
