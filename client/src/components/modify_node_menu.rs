@@ -1,4 +1,4 @@
-use crate::api::{move_node, move_node_to_trash, rename_node};
+use crate::api::{create_file_version, move_node, move_node_to_trash, rename_node};
 use crate::components::basic::folder_selection_dialog::FolderSelectionDialog;
 use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
@@ -107,13 +107,40 @@ pub(crate) fn ModifyNodeMenu(
         }
     });
 
+    let upload_new_version_action = Action::new_local(move |input: &File| {
+        let file = input.to_owned();
+        async move {
+            create_file_version(file, node.get_untracked())
+                .await
+                .map_err(|err| err.to_string())
+        }
+    });
+    Effect::new(move || {
+        let status = upload_new_version_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => {
+                    add_toast(
+                        "Uploaded new version successfully".to_string(),
+                        ToastIntent::Success,
+                    );
+                    on_modified.run(())
+                }
+                Err(e) => add_toast(
+                    format!("Failed to upload new version: {}", e),
+                    ToastIntent::Error,
+                ),
+            }
+        }
+    });
+
     let on_select = move |key: &str| match key {
         "rename" => input_dialog_open.set(true),
         "move" => folder_selection_dialog_open.set(true),
         "new_revision" => file_selection_dialog_open.set(true),
-        "move_to_trash" => (move || {
+        "move_to_trash" => {
             move_to_trash_action.dispatch(());
-        })(),
+        }
         _ => add_toast("TODO".to_owned(), ToastIntent::Error),
     };
 
@@ -150,8 +177,8 @@ pub(crate) fn ModifyNodeMenu(
         />
         <FileSelectionDialog
             open=file_selection_dialog_open
-            on_confirm=Callback::new(move |_files: Vec<File>| {
-                add_toast("TODO".to_owned(), ToastIntent::Error);
+            on_confirm=Callback::new(move |files: Vec<File>| {
+                upload_new_version_action.dispatch(files.first().unwrap().to_owned());
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {

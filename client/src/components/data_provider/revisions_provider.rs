@@ -1,8 +1,7 @@
+use crate::api::file_versions;
 use crate::components::basic::resource_wrapper::ResourceWrapper;
 use crate::model::node::DecryptedNode;
-use chrono::Local;
-use crabdrive_common::storage::{FileRevision, RevisionIv};
-use crabdrive_common::uuid::UUID;
+use crabdrive_common::storage::FileRevision;
 use leptos::prelude::*;
 
 #[component]
@@ -12,20 +11,9 @@ where
     V: IntoView + 'static,
 {
     let revisions_res = LocalResource::new(move || async move {
-        Ok(std::iter::repeat_n(
-            node.get_untracked()
-                .current_revision
-                .unwrap_or(FileRevision {
-                    // TODO: Use real data
-                    id: UUID::nil(),
-                    upload_ended_on: Some(Local::now().naive_local()),
-                    upload_started_on: Local::now().naive_local(),
-                    iv: RevisionIv::new([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-                    chunk_count: 1,
-                }),
-            3,
-        )
-        .collect())
+        file_versions(node.get_untracked().id)
+            .await
+            .map_err(|err| err.to_string())
     });
 
     view! {
