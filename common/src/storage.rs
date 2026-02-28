@@ -60,6 +60,9 @@ impl FromSql<Text, Sqlite> for NodeType {
 /// Unique ID (UUID) for a revision of a file
 pub type RevisionId = UUID;
 
+/// Unique ID (UUID) for an instance of a node shared
+pub type ShareId = UUID;
+
 /// The index of a chunk within a file
 pub type ChunkIndex = i64;
 
@@ -76,6 +79,8 @@ pub struct EncryptedNode {
     pub node_type: NodeType,
     pub current_revision: Option<FileRevision>,
     pub encrypted_metadata: EncryptedMetadata,
+    /// vec containing user_id and username
+    pub has_access: Vec<(UserId, String)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]

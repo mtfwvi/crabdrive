@@ -27,6 +27,13 @@ impl LocalStorage {
         Ok(())
     }
 
+    pub fn unset(key: &str) -> Result<()> {
+        let storage = Self::get_storage()?;
+        storage
+            .remove_item(key)
+            .map_err(|_| anyhow!("Cannot remove from session storage."))
+    }
+
     pub fn get<T: DeserializeOwned>(key: &str) -> Result<Option<T>> {
         let storage = Self::get_storage()?;
 

@@ -59,4 +59,6 @@ pub struct DecryptedNode {
     pub metadata: NodeMetadata,
     /// The metadata encryption key for this node
     pub encryption_key: MetadataKey,
+    /// vec containing user_id and username
+    pub has_access: Vec<(UserId, String)>,
 }

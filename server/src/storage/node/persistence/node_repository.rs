@@ -1,22 +1,23 @@
 use crate::db::connection::DbPool;
-use crate::db::operations;
-use crate::db::operations::{
-    delete_node, get_all_children, get_path_between_nodes, insert_node, select_node, update_node,
-};
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use anyhow::{Context, Ok, Result};
+use crate::db::operations::node::*;
+use crate::db::operations::share::*;
+
+use crate::storage::node::NodeEntity;
+
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::storage::NodeId;
-use crabdrive_common::storage::NodeType;
-use crabdrive_common::uuid::UUID;
+use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::user::UserId;
+
 use std::sync::Arc;
+
+use anyhow::{Context, Ok, Result};
 
 pub(crate) trait NodeRepository {
     fn create_node(
         &self,
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
-        owner: UUID,
+        owner: UserId,
         node_type: crabdrive_common::storage::NodeType,
         node_id: NodeId,
     ) -> Result<NodeEntity>;
@@ -41,9 +42,20 @@ pub(crate) trait NodeRepository {
         to_metadata: EncryptedMetadata,
     ) -> Result<()>;
 
+    /// Get all children of a node
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>>;
 
+    /// Get the node entities of the path between to nodes
     fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>>;
+
+    /// Check if a user has access to the node (own nodes & shared nodes)
+    fn has_access(&self, id: NodeId, user: UserId) -> Result<bool>;
+
+    /// Get the path from a node to the root or trash node
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>>;
+
+    /// Get a list of tuples `(UserId, Username)`, on which users have access to a node
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>>;
 }
 
 pub struct NodeState {
@@ -61,10 +73,12 @@ impl NodeRepository for NodeState {
         &self,
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
-        owner: UUID,
+        owner: UserId,
         node_type: NodeType,
         node_id: NodeId,
     ) -> Result<NodeEntity> {
+        let mut conn = self.db_pool.get()?;
+
         let node = NodeEntity {
             id: node_id,
             parent_id: parent,
@@ -77,14 +91,14 @@ impl NodeRepository for NodeState {
         };
 
         if let Some(parent_id) = parent {
-            let parent_node = select_node(&self.db_pool, parent_id)
+            let parent_node = select_node(&mut conn, parent_id)
                 .context("Failed to select parent node")?
                 .context("Parent node not found")?;
 
-            insert_node(&self.db_pool, &node, &parent_node.metadata)
+            insert_node(&mut conn, &node, &parent_node.metadata)
                 .context("Failed to insert node")?;
         } else {
-            insert_node(&self.db_pool, &node, &encrypted_metadata)
+            insert_node(&mut conn, &node, &encrypted_metadata)
                 .context("Failed to insert root node")?;
         }
 
@@ -92,11 +106,13 @@ impl NodeRepository for NodeState {
     }
 
     fn get_node(&self, id: NodeId) -> Result<Option<NodeEntity>> {
-        select_node(&self.db_pool, id).context("Failed to select node")
+        let mut conn = self.db_pool.get()?;
+        select_node(&mut conn, id).context("Failed to select node")
     }
 
     fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity> {
-        update_node(&self.db_pool, node, None)
+        let mut conn = self.db_pool.get()?;
+        update_node(&mut conn, node, None)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
     }
@@ -109,27 +125,30 @@ impl NodeRepository for NodeState {
             node_id: NodeId,
             deleted_nodes: &mut Vec<NodeEntity>,
         ) -> Result<()> {
-            let children = get_all_children(db_pool, node_id).context("Failed to get children")?;
+            let mut conn = db_pool.get()?;
+
+            let children =
+                get_all_children(&mut conn, node_id).context("Failed to get children")?;
 
             for child in children {
                 delete_recursively(db_pool, child.id, deleted_nodes)?;
             }
 
-            let node = select_node(db_pool, node_id)
+            let node = select_node(&mut conn, node_id)
                 .context("Failed to select node")?
                 .context("Node not found")?;
 
             if let Some(parent_id) = node.parent_id {
-                let parent_node = select_node(db_pool, parent_id)
+                let parent_node = select_node(&mut conn, parent_id)
                     .context("Failed to select parent")?
                     .context("Parent not found")?;
 
-                let deleted_node = delete_node(db_pool, node_id, &parent_node.metadata)
+                let deleted_node = delete_node(&mut conn, node_id, &parent_node.metadata)
                     .context("Failed to delete node")?;
                 deleted_nodes.push(deleted_node);
             } else {
                 let empty_metadata = node.metadata.clone();
-                let deleted_node = delete_node(db_pool, node_id, &empty_metadata)
+                let deleted_node = delete_node(&mut conn, node_id, &empty_metadata)
                     .context("Failed to delete root node")?;
                 deleted_nodes.push(deleted_node);
             }
@@ -150,20 +169,39 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        operations::move_node(&self.db_pool, id, from, from_metadata, to, to_metadata)
+        let mut conn = self.db_pool.get()?;
+        move_node(&mut conn, id, from, from_metadata, to, to_metadata)
     }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
-        get_all_children(&self.db_pool, parent_id).context("Failed to get children")
+        let mut conn = self.db_pool.get()?;
+        get_all_children(&mut conn, parent_id).context("Failed to get children")
     }
 
     fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>> {
-        let path: Vec<NodeEntity> = get_path_between_nodes(&self.db_pool, from, to)?;
+        let mut conn = self.db_pool.get()?;
+        let path: Vec<NodeEntity> = get_path_between_nodes(&mut conn, from, to)?;
 
         if path[0].id != from {
             Ok(None)
         } else {
             Ok(Some(path))
         }
+    }
+
+    fn has_access(&self, id: NodeId, user: UserId) -> Result<bool> {
+        let mut conn = self.db_pool.get()?;
+        has_access(&mut conn, id, user)
+    }
+
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>> {
+        let mut conn = self.db_pool.get()?;
+        // since there is no node with the nil uuid (hopefully) it returns the path from a root node to the node
+        get_path_between_nodes(&mut conn, NodeId::nil(), node)
+    }
+
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>> {
+        let mut conn = self.db_pool.get()?;
+        get_access_list_parent_tree(&mut conn, node)
     }
 }

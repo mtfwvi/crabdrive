@@ -82,7 +82,7 @@ pub async fn export_key(key: &CryptoKey) -> Result<RawEncryptionKey> {
     Ok(raw_key)
 }
 
-pub fn decode_key(key: &String) -> Result<RawEncryptionKey> {
+pub fn decode_key(key: &str) -> Result<RawEncryptionKey> {
     let key_bytes = BASE64_STANDARD
         .decode(key)
         .map_err(|_| anyhow!("Failed to decode key!"))?;

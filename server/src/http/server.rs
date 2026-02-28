@@ -1,6 +1,5 @@
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
-use http_body_util::Full;
 
 
 use axum::http::StatusCode;
@@ -8,11 +7,11 @@ use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
 use axum::{Router, middleware};
 use axum::response::Response;
 use bytes::Bytes;
+use http_body_util::Full;
 use std::any::Any;
 use std::io::ErrorKind;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
-use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;
@@ -44,7 +43,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(listener) => Ok(listener),
         Err(err) => {
-            error!(
+            tracing::error!(
                 "Failed to bind to {}. {}",
                 addr,
                 match err.kind() {
@@ -59,7 +58,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         }
     }?;
 
-    info!("Server running on http://{}", &addr);
+    tracing::info!("Server running on http://{}", &addr);
 
     axum::serve(listener, app)
         .with_graceful_shutdown(graceful_shutdown(state.clone()))
@@ -70,7 +69,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 }
 
 async fn shutdown(_state: AppState) {
-    info!("Stopping server");
+    tracing::info!("Stopping server");
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
@@ -83,7 +82,7 @@ pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<
         "Unknown panic message".to_string()
     };
 
-    error!("panic: {:?}", details);
+    tracing::error!("Request handler panicked!: {:?}", details);
 
     let body = serde_json::json!({
         "error": {

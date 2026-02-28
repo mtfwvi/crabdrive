@@ -1,22 +1,37 @@
 use crate::api::auth::{login, register};
 use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::utils::auth::is_valid_password;
+use crate::utils::browser::SessionStorage;
+use crabdrive_common::storage::NodeId;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{
-    Button, ButtonAppearance, Image, Input, InputType, MessageBar, MessageBarBody,
-    MessageBarIntent, MessageBarLayout, MessageBarTitle, Space, SpaceAlign, Spinner, SpinnerSize,
-    Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToastTitleMedia, ToasterInjection,
+    Button, ButtonAppearance, ComponentRef, Image, Input, InputRef, InputType, MessageBar,
+    MessageBarBody, MessageBarIntent, MessageBarLayout, MessageBarTitle, Space, SpaceAlign,
+    Spinner, SpinnerSize, Text, Toast, ToastIntent, ToastOptions, ToastTitle, ToastTitleMedia,
+    ToasterInjection,
 };
 
+#[derive(PartialEq, Clone, Copy)]
+pub(crate) enum LoginType {
+    Register,
+    Login,
+}
+
 #[component]
-pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
+pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_register = navigate.clone();
     let navigate_to_register =
         Callback::new(move |_| navigate_to_register("/register", Default::default()));
-    let navigate_to_login = Callback::new(move |_| navigate("/login", Default::default()));
+    let navigate_to_login = navigate.clone();
+    let navigate_to_login = Callback::new(move |_| navigate_to_login("/login", Default::default()));
+    let navigate_to_node = Callback::new(move |node_id: NodeId| {
+        navigate(&format!("/{}", node_id), Default::default())
+    });
+
+    let username_input_ref = ComponentRef::<InputRef>::new();
 
     let toaster = ToasterInjection::expect_context();
     let auth_in_progress_toast_id = UUID::random();
@@ -56,6 +71,8 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
         )
     };
 
+    let root_id: Option<NodeId> = SessionStorage::get("root_id").unwrap_or_default();
+
     let username = RwSignal::new(String::from(""));
     let password = RwSignal::new(String::from(""));
     let is_password_valid = RwSignal::new(true);
@@ -87,6 +104,14 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
         }
     });
 
+    Effect::watch(
+        move || login_type,
+        move |_, _, _| {
+            request_animation_frame(move || username_input_ref.get_untracked().unwrap().focus())
+        },
+        true,
+    );
+
     let login_action = Action::new_local(move |input: &(String, String)| {
         let (username, password) = input.to_owned();
         async move {
@@ -117,11 +142,10 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
             return;
         }
 
-        if register_new_account {
-            register_action.dispatch((username, password));
-        } else {
-            login_action.dispatch((username, password));
-        }
+        match login_type.get() {
+            LoginType::Register => register_action.dispatch((username, password)),
+            LoginType::Login => login_action.dispatch((username, password)),
+        };
     });
 
     view! {
@@ -135,16 +159,36 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
             <form
                 class="h-fit w-100 mt-15 px-15 py-10 flex flex-col gap-2 rounded-sm outline outline-gray-300"
                 attr:accept-charset="utf-8"
-                on:submit=move |e| {
+                on:submit=move |e: web_sys::SubmitEvent| {
                     e.prevent_default();
                     on_submit.run(())
                 }
             >
                 <Text class="!text-2xl">
-                    {move || if register_new_account { "Register new account" } else { "Login" }}
+                    {move || match login_type.get() {
+                        LoginType::Register => "Register new account",
+                        LoginType::Login => "Login",
+                    }}
                 </Text>
+
+                <Show when=move || root_id.is_some()>
+                    <Button
+                        appearance=ButtonAppearance::Primary
+                        class="mb-3"
+                        icon=icondata_mdi::MdiAccountCheck
+                        block=true
+                        on_click=move |e: web_sys::MouseEvent| {
+                            e.prevent_default();
+                            navigate_to_node.run(root_id.unwrap());
+                        }
+                    >
+                        "Already logged in! Go to files?"
+                    </Button>
+                </Show>
+
                 <Input
                     placeholder="Username"
+                    comp_ref=username_input_ref
                     class="w-full"
                     autofocus=true
                     value=username
@@ -155,13 +199,14 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     class="w-full"
                     input_type=InputType::Password
                     value=password
-                    autocomplete=if register_new_account {
-                        "new-password"
-                    } else {
-                        "current-password"
+                    autocomplete=match login_type.get() {
+                        LoginType::Register => "new-password",
+                        LoginType::Login => "current-password",
                     }
                 />
-                <Show when=move || !is_password_valid.get() && register_new_account>
+                <Show when=move || {
+                    !is_password_valid.get() && (login_type.get() == LoginType::Register)
+                }>
                     <MessageBar intent=MessageBarIntent::Error layout=MessageBarLayout::Multiline>
                         <MessageBarBody class="mb-2">
                             <MessageBarTitle>"Invalid password"</MessageBarTitle>
@@ -170,25 +215,28 @@ pub(crate) fn LoginPage(register_new_account: bool) -> impl IntoView {
                     </MessageBar>
                 </Show>
                 <Button appearance=ButtonAppearance::Primary block=true>
-                    {move || if register_new_account { "Register" } else { "Login" }}
+                    {move || match login_type.get() {
+                        LoginType::Register => "Register",
+                        LoginType::Login => "Login",
+                    }}
                 </Button>
 
                 <Button
                     appearance=ButtonAppearance::Transparent
                     block=true
-                    on_click=move |_| {
-                        if register_new_account {
-                            navigate_to_login.run(())
-                        } else {
-                            navigate_to_register.run(())
-                        }
+                    on_click=move |e: web_sys::MouseEvent| {
+                        e.prevent_default();
+                        let navigate = match login_type.get() {
+                            LoginType::Register => navigate_to_login,
+                            LoginType::Login => navigate_to_register,
+                        };
+                        navigate.run(())
                     }
                 >
                     {move || {
-                        if register_new_account {
-                            "Already have an account? Login now"
-                        } else {
-                            "Have no account yet? Register now"
+                        match login_type.get() {
+                            LoginType::Register => "Already have an account? Login now",
+                            LoginType::Login => "Have no account yet? Register now",
                         }
                     }}
                 </Button>

@@ -3,13 +3,23 @@ use crabdrive_common::data::DataAmount;
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::user::{UserId, UserType};
+use diesel::prelude::Identifiable;
 use diesel::{AsChangeset, Insertable, Queryable, Selectable};
 use serde::{Deserialize, Serialize};
 
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
+#[derive(
+    Identifiable,
+    Queryable,
+    Selectable,
+    Serialize,
+    Deserialize,
+    Debug,
+    Insertable,
+    AsChangeset,
+    Clone,
+)]
 #[diesel(table_name = crate::db::schema::User)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[diesel(belongs_to(encryptionKey))]
 pub(crate) struct UserEntity {
     pub user_type: UserType,
     pub id: UserId,

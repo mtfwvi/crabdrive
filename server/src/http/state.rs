@@ -3,6 +3,7 @@ use crate::storage::node::NodeRepository;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::RevisionRepository;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
+use crate::storage::share::persistence::share_repository::{self, ShareRepository, ShareRepositoryImpl};
 use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::auth::secrets::Keys;
@@ -19,6 +20,7 @@ pub struct AppState {
     pub node_repository: Arc<dyn NodeRepository + Send + Sync>,
     pub revision_repository: Arc<dyn RevisionRepository + Send + Sync>,
     pub user_repository: Arc<dyn UserRepository + Send + Sync>,
+    pub share_repository: Arc<dyn ShareRepository + Send + Sync>,
     pub keys: Arc<Keys>,
 }
 
@@ -33,6 +35,7 @@ impl AppState {
         let node_repository = NodeState::new(Arc::new(pool.clone()));
         let revision_repository = RevisionService::new(Arc::new(pool.clone()));
         let user_repository = UserState::new(Arc::new(pool.clone()));
+        let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
 
         let keys = Keys::new(&config.auth.jwt_secret);
 
@@ -43,6 +46,7 @@ impl AppState {
             node_repository: Arc::new(node_repository),
             revision_repository: Arc::new(revision_repository),
             user_repository: Arc::new(user_repository),
+            share_repository: Arc::new(share_repository),
             keys: Arc::new(keys),
         }
     }

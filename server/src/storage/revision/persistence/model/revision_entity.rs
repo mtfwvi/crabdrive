@@ -1,16 +1,29 @@
-use chrono::NaiveDateTime;
+use crate::storage::node::NodeEntity;
+
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
+
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(
-    Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone, Copy,
+    Queryable,
+    Selectable,
+    Serialize,
+    Deserialize,
+    Debug,
+    Insertable,
+    AsChangeset,
+    Clone,
+    Copy,
+    Associations,
 )]
 #[diesel(table_name = crate::db::schema::Revision)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
+#[diesel(belongs_to(NodeEntity, foreign_key = file_id))]
 pub struct RevisionEntity {
     pub id: RevisionId,
 
