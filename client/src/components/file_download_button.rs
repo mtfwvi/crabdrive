@@ -40,7 +40,7 @@ pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> i
         }
     });
     let handle_download = move |_| {
-        download_action.dispatch(node.get().clone());
+        download_action.dispatch(node.get_untracked().clone());
     };
 
     Effect::new(move || {

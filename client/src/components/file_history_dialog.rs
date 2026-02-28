@@ -3,7 +3,7 @@ use crate::components::data_provider::revisions_provider::RevisionsProvider;
 use crate::components::revision_list::RevisionList;
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
-use crabdrive_common::storage::RevisionId;
+use crabdrive_common::storage::FileRevision;
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface,
@@ -38,11 +38,12 @@ pub(crate) fn FileHistoryDialog(
         metadata.name
     });
 
-    let download_action = Action::new_local(|input: &DecryptedNode| {
-        let node = input.to_owned();
+    let download_action = Action::new_local(|input: &(DecryptedNode, FileRevision)| {
+        let (node, revision) = input.to_owned();
         async move {
-            /* TODO: Download correct revision */
-            download_file(node).await.map_err(|err| err.to_string())
+            download_file(node, Some(revision))
+                .await
+                .map_err(|err| err.to_string())
         }
     });
     Effect::new(move || {
@@ -58,9 +59,9 @@ pub(crate) fn FileHistoryDialog(
             }
         }
     });
-    let on_select_for_download = Callback::new(move |revision_id: RevisionId| {
-        tracing::debug!("handling download for revision_id={}", revision_id);
-        download_action.dispatch(node.get().clone());
+    let on_select_for_download = Callback::new(move |revision: FileRevision| {
+        tracing::debug!("handling download for revision_id={}", revision.id);
+        download_action.dispatch((node.get_untracked().clone(), revision));
     });
 
     view! {

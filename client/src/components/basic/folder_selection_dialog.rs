@@ -17,11 +17,11 @@ pub(crate) fn FolderSelectionDialog(
     #[prop(into)] confirm_label: String,
     start_folder: Signal<NodeId>,
 ) -> impl IntoView {
-    let currently_open = RwSignal::new_local(start_folder.get());
+    let currently_open = RwSignal::new_local(start_folder.get_untracked());
 
     Effect::new(move || {
         if open.get() {
-            currently_open.set(start_folder.get())
+            currently_open.set(start_folder.get_untracked())
         }
     });
 
