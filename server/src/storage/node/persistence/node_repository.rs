@@ -112,7 +112,7 @@ impl NodeRepository for NodeState {
 
     fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity> {
         let mut conn = self.db_pool.get()?;
-        update_node(&mut conn, node, None)
+        update_node(&mut conn, node)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
     }

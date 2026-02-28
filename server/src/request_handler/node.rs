@@ -108,6 +108,7 @@ pub async fn post_move_node(
     Json(payload): Json<PostMoveNodeRequest>,
 ) -> (StatusCode, Json<PostMoveNodeResponse>) {
     let node = state.node_repository.get_node(node_id).expect("db error");
+
     if node.is_none() {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
@@ -125,6 +126,7 @@ pub async fn post_move_node(
         .node_repository
         .get_node(payload.to_node_id)
         .expect("db error");
+
     let from_node = state
         .node_repository
         .get_node(node.parent_id.expect("node to be moved has no parent"))
@@ -135,8 +137,20 @@ pub async fn post_move_node(
     }
     let (to_node, from_node) = (to_node.unwrap(), from_node.unwrap());
 
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
+    } else if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
+    }
+
     if to_node.owner_id != current_user.id || from_node.owner_id != current_user.id {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
+    }
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter
+        || to_node.metadata_change_counter != payload.to_node_change_counter
+    {
+        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
     }
 
     //TODO check version (in one transaction)
