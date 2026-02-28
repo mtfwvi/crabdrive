@@ -1,17 +1,16 @@
 use crate::db::NodeDsl;
 use crate::db::connection::DbPool;
-use crate::db::operations;
 use crate::db::operations::{
-    delete_node, get_all_children, get_path_between_nodes, insert_node, select_node, update_node,
+    delete_node, get_all_children, get_path_between_nodes, insert_node, move_node, select_node,
+    update_node,
 };
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use anyhow::{Context, Ok, Result};
 use chrono::NaiveDateTime;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::storage::NodeId;
-use crabdrive_common::storage::NodeType;
-use crabdrive_common::uuid::UUID;
+use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::user::UserId;
 use diesel::Connection;
 use diesel::ExpressionMethods;
 use diesel::QueryDsl;
@@ -23,7 +22,7 @@ pub(crate) trait NodeRepository {
         &self,
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
-        owner: UUID,
+        owner: UserId,
         node_type: crabdrive_common::storage::NodeType,
         node_id: NodeId,
     ) -> Result<NodeEntity>;
@@ -39,6 +38,10 @@ pub(crate) trait NodeRepository {
     /// - the id of the node to move
     /// - the metadata of the old parent (remove the encryption key of the node we are moving)
     /// - the metadata of the new parent (add the encryption key of the node we are moving)
+    /// Constraints:
+    /// - the node cannot be moved into one of its own children
+    /// - the to_node must be a folder
+    /// - a file cannot be moved into another file
     fn move_node(
         &self,
         id: NodeId,
@@ -48,8 +51,10 @@ pub(crate) trait NodeRepository {
         to_metadata: EncryptedMetadata,
     ) -> Result<()>;
 
+    /// Get all children of a node
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>>;
 
+    /// Get the node entities of the path between two nodes
     fn get_path_between_nodes(&self, from: NodeId, to: NodeId) -> Result<Option<Vec<NodeEntity>>>;
 
     fn move_node_to_trash(
@@ -78,6 +83,9 @@ pub(crate) trait NodeRepository {
         trash_node_id: NodeId,
         new_trash_metadata: EncryptedMetadata,
     ) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)>;
+
+    /// Get the path from a node to the root or trash node
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>>;
 }
 
 pub struct NodeState {
@@ -95,7 +103,7 @@ impl NodeRepository for NodeState {
         &self,
         parent: Option<NodeId>,
         encrypted_metadata: EncryptedMetadata,
-        owner: UUID,
+        owner: UserId,
         node_type: NodeType,
         node_id: NodeId,
     ) -> Result<NodeEntity> {
@@ -143,7 +151,8 @@ impl NodeRepository for NodeState {
             node_id: NodeId,
             deleted_nodes: &mut Vec<NodeEntity>,
         ) -> Result<()> {
-            let children = get_all_children(db_pool, node_id).context("Failed to get children")?;
+            let children =
+                get_all_children(db_pool, node_id).context("Failed to get children")?;
 
             for child in children {
                 delete_recursively(db_pool, child.id, deleted_nodes)?;
@@ -184,7 +193,23 @@ impl NodeRepository for NodeState {
         to: NodeId,
         to_metadata: EncryptedMetadata,
     ) -> Result<()> {
-        operations::move_node(&self.db_pool, id, from, from_metadata, to, to_metadata)
+        // to_node must be a folder
+        let to_node = select_node(&self.db_pool, to)
+            .context("Failed to select to_node")?
+            .context("to_node not found")?;
+
+        if to_node.node_type != NodeType::Folder {
+            anyhow::bail!("Cannot move a node into a non-folder node");
+        }
+
+        // node cannot be moved into one of its own children (i.e. to_node cannot be in the subtree of id)
+        let path = get_path_between_nodes(&self.db_pool, id, to)?;
+        // if a path exists from id down to to, then to is a child of id
+        if !path.is_empty() && path.first().map(|n| n.id) == Some(id) {
+            anyhow::bail!("Cannot move a node into one of its own children");
+        }
+
+        move_node(&self.db_pool, id, from, from_metadata, to, to_metadata)
     }
 
     fn get_children(&self, parent_id: NodeId) -> Result<Vec<NodeEntity>> {
@@ -351,5 +376,9 @@ impl NodeRepository for NodeState {
             .context("Failed to update trash node metadata")?;
 
         Ok((all_nodes, all_revisions))
+    }
+
+    fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>> {
+        get_path_between_nodes(&self.db_pool, NodeId::nil(), node)
     }
 }
