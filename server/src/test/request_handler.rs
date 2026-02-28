@@ -42,6 +42,7 @@ use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
+use crate::DEFAULT_INVITE_CODE;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
@@ -63,10 +64,12 @@ pub async fn test_register() {
 
     let username = "test_user";
     let password = "test_password";
+    let invite_code = DEFAULT_INVITE_CODE;
 
     let register = PostRegisterRequest {
         username: username.to_string(),
         password: password.to_string(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
         keys: UserKeys::nil(),
     };
 
@@ -683,6 +686,7 @@ pub async fn get_server() -> TestServer {
     let register_user1_response_body = PostRegisterRequest {
         username: TEST_USERNAME1.to_string(),
         password: TEST_USERNAME1.to_string(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
         keys: UserKeys::nil(),
     };
 
@@ -696,6 +700,7 @@ pub async fn get_server() -> TestServer {
     let register_user2_response_body = PostRegisterRequest {
         username: TEST_USERNAME2.to_string(),
         password: TEST_USERNAME2.to_string(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
         keys: UserKeys::nil(),
     };
 

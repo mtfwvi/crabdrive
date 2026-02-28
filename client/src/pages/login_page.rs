@@ -75,13 +75,14 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
 
     let username = RwSignal::new(String::from(""));
     let password = RwSignal::new(String::from(""));
+    let invite_code = RwSignal::new(String::from(""));
     let is_password_valid = RwSignal::new(true);
 
-    let register_action = Action::new_local(move |input: &(String, String)| {
-        let (username, password) = input.to_owned();
+    let register_action = Action::new_local(move |input: &(String, String, String)| {
+        let (username, password, invite_code) = input.to_owned();
         async move {
             add_auth_in_progress_toast("Registration");
-            register(&username, &password)
+            register(&username, &password, &invite_code)
                 .await
                 .map_err(|err| err.to_string())
         }
@@ -136,6 +137,7 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
     let on_submit = Callback::new(move |_| {
         let username = username.get();
         let password = password.get();
+        let invite_code = invite_code.get();
         let password_valid = is_valid_password(&password);
         is_password_valid.set(password_valid);
         if username.is_empty() || !password_valid {
@@ -143,7 +145,7 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
         }
 
         match login_type.get() {
-            LoginType::Register => register_action.dispatch((username, password)),
+            LoginType::Register => register_action.dispatch((username, password, invite_code)),
             LoginType::Login => login_action.dispatch((username, password)),
         };
     });
@@ -204,6 +206,14 @@ pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl Int
                         LoginType::Login => "current-password",
                     }
                 />
+                <Show when=move || login_type.get().eq(&LoginType::Register)>
+                    <Input
+                    placeholder="Invite code"
+                    class="w-full"
+                    input_type=InputType::Password
+                    value=invite_code
+                />
+                </Show>
                 <Show when=move || {
                     !is_password_valid.get() && (login_type.get() == LoginType::Register)
                 }>

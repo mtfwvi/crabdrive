@@ -10,7 +10,7 @@ use crabdrive_common::user::UserKeys;
 use tracing::debug_span;
 
 /// Attempts to register a user, with a username and (unencrypted) password.
-pub async fn register(username: &str, password: &str) -> Result<()> {
+pub async fn register(username: &str, password: &str, invite_code: &str) -> Result<()> {
     let _guard = debug_span!("api::register").entered();
 
     if utils::auth::is_authenticated()? {
@@ -44,6 +44,7 @@ pub async fn register(username: &str, password: &str) -> Result<()> {
     let response = api::requests::auth::post_register(PostRegisterRequest {
         username: username.parse()?,
         password: server_password,
+        invite_code: invite_code.parse()?,
         keys: UserKeys::new(
             vec![],
             EncryptionKey::nil(),
