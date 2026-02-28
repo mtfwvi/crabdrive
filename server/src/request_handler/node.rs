@@ -152,10 +152,23 @@ pub async fn post_move_node(
     if from_node.metadata_change_counter != payload.from_node_change_counter
         || to_node.metadata_change_counter != payload.to_node_change_counter
     {
+        // TODO - This is not thread-safe
         return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
     }
 
-    //TODO check version (in one transaction)
+    let accessible_path_of_node: Vec<NodeEntity> = state
+        .node_repository
+        .get_path_to_root(to_node.id)
+        .expect("Database error");
+
+    if accessible_path_of_node.iter().any(|n| n.id == node_id) {
+        // Prevent moving a node into it's subtree, since it causes some weird
+        // cyclic references
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostMoveNodeResponse::BadRequest),
+        );
+    }
 
     state
         .node_repository
