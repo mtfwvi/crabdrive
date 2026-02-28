@@ -13,7 +13,7 @@ pub async fn delete_node_tree(node: DecryptedNode) -> Result<()> {
         return Err(anyhow!("cannot delete root node"));
     }
 
-    if node.parent_id.eq(&SessionStorage::get("trash_id")?) {
+    if !node.parent_id.eq(&SessionStorage::get("trash_id")?) {
         return Err(anyhow!(
             "cannot permanently delete node that is not in trash"
         ));

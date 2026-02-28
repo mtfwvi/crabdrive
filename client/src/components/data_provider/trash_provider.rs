@@ -20,7 +20,6 @@ where
         <ResourceWrapper
             resource=trash_res
             error_text="Failed to load trash items from server"
-            fallback_spinner=false
             children=move |trash_node| children(trash_node, refetch)
         />
     }
