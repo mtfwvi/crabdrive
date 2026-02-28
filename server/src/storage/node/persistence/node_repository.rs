@@ -157,8 +157,7 @@ impl NodeRepository for NodeState {
             node_id: NodeId,
             deleted_nodes: &mut Vec<NodeEntity>,
         ) -> Result<()> {
-            let children =
-                get_all_children(db_pool, node_id).context("Failed to get children")?;
+            let children = get_all_children(db_pool, node_id).context("Failed to get children")?;
 
             for child in children {
                 delete_recursively(db_pool, child.id, deleted_nodes)?;
