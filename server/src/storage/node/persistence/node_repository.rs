@@ -86,6 +86,12 @@ pub(crate) trait NodeRepository {
 
     /// Get the path from a node to the root or trash node
     fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>>;
+
+    /// Check if a user has access to the node (own nodes & shared nodes)
+    fn has_access(&self, id: NodeId, user: UserId) -> Result<bool>;
+
+    /// Get a list of tuples `(UserId, Username)`, on which users have access to a node
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>>;
 }
 
 pub struct NodeState {
@@ -380,5 +386,15 @@ impl NodeRepository for NodeState {
 
     fn get_path_to_root(&self, node: NodeId) -> Result<Vec<NodeEntity>> {
         get_path_between_nodes(&self.db_pool, NodeId::nil(), node)
+    }
+
+    fn has_access(&self, id: NodeId, user: UserId) -> Result<bool> {
+        // TODO: implement share operations
+        todo!()
+    }
+
+    fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>> {
+        // TODO: implement share operations
+        todo!()
     }
 }

@@ -18,6 +18,17 @@ pub fn get_document() -> Result<Document> {
     ))
 }
 
+pub fn get_origin() -> Result<String> {
+    get_window()?
+        .location()
+        .origin()
+        .map_err(|_| anyhow!("Cannot access current origin"))
+}
+
+pub fn get_current_url() -> Result<String> {
+    wrap_js_err(get_window()?.location().href())
+}
+
 pub fn get_crypto() -> Result<Crypto> {
     wrap_js_err(get_window()?.crypto())
 }
@@ -35,9 +46,7 @@ pub fn redirect(url: &str, replace: bool) -> Result<()> {
 
     // The current origin (Protocol + Domain + Port)
     // Redirects are allowed, if they are redirecting to the same origin.
-    let current_origin = location
-        .origin()
-        .map_err(|_| anyhow!("Cannot access current origin"))?;
+    let current_origin = get_origin()?;
     // Origin + Path
     let current_href = location
         .href()

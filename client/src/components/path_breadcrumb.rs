@@ -1,44 +1,55 @@
 use crate::model::node::{DecryptedNode, NodeMetadata};
+use crate::utils::browser::SessionStorage;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
-use thaw::{Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Icon, Text};
+use thaw::{
+    Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Icon, Space, SpaceAlign, Text,
+};
 
 #[component]
 pub(crate) fn PathBreadcrumb(
     #[prop(into)] path: Signal<Vec<DecryptedNode>>,
-    #[prop(into, optional, default = false.into())] is_trash: Signal<bool>,
     on_select: Callback<NodeId>,
     #[prop(optional, default = false)] compact: bool,
 ) -> impl IntoView {
+    let accessible_root_node = move || path.get().first().expect("Path was empty").clone();
     let current_node = move || path.get().last().expect("Path was empty").clone();
+
+    let root_id: String = SessionStorage::get("root_id")
+        .unwrap_or_default()
+        .unwrap_or_default();
 
     let inner_node_style = if compact { "!text-lg" } else { "!text-xl" };
     let leaf_node_style = if compact { "!text-xl" } else { "!text-2xl" };
 
     view! {
-        <Breadcrumb>
-            <For
-                each=move || path.get()
-                key=|path_node| path_node.id
-                children=move |path_node| {
-                    let is_not_last = move || path_node.id != current_node().id;
+        <Space align=SpaceAlign::Center class="!gap-1">
+            <Show when=move || accessible_root_node().id.to_string() != root_id>
+                <Icon class=inner_node_style icon=icondata_mdi::MdiAccountCircleOutline />
+            </Show>
+            <Breadcrumb>
+                <For
+                    each=move || path.get()
+                    key=|path_node| path_node.id
+                    children=move |path_node| {
+                        let is_not_last = move || path_node.id != current_node().id;
 
-                    view! {
-                        <PathBreadcrumbItem
-                            node=path_node
-                            is_last=!is_not_last()
-                            is_trash
-                            on_click=on_select
-                            leaf_node_style
-                            inner_node_style
-                        />
-                        <Show when=is_not_last>
-                            <BreadcrumbDivider class=inner_node_style />
-                        </Show>
+                        view! {
+                            <PathBreadcrumbItem
+                                node=path_node
+                                is_last=!is_not_last()
+                                on_click=on_select
+                                leaf_node_style
+                                inner_node_style
+                            />
+                            <Show when=is_not_last>
+                                <BreadcrumbDivider class=inner_node_style />
+                            </Show>
+                        }
                     }
-                }
-            />
-        </Breadcrumb>
+                />
+            </Breadcrumb>
+        </Space>
     }
 }
 
@@ -46,7 +57,6 @@ pub(crate) fn PathBreadcrumb(
 fn PathBreadcrumbItem(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(optional, into)] is_last: Signal<bool>,
-    is_trash: Signal<bool>,
     leaf_node_style: &'static str,
     inner_node_style: &'static str,
     on_click: Callback<NodeId>,
@@ -69,12 +79,6 @@ fn PathBreadcrumbItem(
     view! {
         <BreadcrumbItem>
             <BreadcrumbButton on:click=on_click>
-                <Show when=move || is_trash.get()>
-                    <Icon
-                        class=format!("{} mr-1", text_style.get())
-                        icon=icondata_mdi::MdiTrashCanOutline
-                    />
-                </Show>
                 <Text class=format!("{} !font-bold", text_style.get())>{name}</Text>
             </BreadcrumbButton>
         </BreadcrumbItem>

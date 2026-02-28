@@ -1,8 +1,11 @@
-use chrono::NaiveDateTime;
+use crate::user::UserEntity;
+
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::RevisionId;
 use crabdrive_common::storage::{NodeId, NodeType};
-use crabdrive_common::uuid::UUID;
+use crabdrive_common::user::UserId;
+
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
@@ -16,14 +19,16 @@ use serde::{Deserialize, Serialize};
     AsChangeset,
     Clone,
     QueryableByName,
+    Identifiable,
+    Associations,
 )]
 #[diesel(table_name = crate::db::schema::Node)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-#[diesel(belongs_to(encryptionKey))]
+#[diesel(belongs_to(UserEntity, foreign_key = owner_id))]
 pub(crate) struct NodeEntity {
     pub id: NodeId,
     pub parent_id: Option<NodeId>,
-    pub owner_id: UUID,
+    pub owner_id: UserId,
 
     /// The metadata encrypted by the client
     ///

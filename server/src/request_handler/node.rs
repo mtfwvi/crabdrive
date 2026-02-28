@@ -6,10 +6,11 @@ use crabdrive_common::payloads::node::request::node::{
     PostMoveNodeRequest, PostMoveNodeToTrashRequest,
 };
 use crabdrive_common::payloads::node::response::node::{
-    DeleteNodeResponse, GetNodeChildrenResponse, GetNodeResponse, GetPathBetweenNodesResponse,
-    PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
-    PostMoveNodeToTrashResponse,
+    DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse,
+    GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse,
+    PostMoveNodeResponse, PostMoveNodeToTrashResponse,
 };
+use std::collections::VecDeque;
 
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
@@ -58,7 +59,11 @@ pub async fn get_node(
     }
     let node_entity = node_entity.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
 
@@ -83,7 +88,11 @@ pub async fn patch_node(
 
     let node_entity = node.unwrap();
 
-    if node_entity.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node_entity.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(PatchNodeResponse::NotFound));
     }
 
@@ -120,7 +129,11 @@ pub async fn post_move_node(
     }
     let node = node.unwrap();
 
-    if node.owner_id != current_user.id {
+    if !state
+        .node_repository
+        .has_access(node.id, current_user.id)
+        .expect("db error")
+    {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
@@ -327,8 +340,14 @@ pub async fn get_path_between_nodes(
             Json(GetPathBetweenNodesResponse::NoContent),
         ),
         Some(path_entites) => {
-            if path_entites[0].owner_id != current_user.id
-                || path_entites.last().unwrap().owner_id != current_user.id
+            if !state
+                .node_repository
+                .has_access(path_entites[0].id, current_user.id)
+                .expect("db error")
+                || !state
+                    .node_repository
+                    .has_access(path_entites.last().unwrap().id, current_user.id)
+                    .expect("db error")
             {
                 return (
                     StatusCode::NOT_FOUND,
@@ -353,7 +372,18 @@ pub async fn get_node_children(
 ) -> (StatusCode, Json<GetNodeChildrenResponse>) {
     let node = state.node_repository.get_node(parent_id).expect("db error");
 
-    if node.as_ref().is_none() || node.unwrap().owner_id != current_user.id {
+    if node.as_ref().is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetNodeChildrenResponse::NotFound),
+        );
+    }
+
+    if !state
+        .node_repository
+        .has_access(node.unwrap().id, current_user.id)
+        .expect("db error")
+    {
         return (
             StatusCode::NOT_FOUND,
             Json(GetNodeChildrenResponse::NotFound),
@@ -369,6 +399,48 @@ pub async fn get_node_children(
     (
         StatusCode::OK,
         Json(GetNodeChildrenResponse::Ok(children.collect())),
+    )
+}
+
+pub async fn get_accessible_path(
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+) -> (StatusCode, Json<GetAccessiblePathResponse>) {
+    if !state
+        .node_repository
+        .has_access(node_id, current_user.id)
+        .expect("db error")
+    {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(GetAccessiblePathResponse::NotFound),
+        );
+    }
+
+    let path = state
+        .node_repository
+        .get_path_to_root(node_id)
+        .expect("db error");
+    let mut path_list = VecDeque::from(path);
+
+    // there is always at least one element as we checked that the user has access to the last node so this cannot panic
+    while !state
+        .node_repository
+        .has_access(path_list[0].id, current_user.id)
+        .expect("db error")
+    {
+        path_list.pop_front();
+    }
+
+    let encrypted_node_path: Vec<EncryptedNode> = path_list
+        .iter()
+        .map(|entity| entity_to_encrypted_node(entity.clone(), &state).unwrap())
+        .collect();
+
+    (
+        StatusCode::OK,
+        Json(GetAccessiblePathResponse::Ok(encrypted_node_path)),
     )
 }
 
@@ -395,6 +467,7 @@ pub fn entity_to_encrypted_node(
         node_type: node.node_type,
         current_revision,
         encrypted_metadata: node.metadata,
+        has_access: state.node_repository.get_access_list(node.id)?,
     })
 }
 pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {

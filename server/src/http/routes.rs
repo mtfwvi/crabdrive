@@ -10,6 +10,10 @@ use crate::request_handler::node::*;
 use crabdrive_common::da;
 use crabdrive_common::routes;
 
+use crate::request_handler::share::{
+    get_accept_share_info, get_accepted_shared_nodes, get_node_share_info, post_accept_share,
+    post_share_node,
+};
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{delete, get, post};
@@ -26,6 +30,7 @@ pub fn routes() -> Router<AppState> {
         .merge(nodes_routes())
         .merge(admin_routes())
         .merge(auth_routes())
+        .merge(share_routes())
 }
 
 pub fn nodes_routes() -> Router<AppState> {
@@ -59,6 +64,10 @@ pub fn nodes_routes() -> Router<AppState> {
                 .layer(DefaultBodyLimit::max(da!(18 MB).as_bytes() as usize))
                 .get(get_chunk),
         )
+        .route(
+            routes::node::ROUTE_ACCESSIBLE_PATH,
+            get(get_accessible_path),
+        )
 }
 
 pub fn auth_routes() -> Router<AppState> {
@@ -76,4 +85,25 @@ pub fn admin_routes() -> Router<AppState> {
             get(get_user).delete(delete_user),
         )
         .route(routes::admin::ROUTE_USER, post(post_user))
+}
+
+pub fn share_routes() -> Router<AppState> {
+    Router::new()
+        .route(routes::node::share::ROUTE_SHARE_NODE, post(post_share_node))
+        .route(
+            routes::node::share::ROUTE_NODE_SHARE_INFO,
+            get(get_node_share_info),
+        )
+        .route(
+            routes::node::share::ROUTE_GET_SHARE_ACCEPT_INFO,
+            get(get_accept_share_info),
+        )
+        .route(
+            routes::node::share::ROUTE_GET_ACCEPTED_SHARED,
+            get(get_accepted_shared_nodes),
+        )
+        .route(
+            routes::node::share::ROUTE_ACCEPT_SHARE,
+            post(post_accept_share),
+        )
 }

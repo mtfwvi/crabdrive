@@ -49,6 +49,12 @@ pub enum GetPathBetweenNodesResponse {
     NotFound,
 }
 
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub enum GetAccessiblePathResponse {
+    Ok(Vec<EncryptedNode>),
+    NotFound,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GetNodeChildrenResponse {
     Ok(Vec<EncryptedNode>),

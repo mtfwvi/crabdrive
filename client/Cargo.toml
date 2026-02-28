@@ -13,7 +13,7 @@ icondata_core = {workspace = true}
 icondata_mdi = {workspace = true}
 leptos = { workspace = true, features = ["csr"] }
 leptos_router = { workspace = true }
-leptos-use = { workspace = true, features = ["use_preferred_dark"] }
+leptos-use = { workspace = true, features = ["use_preferred_dark", "use_clipboard"] }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 thaw = { workspace = true, features = ["csr"] }
