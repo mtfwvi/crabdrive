@@ -4,7 +4,10 @@ use crabdrive_common::payloads::auth::{
     response::{login::PostLoginResponse, register::PostRegisterResponse},
 };
 
-use crate::api::requests::{RequestBody, RequestMethod, request, string_from_response};
+use crate::{
+    api::requests::{RequestBody, RequestMethod, request, string_from_response},
+    utils,
+};
 
 pub async fn post_login(body: PostLoginRequest) -> Result<PostLoginResponse> {
     let url = crabdrive_common::routes::auth::login();
@@ -32,9 +35,14 @@ pub async fn post_register(body: PostRegisterRequest) -> Result<PostRegisterResp
 
 pub async fn post_logout() -> Result<()> {
     let url = crabdrive_common::routes::auth::logout();
-
-    let _response = request(&url, RequestMethod::POST, RequestBody::Empty, None, true).await;
-
-    // TODO: Do anything with response?
+    let token = utils::auth::get_token()?;
+    let _ = request(
+        &url,
+        RequestMethod::POST,
+        RequestBody::Empty,
+        Some(&token),
+        true,
+    )
+    .await?;
     Ok(())
 }
