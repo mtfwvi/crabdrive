@@ -23,7 +23,6 @@ where
             error_text=Signal::derive(move || {
                 format!("Failed to load children of {} from server", node.get().id)
             })
-            fallback_spinner=false
             children=move |children_nodes| children(children_nodes, refetch)
         />
     }

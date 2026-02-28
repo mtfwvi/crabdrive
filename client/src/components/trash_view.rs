@@ -1,5 +1,4 @@
-use crate::api::get_children;
-use crate::components::basic::resource_wrapper::ResourceWrapper;
+use crate::components::data_provider::children_provider::ChildrenProvider;
 use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
 use crate::components::trash_empty_button::TrashEmptyButton;
@@ -18,15 +17,6 @@ pub(crate) fn TrashView(
         navigate(&format!("/{}", node_id), Default::default());
     });
 
-    let children_res = LocalResource::new(move || {
-        let current_node = trash_node.get();
-        async move {
-            get_children(current_node)
-                .await
-                .map_err(|err| err.to_string())
-        }
-    });
-
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
     let toggle_selection = Callback::new(move |file: DecryptedNode| {
         let selected = selection.get().clone();
@@ -40,11 +30,7 @@ pub(crate) fn TrashView(
     });
 
     view! {
-        <ResourceWrapper
-            resource=children_res
-            error_text="The items in trash could not be loaded from the server"
-            let:children
-        >
+        <ChildrenProvider node=trash_node let:children let:refetch_children>
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
                     <Space align=SpaceAlign::Center>
@@ -72,11 +58,11 @@ pub(crate) fn TrashView(
                     content_type=DetailsViewType::Trash
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
-                        children_res.refetch();
+                        refetch_children.run(());
                         selection.set(None);
                     })
                 />
             </Show>
-        </ResourceWrapper>
+        </ChildrenProvider>
     }
 }

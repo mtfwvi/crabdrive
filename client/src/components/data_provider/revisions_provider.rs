@@ -32,7 +32,6 @@ where
         <ResourceWrapper
             resource=revisions_res
             error_text="Failed to load shared nodes from server"
-            fallback_spinner=false
             children=move |revisions| children(revisions)
         />
     }
