@@ -4,6 +4,7 @@ use crate::utils;
 use anyhow::{Result, anyhow};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD_NO_PAD;
+use tracing::error;
 
 /// Checks if a username is remembered
 pub fn is_authenticated() -> Result<bool> {
@@ -51,6 +52,7 @@ pub async fn salt_from_username(username: &str) -> String {
 
 /// Get the JWT Bearer token. Will return `Err` if no token is present but should redirect to the login page.
 pub fn get_token() -> Result<String> {
+    error!("Retrieving authentication token");
     if let Some(token) = SessionStorage::get("bearer")? {
         Ok(token)
     } else {
@@ -62,6 +64,13 @@ pub fn get_token() -> Result<String> {
 pub fn go_to_login() -> Result<()> {
     SessionStorage::clear()?;
     let current_url = get_current_url()?;
+
+    // without this, the login page redirects to the login page for some reason (/ -> /login -> /login)
+    // if we are on the login page, it is not necessary to store the url as it would overwrite the old one
+    if current_url.contains("login") {
+        return Ok(());
+    }
+
     LocalStorage::set("redirect_url", &current_url)?;
 
     let mut login_url = get_origin()?;
