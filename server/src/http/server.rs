@@ -108,15 +108,21 @@ pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<
     } else if let Some(s) = err.downcast_ref::<&str>() {
         s.to_string()
     } else {
-        "Unknown panic message".to_string()
+        "[Unknown panic message]".to_string()
     };
 
-    error!("panic: {:?}", details);
+    error!("Request handler panicked: {:?}", details);
+
+    let client_details = if cfg!(debug_assertions) {
+        details
+    } else {
+        "Internal Server Error".to_string()
+    };
 
     let body = serde_json::json!({
         "error": {
             "kind": "panic",
-            "details": details,
+            "details": client_details,
         }
     });
     let body = serde_json::to_string(&body).unwrap();
