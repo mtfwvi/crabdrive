@@ -1,5 +1,6 @@
 use jsonwebtoken::{DecodingKey, EncodingKey};
 
+#[derive(Clone)]
 pub struct Keys {
     pub encoding_key: EncodingKey,
     pub decoding_key: DecodingKey,

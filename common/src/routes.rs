@@ -147,6 +147,12 @@ pub mod auth {
         ROUTE_LOGOUT.to_string()
     }
 
+    pub const ROUTE_REFRESH: &str = "/api/auth/refresh/";
+    /// `/api/auth/refresh/`
+    pub fn refresh() -> String {
+        ROUTE_REFRESH.to_string()
+    }
+
     pub const ROUTE_INFO: &str = "/api/auth/info/";
     /// `/api/auth/info/`
     pub fn info() -> String {

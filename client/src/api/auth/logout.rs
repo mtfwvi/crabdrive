@@ -13,10 +13,11 @@ pub async fn logout() -> Result<()> {
         return Err(anyhow!("Unable to sign out at the moment"));
     }
 
-    SessionStorage::clear().context("Failed to clear session storage!")?;
     api::requests::auth::post_logout()
         .await
         .context("Server currently not reachable - Please try again later")?;
+
+    SessionStorage::clear().context("Failed to clear session storage!")?;
 
     Ok(())
 }
