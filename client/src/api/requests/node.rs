@@ -4,6 +4,7 @@ use crabdrive_common::payloads::node::request::node::{
     DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
     PostMoveNodeToTrashRequest,
 };
+use crabdrive_common::payloads::node::response::file::GetVersionsResponse;
 use crabdrive_common::payloads::node::response::node::{
     DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse,
     GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse,
@@ -68,5 +69,10 @@ pub async fn get_path_between_nodes(
 
 pub async fn get_accessible_path(node_id: NodeId) -> Result<GetAccessiblePathResponse> {
     let url = routes::node::accessible_path(node_id);
+    json_api_request(&url, RequestMethod::GET, ()).await
+}
+
+pub async fn get_file_versions(node_id: NodeId) -> Result<GetVersionsResponse> {
+    let url = routes::node::versions(node_id);
     json_api_request(&url, RequestMethod::GET, ()).await
 }
