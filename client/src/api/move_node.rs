@@ -4,8 +4,8 @@ use crate::api::requests::node::{
 use crate::api::{get_accessible_path, get_trash_node};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption::node::encrypt_metadata;
-use anyhow::Result;
 use anyhow::anyhow;
+use anyhow::{Result, bail};
 use crabdrive_common::payloads::node::request::node::MoveNodeData;
 use crabdrive_common::payloads::node::response::node::{
     PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse,
@@ -58,10 +58,9 @@ pub async fn move_node(
 
     match response {
         PostMoveNodeResponse::Ok => Ok(()),
-        PostMoveNodeResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeResponse::BadRequest => bail!("Cannot move a file into another file!"),
+        PostMoveNodeResponse::NotFound => bail!("One of the nodes referenced could not be found"),
+        PostMoveNodeResponse::Conflict => bail!("Refresh the page and try again!"),
     }
 }
 

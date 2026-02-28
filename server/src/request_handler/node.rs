@@ -16,8 +16,8 @@ use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
-use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
+use crabdrive_common::storage::{FileRevision, NodeType};
 
 pub async fn delete_node(
     State(_state): State<AppState>,
@@ -135,12 +135,14 @@ pub async fn post_move_node(
     if to_node.is_none() || from_node.is_none() {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
+
     let (to_node, from_node) = (to_node.unwrap(), from_node.unwrap());
 
-    if from_node.metadata_change_counter != payload.from_node_change_counter {
-        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
-    } else if to_node.metadata_change_counter != payload.to_node_change_counter {
-        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
+    if to_node.node_type != NodeType::Folder {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostMoveNodeResponse::BadRequest),
+        );
     }
 
     if to_node.owner_id != current_user.id || from_node.owner_id != current_user.id {
