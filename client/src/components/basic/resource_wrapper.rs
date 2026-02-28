@@ -8,7 +8,6 @@ pub(crate) fn ResourceWrapper<T, F, V>(
     resource: LocalResource<Result<T, String>>,
     children: F,
     #[prop(into)] error_text: Signal<String>,
-    #[prop(optional, default = true)] fallback_spinner: bool,
 ) -> impl IntoView
 where
     T: Clone + Debug + Send + Sync + 'static,
@@ -20,11 +19,7 @@ where
 
     view! {
         <Transition fallback=move || {
-            view! {
-                <Show when=move || fallback_spinner>
-                    <Spinner />
-                </Show>
-            }
+            view! { <Spinner class="m-auto" /> }
         }>
             {move || {
                 resource

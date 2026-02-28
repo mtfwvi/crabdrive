@@ -1,7 +1,9 @@
-use crate::components::content_frame::ContentViewType;
 use crate::components::file_download_button::FileDownloadButton;
+use crate::components::file_history_button::FileHistoryButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::components::node_share_button::NodeShareButton;
+use crate::components::trash_item_delete_button::TrashItemDeleteButton;
+use crate::components::trash_item_restore_button::TrashItemRestoreButton;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{
@@ -11,10 +13,18 @@ use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
+#[derive(PartialEq, Clone, Debug)]
+pub(crate) enum DetailsViewType {
+    Folder(Box<DecryptedNode>), // parent node
+    Shared,
+    Trash,
+    ReadOnly,
+}
+
 #[component]
 pub(crate) fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
-    #[prop(into)] content_type: Signal<ContentViewType>,
+    #[prop(into)] content_type: Signal<DetailsViewType>,
     on_modified: Callback<()>,
     on_close: Callback<()>,
 ) -> impl IntoView {
@@ -62,6 +72,10 @@ pub(crate) fn NodeDetails(
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
                     <OptionalNodeAttribute
+                        name="Deleted"
+                        value=Signal::derive(move || node.get().deleted_on.map(format_date_time))
+                    />
+                    <OptionalNodeAttribute
                         name="Owner"
                         value=Signal::derive(move || get_owner_username(node.get()))
                     />
@@ -73,37 +87,45 @@ pub(crate) fn NodeDetails(
                         })
                     />
 
-                    <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
+                    <Show when=move || matches!(content_type.get(), DetailsViewType::Folder(_))>
                         <Space vertical=true class="mt-4">
                             <Show when=move || node.get().node_type == NodeType::File>
                                 <FileDownloadButton node />
                             </Show>
 
-                            <ModifyNodeMenu node on_modified />
+                            <ModifyNodeMenu
+                                node
+                                parent=Signal::derive(move || {
+                                    match content_type.get() {
+                                        DetailsViewType::Folder(parent) => *parent,
+                                        _ => unreachable!(),
+                                    }
+                                })
+                                on_modified
+                            />
+
+                            <Show when=move || node.get().node_type == NodeType::File>
+                                <FileHistoryButton node />
+                            </Show>
 
                             <NodeShareButton node />
                         </Space>
                     </Show>
 
                     <Show when=move || {
-                        content_type.get() == ContentViewType::Shared
+                        content_type.get() == DetailsViewType::Shared
                             && node.get().node_type == NodeType::File
                     }>
-                        <FileDownloadButton node />
+                        <Space vertical=true class="mt-4">
+                            <FileDownloadButton node />
+                            <FileHistoryButton node />
+                        </Space>
                     </Show>
 
-                    <Show when=move || content_type.get() == ContentViewType::Trash>
+                    <Show when=move || content_type.get() == DetailsViewType::Trash>
                         <Space vertical=true class="mt-4">
-                            <Button
-                                block=true
-                                icon=icondata_mdi::MdiRestore
-                                appearance=ButtonAppearance::Primary
-                            >
-                                "Restore"
-                            </Button>
-                            <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
-                                "Delete forever"
-                            </Button>
+                            <TrashItemRestoreButton node on_restored=on_modified />
+                            <TrashItemDeleteButton node on_deleted=on_modified />
                         </Space>
                     </Show>
                 </Space>

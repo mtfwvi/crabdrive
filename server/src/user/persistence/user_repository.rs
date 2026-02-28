@@ -58,12 +58,12 @@ pub(crate) trait UserRepository {
     fn close_session(&self, jwt: &str) -> Result<()>;
 }
 
-pub struct UserState {
+pub struct UserRepositoryImpl {
     db_pool: Arc<DbPool>,
     secrets: Keys,
 }
 
-impl UserState {
+impl UserRepositoryImpl {
     pub fn new(db_pool: Arc<DbPool>, keys: Keys) -> Self {
         Self {
             db_pool,
@@ -124,7 +124,7 @@ fn create_new_refresh_token(
     (refresh_token, tok)
 }
 
-impl UserRepository for UserState {
+impl UserRepository for UserRepositoryImpl {
     fn create_user(
         &self,
         username: &str,

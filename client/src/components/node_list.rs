@@ -1,7 +1,7 @@
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::get_node_icon;
-use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::storage::NodeType;
 use leptos::prelude::*;
 use thaw::{
     Button, ButtonAppearance, ButtonSize, Flex, FlexGap, FlexJustify, Icon, Space, Text, Toast,
@@ -14,7 +14,7 @@ pub(crate) fn NodeList(
     #[prop(into)] folders_only: Signal<bool>,
     #[prop(optional, default = "Folder is empty")] no_nodes_message: &'static str,
     on_node_click: Callback<DecryptedNode>,
-    on_folder_dblclick: Callback<NodeId>,
+    on_folder_dblclick: Callback<DecryptedNode>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
@@ -34,7 +34,7 @@ pub(crate) fn NodeList(
     };
     let on_dblclick = move |node: DecryptedNode| match node.node_type {
         NodeType::File => {}
-        NodeType::Folder => on_folder_dblclick.run(node.id),
+        NodeType::Folder => on_folder_dblclick.run(node),
         NodeType::Link => add_toast(String::from("Links have not been implemented")),
     };
 
