@@ -12,6 +12,7 @@ use crabdrive_common::storage::RevisionId;
 use crabdrive_common::uuid::UUID;
 
 pub(crate) trait RevisionRepository {
+    //Query a revision by its ID
     fn get_revision(&self, revision_id: RevisionId) -> Result<Option<RevisionEntity>>;
     fn get_all_revisions_by_node(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>>;
     fn create_revision(

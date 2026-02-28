@@ -32,8 +32,13 @@ pub(crate) trait NodeRepository {
 
     fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity>;
 
+    /// Returns a list of all nodes it deleted so that the associated chunks can be deleted
     fn purge_tree(&self, id: NodeId) -> Result<Vec<NodeEntity>>;
 
+    /// Move a node from one parent to another. Requires:
+    /// - the id of the node to move
+    /// - the metadata of the old parent (remove the encryption key of the node we are moving)
+    /// - the metadata of the new parent (add the encryption key of the node we are moving)
     fn move_node(
         &self,
         id: NodeId,
@@ -67,10 +72,11 @@ pub(crate) trait NodeRepository {
 
     fn purge_tree_from_trash(&self, id: NodeId) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)>;
 
-    fn empty_trash(
+    fn purge_nodes_from_trash(
         &self,
+        node_ids: Vec<NodeId>,
         trash_node_id: NodeId,
-        older_than_days: i64,
+        new_trash_metadata: EncryptedMetadata,
     ) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)>;
 }
 
@@ -314,56 +320,35 @@ impl NodeRepository for NodeState {
                     .context("Failed to delete node")?;
             }
 
-            if let Some(root_node) = all_nodes.last() {
-                if let Some(parent_id) = root_node.parent_id {
-                    diesel::update(NodeDsl::Node)
-                        .filter(NodeDsl::id.eq(parent_id))
-                        .set(
-                            NodeDsl::metadata_change_counter
-                                .eq(NodeDsl::metadata_change_counter + 1),
-                        )
-                        .execute(conn)
-                        .context("Failed to update parent metadata counter")?;
-                }
-            }
-
             Ok((all_nodes, all_revisions))
         })
     }
 
-    fn empty_trash(
+    fn purge_nodes_from_trash(
         &self,
+        node_ids: Vec<NodeId>,
         trash_node_id: NodeId,
-        older_than_days: i64,
+        new_trash_metadata: EncryptedMetadata,
     ) -> Result<(Vec<NodeEntity>, Vec<RevisionEntity>)> {
-        use crate::db::schema::Node::dsl as NodeDsl;
-        use chrono::Utc;
+        let mut all_nodes = Vec::new();
+        let mut all_revisions = Vec::new();
+
+        for node_id in node_ids {
+            let (nodes, revisions) = self.purge_tree_from_trash(node_id)?;
+            all_nodes.extend(nodes);
+            all_revisions.extend(revisions);
+        }
 
         let mut conn = self
             .db_pool
             .get()
             .context("Failed to get database connection")?;
 
-        let cutoff_date = Utc::now().naive_utc() - chrono::Duration::days(older_than_days);
-
-        let nodes_to_delete = conn
-            .transaction(|conn| {
-                NodeDsl::Node
-                    .filter(NodeDsl::parent_id.eq(trash_node_id))
-                    .filter(NodeDsl::deleted_on.is_not_null())
-                    .filter(NodeDsl::deleted_on.lt(cutoff_date))
-                    .load::<NodeEntity>(conn)
-            })
-            .context("Failed to load trash nodes")?;
-
-        let mut all_nodes = Vec::new();
-        let mut all_revisions = Vec::new();
-
-        for node in nodes_to_delete {
-            let (nodes, revisions) = self.purge_tree_from_trash(node.id)?;
-            all_nodes.extend(nodes);
-            all_revisions.extend(revisions);
-        }
+        diesel::update(NodeDsl::Node)
+            .filter(NodeDsl::id.eq(trash_node_id))
+            .set(NodeDsl::metadata.eq(new_trash_metadata))
+            .execute(&mut conn)
+            .context("Failed to update trash node metadata")?;
 
         Ok((all_nodes, all_revisions))
     }

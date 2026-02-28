@@ -303,10 +303,7 @@ pub async fn post_move_node_out_of_trash(
         payload.to_node_metadata,
     ) {
         Ok(_) => (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok)),
-        Err(_) => (
-            StatusCode::CONFLICT,
-            Json(PostMoveNodeOutOfTrashResponse::Conflict),
-        ),
+        Err(_) => panic!("db error"),
     }
 }
 
