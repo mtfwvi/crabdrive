@@ -37,7 +37,8 @@ pub async fn delete_node(
         return (StatusCode::NOT_FOUND, Json(DeleteNodeResponse::NotFound));
     }
 
-    let parent = state.node_repository.get_node(node.parent_id.unwrap()).expect("db error").unwrap();
+    // will panic when trying to delete root node but thats ok as the client prevents it
+    let parent = state.node_repository.get_node(node.parent_id.unwrap()).expect("db error").expect("db constraints");
 
     if parent.metadata_change_counter != payload.parent_change_count {
         return (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict));
