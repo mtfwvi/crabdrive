@@ -3,6 +3,7 @@ use crate::components::file_history_button::FileHistoryButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::components::node_share_button::NodeShareButton;
 use crate::components::trash_item_delete_button::TrashItemDeleteButton;
+use crate::components::trash_item_restore_button::TrashItemRestoreButton;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{
@@ -123,13 +124,7 @@ pub(crate) fn NodeDetails(
 
                     <Show when=move || content_type.get() == DetailsViewType::Trash>
                         <Space vertical=true class="mt-4">
-                            <Button
-                                block=true
-                                icon=icondata_mdi::MdiRestore
-                                appearance=ButtonAppearance::Primary
-                            >
-                                "Restore"
-                            </Button>
+                            <TrashItemRestoreButton node on_restored=on_modified />
                             <TrashItemDeleteButton node on_deleted=on_modified />
                         </Space>
                     </Show>
