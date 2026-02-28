@@ -78,7 +78,7 @@ pub(crate) fn FolderView(
                         if trash_id == Some(path_root_node.get().id) {
                             DetailsViewType::ReadOnly
                         } else {
-                            DetailsViewType::Folder(current_node.get())
+                            DetailsViewType::Folder(Box::new(current_node.get()))
                         }
                     })
                     on_close=Callback::new(move |_| selection.set(None))

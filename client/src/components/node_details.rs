@@ -13,7 +13,7 @@ use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
 #[derive(PartialEq, Clone, Debug)]
 pub(crate) enum DetailsViewType {
-    Folder(DecryptedNode), // parent node
+    Folder(Box<DecryptedNode>), // parent node
     Shared,
     Trash,
     ReadOnly,
@@ -70,6 +70,10 @@ pub(crate) fn NodeDetails(
                         value=Signal::derive(move || format_date_time(metadata.get().created))
                     />
                     <OptionalNodeAttribute
+                        name="Deleted"
+                        value=Signal::derive(move || node.get().deleted_on.map(format_date_time))
+                    />
+                    <OptionalNodeAttribute
                         name="Owner"
                         value=Signal::derive(move || get_owner_username(node.get()))
                     />
@@ -91,7 +95,7 @@ pub(crate) fn NodeDetails(
                                 node
                                 parent=Signal::derive(move || {
                                     match content_type.get() {
-                                        DetailsViewType::Folder(parent) => parent,
+                                        DetailsViewType::Folder(parent) => *parent,
                                         _ => unreachable!(),
                                     }
                                 })

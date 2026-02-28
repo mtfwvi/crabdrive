@@ -1,8 +1,8 @@
-use crate::api::{move_node, rename_node};
+use crate::api::{move_node, move_node_to_trash, rename_node};
 use crate::components::basic::folder_selection_dialog::FolderSelectionDialog;
 use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::constants::INFINITE_TOAST_TIMEOUT;
+use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
 use crabdrive_common::storage::NodeType;
@@ -20,7 +20,7 @@ pub(crate) fn ModifyNodeMenu(
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
-    let add_toast = move |text: String| {
+    let add_toast = move |text: String, intent: ToastIntent| {
         toaster.dispatch_toast(
             move || {
                 view! {
@@ -29,9 +29,13 @@ pub(crate) fn ModifyNodeMenu(
                     </Toast>
                 }
             },
-            ToastOptions::default()
-                .with_intent(ToastIntent::Error)
-                .with_timeout(INFINITE_TOAST_TIMEOUT),
+            ToastOptions::default().with_intent(intent).with_timeout(
+                if matches!(intent, ToastIntent::Error) {
+                    INFINITE_TOAST_TIMEOUT
+                } else {
+                    DEFAULT_TOAST_TIMEOUT
+                },
+            ),
         )
     };
 
@@ -42,14 +46,6 @@ pub(crate) fn ModifyNodeMenu(
         let NodeMetadata::V1(metadata) = node.get().metadata;
         metadata
     });
-
-    let on_select = move |key: &str| match key {
-        "new_revision" => file_selection_dialog_open.set(true),
-        "rename" => input_dialog_open.set(true),
-        "move" => folder_selection_dialog_open.set(true),
-        "move_to_trash" => add_toast("TODO".to_owned()),
-        _ => add_toast("TODO".to_owned()),
-    };
 
     let rename_action = Action::new_local(move |input: &String| {
         let new_name = input.to_owned();
@@ -64,7 +60,7 @@ pub(crate) fn ModifyNodeMenu(
         if status.is_some() {
             match status.unwrap() {
                 Ok(_) => on_modified.run(()),
-                Err(e) => add_toast(format!("Failed to rename: {}", e)),
+                Err(e) => add_toast(format!("Failed to rename: {}", e), ToastIntent::Error),
             }
         }
     });
@@ -82,10 +78,44 @@ pub(crate) fn ModifyNodeMenu(
         if status.is_some() {
             match status.unwrap() {
                 Ok(_) => on_modified.run(()),
-                Err(e) => add_toast(format!("Failed to move: {}", e)),
+                Err(e) => add_toast(format!("Failed to move: {}", e), ToastIntent::Error),
             }
         }
     });
+
+    let move_to_trash_action = Action::new_local(move |_| async move {
+        move_node_to_trash(node.get_untracked())
+            .await
+            .map_err(|err| err.to_string())
+    });
+    Effect::new(move || {
+        let status = move_to_trash_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => {
+                    add_toast(
+                        "Moved to trash successfully".to_string(),
+                        ToastIntent::Success,
+                    );
+                    on_modified.run(())
+                }
+                Err(e) => add_toast(
+                    format!("Failed to move to trash: {}", e),
+                    ToastIntent::Error,
+                ),
+            }
+        }
+    });
+
+    let on_select = move |key: &str| match key {
+        "rename" => input_dialog_open.set(true),
+        "move" => folder_selection_dialog_open.set(true),
+        "new_revision" => file_selection_dialog_open.set(true),
+        "move_to_trash" => (move || {
+            move_to_trash_action.dispatch(());
+        })(),
+        _ => add_toast("TODO".to_owned(), ToastIntent::Error),
+    };
 
     view! {
         <Menu on_select trigger_type=MenuTriggerType::Hover>
@@ -121,7 +151,7 @@ pub(crate) fn ModifyNodeMenu(
         <FileSelectionDialog
             open=file_selection_dialog_open
             on_confirm=Callback::new(move |_files: Vec<File>| {
-                add_toast("TODO".to_owned());
+                add_toast("TODO".to_owned(), ToastIntent::Error);
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
