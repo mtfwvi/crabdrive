@@ -3,7 +3,7 @@ use crate::storage::node::NodeRepository;
 use crate::storage::node::persistence::node_repository::NodeState;
 use crate::storage::revision::RevisionRepository;
 use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::share::persistence::share_repository::{self, ShareRepository, ShareRepositoryImpl};
+use crate::storage::share::persistence::share_repository::{ShareRepository, ShareRepositoryImpl};
 use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::user::auth::secrets::Keys;
