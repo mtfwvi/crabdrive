@@ -33,7 +33,11 @@ pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> i
 
     let download_action = Action::new_local(|input: &DecryptedNode| {
         let node = input.to_owned();
-        async move { download_file(node).await.map_err(|err| err.to_string()) }
+        async move {
+            download_file(node, None)
+                .await
+                .map_err(|err| err.to_string())
+        }
     });
     let handle_download = move |_| {
         download_action.dispatch(node.get().clone());

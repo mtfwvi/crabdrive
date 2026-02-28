@@ -1,10 +1,16 @@
 use crate::http::AppState;
-use crate::user::auth::new_bearer_token;
 use crate::user::persistence::model::user_entity::UserEntity;
 
 use axum::Json;
 use axum::extract::State;
-use axum::http::StatusCode;
+use axum::http::header::SET_COOKIE;
+use axum::http::{HeaderName, StatusCode};
+use axum_extra::TypedHeader;
+use axum_extra::extract::CookieJar;
+use axum_extra::extract::cookie::{Cookie, SameSite};
+use axum_extra::headers::Authorization;
+use axum_extra::headers::authorization::Bearer;
+
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
@@ -13,16 +19,22 @@ use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, Self
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
 use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
 
+use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
 use crabdrive_common::payloads::auth::response::register::{
     PostRegisterResponse, RegisterConflictReason,
 };
+use crabdrive_common::routes::auth::ROUTE_REFRESH;
 use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::user::UserKeys;
 
 pub async fn post_login(
     State(state): State<AppState>,
     Json(payload): Json<PostLoginRequest>,
-) -> (StatusCode, Json<PostLoginResponse>) {
+) -> (
+    StatusCode,
+    [(HeaderName, String); 1],
+    Json<PostLoginResponse>,
+) {
     let username = payload.username;
     let password = payload.password;
 
@@ -34,18 +46,25 @@ pub async fn post_login(
     if user_entity.is_none() {
         return (
             StatusCode::UNAUTHORIZED,
+            [(SET_COOKIE, "".to_string())],
             Json(PostLoginResponse::Unauthorized(Username)),
         );
     }
 
     let user_entity = user_entity.unwrap();
 
-    let jwt = new_bearer_token(
-        user_entity.id,
-        state.config.auth.jwt_expiration_period,
-        &state.keys.encoding_key,
-    )
-    .unwrap();
+    let (rtoken, jwt) = state
+        .user_repository
+        .create_session(user_entity.id)
+        .expect("Failed to create session!");
+
+    let cookie = Cookie::build(("refresh_token", rtoken))
+        .http_only(true)
+        .secure(state.config.is_prod())
+        .same_site(SameSite::Strict)
+        .path(ROUTE_REFRESH)
+        .build()
+        .to_string();
 
     let keys = if user_entity.encryption_uninitialized {
         None
@@ -61,6 +80,7 @@ pub async fn post_login(
 
     (
         StatusCode::OK,
+        [(SET_COOKIE, cookie)],
         Json(PostLoginResponse::Ok(LoginSuccess::new(
             jwt,
             format!("/{}", &user_entity.root_node.unwrap()),
@@ -147,8 +167,74 @@ pub async fn get_user_info(
     }))
 }
 
-pub async fn post_logout() -> StatusCode {
-    //TODO implement (token blacklisting?)
+pub async fn post_logout(
+    State(state): State<AppState>,
+    _user: UserEntity,
+    TypedHeader(auth): TypedHeader<Authorization<Bearer>>,
+) -> (StatusCode, [(HeaderName, String); 1]) {
+    tracing::debug!("Logging out!");
+    let jwt = auth.token().to_string();
+    state
+        .user_repository
+        .close_session(&jwt)
+        .expect("Failed to close session");
+    (StatusCode::OK, [(SET_COOKIE, "".to_string())])
+}
 
-    StatusCode::OK
+pub async fn post_refresh(
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> (
+    StatusCode,
+    [(HeaderName, String); 1],
+    Json<PostRefreshResponse>,
+) {
+    let refresh_token = match jar.get("refresh_token") {
+        Some(cookie) => cookie.value().to_string(),
+        None => {
+            tracing::debug!("Failed to refresh, (no refresh_token found)");
+            return (
+                StatusCode::UNAUTHORIZED,
+                [(SET_COOKIE, "".to_string())],
+                Json(PostRefreshResponse::Err),
+            );
+        }
+    };
+
+    let res = state.user_repository.refresh_session(&refresh_token);
+
+    if res.is_err() {
+        tracing::error!("Unable to invalidate token: {:?}", res);
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            [(SET_COOKIE, "".to_string())],
+            Json(PostRefreshResponse::Err),
+        );
+    }
+
+    let res = res.unwrap();
+
+    if res.is_none() {
+        return (
+            StatusCode::UNAUTHORIZED,
+            [(SET_COOKIE, "".to_string())],
+            Json(PostRefreshResponse::Err),
+        );
+    }
+
+    let (r_tok, jwt) = res.unwrap();
+
+    let cookie = Cookie::build(("refresh_token", r_tok))
+        .http_only(true)
+        .secure(state.config.is_prod())
+        .same_site(SameSite::Strict)
+        .path(ROUTE_REFRESH)
+        .build()
+        .to_string();
+
+    (
+        StatusCode::OK,
+        [(SET_COOKIE, cookie)],
+        Json(PostRefreshResponse::Ok(RefreshBody { bearer_token: jwt })),
+    )
 }

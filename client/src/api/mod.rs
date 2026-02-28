@@ -2,6 +2,7 @@ mod accept_share;
 pub(crate) mod auth;
 mod create_file;
 mod create_folder;
+mod delete;
 mod download_file;
 mod get_accepted_nodes;
 mod get_accessible_path;
@@ -9,6 +10,8 @@ mod get_children;
 mod get_self_info;
 mod get_shared_node_encryption_key;
 mod get_trash_node;
+mod get_versions;
+mod move_node;
 mod path_between_nodes;
 mod path_to_root;
 mod rename_node;
@@ -18,6 +21,7 @@ mod share_node;
 pub use accept_share::accept_share;
 pub use create_file::create_file;
 pub use create_folder::create_folder;
+
 pub use download_file::download_file;
 pub use get_accepted_nodes::get_accepted_nodes;
 pub use get_accessible_path::get_accessible_path;
@@ -35,3 +39,19 @@ pub use path_between_nodes::path_between_nodes;
 
 #[allow(unused_imports)]
 pub use get_self_info::get_self_info;
+
+#[allow(unused_imports)]
+pub use create_file::create_file_version;
+#[allow(unused_imports)]
+pub use get_versions::file_versions;
+#[allow(unused_imports)]
+pub use move_node::move_node;
+#[allow(unused_imports)]
+pub use move_node::move_node_out_of_trash;
+#[allow(unused_imports)]
+pub use move_node::move_node_to_trash;
+
+#[allow(unused_imports)]
+pub use delete::delete_node_tree;
+#[allow(unused_imports)]
+pub use delete::empty_trash;

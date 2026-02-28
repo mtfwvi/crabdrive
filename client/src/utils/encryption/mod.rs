@@ -3,7 +3,6 @@ pub mod chunk;
 pub mod node;
 pub mod random;
 
-use crate::hex_fmt;
 use crate::model::encryption::{DerivedKey, RawEncryptionKey, WrappedKey};
 use crate::utils::browser::get_subtle_crypto;
 use crate::utils::error::{future_from_js_promise, wrap_js_err};
@@ -58,7 +57,6 @@ pub async fn import_key(key: &RawEncryptionKey) -> Result<CryptoKey> {
     ))?;
 
     let crypto_key = future_from_js_promise(key_promise).await?;
-    tracing::trace!("Imported key: {}", hex_fmt!(key));
 
     Ok(crypto_key)
 }
@@ -76,8 +74,6 @@ pub async fn export_key(key: &CryptoKey) -> Result<RawEncryptionKey> {
     let raw_key: [u8; 32] = key_vec
         .try_into()
         .map_err(|_| anyhow!("Failed to export key!"))?;
-
-    tracing::trace!("Exported Key: {}", hex_fmt!(raw_key));
 
     Ok(raw_key)
 }
@@ -116,7 +112,6 @@ pub async fn generate_aes256_key() -> Result<RawEncryptionKey> {
     .await?;
 
     let raw_key = export_key(&key).await?;
-    tracing::trace!("Generated key: {}", hex_fmt!(raw_key));
 
     Ok(raw_key)
 }
@@ -156,7 +151,6 @@ pub async fn unwrap_key(
     .await?;
 
     let key = export_key(&key).await?;
-    tracing::trace!("Successfully unwrapped key: {}", hex_fmt!(key));
 
     Ok(key)
 }
@@ -185,7 +179,6 @@ pub async fn wrap_key(
     .await?;
 
     let key = Uint8Array::new(&wrapped_key).to_vec();
-    tracing::trace!("Successfully wrapped key: {}", hex_fmt!(key));
 
     Ok(EncryptionKey::new(key, iv))
 }

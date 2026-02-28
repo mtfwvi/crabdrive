@@ -11,7 +11,7 @@ use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::js_sys::Uint8Array;
 use web_sys::{Blob, Url};
 
-pub async fn download_file(node: DecryptedNode) -> Result<()> {
+pub async fn download_file(node: DecryptedNode, revision: Option<FileRevision>) -> Result<()> {
     let _guard = debug_span!("api::downloadFile").entered();
     let token = utils::auth::get_token()
         .inspect_err(|_| tracing::error!("No token found. Is the user authenticated?"))?;
@@ -24,12 +24,14 @@ pub async fn download_file(node: DecryptedNode) -> Result<()> {
     .ok_or(anyhow!("Cannot download folders or symlinks"))
     .inspect_err(|_| tracing::error!("Cannot download folders or symlinks."))?;
 
-    let current_revision = node
+    let active_revision = node
         .current_revision
         .ok_or(anyhow!("This node does not have any file contents"))
         .inspect_err(|_| tracing::error!("Node has no revision associated with it."))?;
 
-    if current_revision.upload_ended_on.is_none() {
+    let revision = revision.unwrap_or(active_revision);
+
+    if revision.upload_ended_on.is_none() {
         // Revision has not finished uploading
         tracing::error!("Cannot download file, which is still uploading.");
         return Err(anyhow!(
@@ -37,11 +39,11 @@ pub async fn download_file(node: DecryptedNode) -> Result<()> {
         ));
     }
 
-    let mut chunks = Vec::with_capacity(current_revision.chunk_count as usize);
+    let mut chunks = Vec::with_capacity(revision.chunk_count as usize);
 
-    for i in 1..=current_revision.chunk_count {
+    for i in 1..=revision.chunk_count {
         let decrypted_chunk_result =
-            download_chunk_and_decrypt(node.id, &current_revision, &file_key, i, &token)
+            download_chunk_and_decrypt(node.id, &revision, &file_key, i, &token)
                 .await
                 .inspect_err(|e| tracing::error!("Failed to download chunks: {}", e))?;
         chunks.push(decrypted_chunk_result);
