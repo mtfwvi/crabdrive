@@ -16,9 +16,9 @@ use crate::user::persistence::user_repository::UserState;
 
 use std::any::Any;
 use std::io::ErrorKind;
-use std::sync::Arc;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
 
 use axum::http::StatusCode;
 use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
@@ -27,10 +27,10 @@ use axum::response::Response;
 use bytes::Bytes;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use http_body_util::Full;
-use tower_http::catch_panic::CatchPanicLayer;
-use tower_http::cors::CorsLayer;
 use tempfile::TempDir;
 use tokio::sync::RwLock;
+use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::cors::CorsLayer;
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;
@@ -69,8 +69,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         Arc::new(RevisionService::new(Arc::new(pool.clone())));
     let user_repository: Arc<dyn UserRepository + Send + Sync> =
         Arc::new(UserState::new(Arc::new(pool.clone())));
-    let share_repository =
-        Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
+    let share_repository = Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 

@@ -58,8 +58,7 @@ impl FileTransfer {
     }
 
     pub fn get_state(&self) -> FileTransferState {
-        self
-            .state
+        self.state
             .load(std::sync::atomic::Ordering::Relaxed)
             .try_into()
             .expect("also impossible")

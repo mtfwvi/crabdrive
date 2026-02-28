@@ -1,8 +1,8 @@
-use crabdrive_common::{storage::{ChunkIndex}, uuid::UUID};
+use crabdrive_common::{storage::ChunkIndex, uuid::UUID};
 
 use std::path::PathBuf;
 
-use bytes::{Bytes};
+use bytes::Bytes;
 use uuid::Uuid;
 
 use crate::storage::vfs::FileSystemError;
@@ -40,12 +40,10 @@ pub fn push_index(path: &mut PathBuf, index: ChunkIndex) {
 }
 
 pub async fn read_chunk(path: &PathBuf) -> Result<Bytes, FileSystemError> {
-    let data = tokio::fs::read(path)
-        .await
-        .map_err(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => FileSystemError::NotFound,
-            _ => e.into(),
-        })?;
+    let data = tokio::fs::read(path).await.map_err(|e| match e.kind() {
+        std::io::ErrorKind::NotFound => FileSystemError::NotFound,
+        _ => e.into(),
+    })?;
 
     Ok(Bytes::from(data))
 }

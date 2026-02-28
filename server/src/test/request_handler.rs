@@ -626,8 +626,7 @@ pub async fn get_server() -> TestServer {
         Arc::new(RevisionService::new(Arc::new(pool.clone())));
     let user_repository: Arc<dyn UserRepository + Send + Sync> =
         Arc::new(UserState::new(Arc::new(pool.clone())));
-    let share_repository =
-        Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
+    let share_repository = Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
 
     let keys = Keys::new(&config.auth.jwt_secret);
 
