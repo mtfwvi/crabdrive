@@ -37,7 +37,9 @@ pub async fn delete_node(
         return (StatusCode::NOT_FOUND, Json(DeleteNodeResponse::NotFound));
     }
 
-    if node.metadata_change_counter != payload.parent_change_count {
+    let parent = state.node_repository.get_node(node.parent_id.unwrap()).expect("db error").unwrap();
+
+    if parent.metadata_change_counter != payload.parent_change_count {
         return (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict));
     }
 
@@ -155,7 +157,19 @@ pub async fn post_move_node(
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
-    //TODO check version (in one transaction)
+    if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeResponse::Conflict),
+        );
+    }
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeResponse::Conflict),
+        );
+    }
 
     state
         .node_repository
@@ -194,13 +208,6 @@ pub async fn post_move_node_to_trash(
         );
     }
 
-    if node.metadata_change_counter != payload.to_node_change_counter {
-        return (
-            StatusCode::CONFLICT,
-            Json(PostMoveNodeToTrashResponse::Conflict),
-        );
-    }
-
     let from_node = state
         .node_repository
         .get_node(node.parent_id.expect("node has no parent"))
@@ -220,6 +227,20 @@ pub async fn post_move_node_to_trash(
 
     let from_node = from_node.unwrap();
     let trash_node = trash_node.unwrap();
+
+    if trash_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
 
     if from_node.owner_id != current_user.id || trash_node.owner_id != current_user.id {
         return (
@@ -274,13 +295,6 @@ pub async fn post_move_node_out_of_trash(
         );
     }
 
-    if node.metadata_change_counter != payload.to_node_change_counter {
-        return (
-            StatusCode::CONFLICT,
-            Json(PostMoveNodeOutOfTrashResponse::Conflict),
-        );
-    }
-
     let from_trash = state
         .node_repository
         .get_node(node.parent_id.expect("node has no parent"))
@@ -305,6 +319,20 @@ pub async fn post_move_node_out_of_trash(
         return (
             StatusCode::NOT_FOUND,
             Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    if from_trash.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
         );
     }
 
