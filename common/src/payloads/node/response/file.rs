@@ -34,18 +34,3 @@ pub enum GetVersionsResponse {
     Ok(Vec<FileRevision>),
     NotFound,
 }
-
-#[derive(Serialize, Deserialize, Debug)]
-pub enum GetRevisionHistoryResponse {
-    Ok(Vec<RevisionInfo>),
-    NotFound,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct RevisionInfo {
-    pub id: String,
-    pub upload_started: String,
-    pub upload_completed: Option<String>,
-    pub is_current: bool,
-    pub chunk_count: i64,
-}
