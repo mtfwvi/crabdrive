@@ -62,6 +62,13 @@ pub fn get_token() -> Result<String> {
 pub fn go_to_login() -> Result<()> {
     SessionStorage::clear()?;
     let current_url = get_current_url()?;
+
+    // without this, the login page redirects to the login page for some reason (/ -> /login -> /login)
+    // if we are on the login page, it is not necessary to store the url as it would overwrite the old one
+    if current_url.contains("login") {
+        return Ok(());
+    }
+
     LocalStorage::set("redirect_url", &current_url)?;
 
     let mut login_url = get_origin()?;

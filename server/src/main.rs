@@ -18,6 +18,7 @@ use crate::http::{AppConfig, server};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    println!("starting crabdrive");
     // Get CLI arguments & flags
     let matches = Command::new("crabdrive-server")
         .about("Starts the crabdrive server")

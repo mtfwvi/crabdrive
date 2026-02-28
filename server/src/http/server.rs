@@ -18,7 +18,28 @@ use tower_http::cors::CorsLayer;
 use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
-    let _ = tokio::signal::ctrl_c().await;
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
     shutdown(state).await;
 }
 
@@ -71,11 +92,11 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         let mut duration = time::interval(Duration::from_secs(60 * 15));
         loop {
             duration.tick().await;
-            tracing::info!("Removing expired tokens from blacklist");
+            info!("Removing expired tokens from blacklist");
             let mut conn = match db_pool.get() {
                 Ok(conn) => conn,
                 Err(e) => {
-                    tracing::error!("Unable to remove expired tokens: {e}");
+                    error!("Unable to remove expired tokens: {e}");
                     break;
                 }
             };
@@ -83,12 +104,12 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
             // Ignore on error to prevent server crash
             let count = operations::token::delete_expired_blacklisted_tokens(&mut conn, now)
                 .inspect_err(|e| {
-                    tracing::error!("Unable to remove expired tokens: {e}");
+                    error!("Unable to remove expired tokens: {e}");
                 })
                 .ok()
                 .unwrap_or(0);
 
-            tracing::info!("Removed {count} tokens from blacklist!");
+            info!("Removed {count} tokens from blacklist!");
         }
     });
 
@@ -126,7 +147,7 @@ pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<
 
     Response::builder()
         .status(StatusCode::INTERNAL_SERVER_ERROR)
-        .header(header::CONTENT_TYPE, "application/json")
+        .header(CONTENT_TYPE, "application/json")
         .body(Full::from(body))
         .unwrap()
 }
