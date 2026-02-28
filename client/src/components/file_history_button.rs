@@ -16,10 +16,6 @@ pub(crate) fn FileHistoryButton(#[prop(into)] node: Signal<DecryptedNode>) -> im
         >
             "History"
         </Button>
-        <FileHistoryDialog
-            open=file_history_dialog_open
-            on_close=Callback::new(move |_| file_history_dialog_open.set(false))
-            node
-        />
+        <FileHistoryDialog open=file_history_dialog_open node />
     }
 }

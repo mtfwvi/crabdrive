@@ -1,19 +1,16 @@
 use crate::api::download_file;
+use crate::components::basic::custom_dialog::CustomDialog;
 use crate::components::data_provider::revisions_provider::RevisionsProvider;
 use crate::components::revision_list::RevisionList;
 use crate::constants::DEFAULT_TOAST_TIMEOUT;
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crabdrive_common::storage::FileRevision;
 use leptos::prelude::*;
-use thaw::{
-    Button, ButtonAppearance, Dialog, DialogActions, DialogBody, DialogContent, DialogSurface,
-    DialogTitle, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
-};
+use thaw::{Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection};
 
 #[component]
 pub(crate) fn FileHistoryDialog(
     #[prop(into)] open: RwSignal<bool>,
-    on_close: Callback<()>,
     node: Signal<DecryptedNode>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
@@ -66,26 +63,14 @@ pub(crate) fn FileHistoryDialog(
 
     view! {
         <RevisionsProvider node let:revisions>
-            <Dialog open>
-                <DialogSurface class="w-fit">
-                    <DialogBody>
-                        <DialogTitle>
-                            {move || format!("Earlier versions of {}", file_name.get())}
-                        </DialogTitle>
-                        <DialogContent>
-                            <RevisionList revisions on_select_for_download />
-                        </DialogContent>
-                        <DialogActions>
-                            <Button
-                                appearance=ButtonAppearance::Primary
-                                on_click=move |_| on_close.run(())
-                            >
-                                "Close"
-                            </Button>
-                        </DialogActions>
-                    </DialogBody>
-                </DialogSurface>
-            </Dialog>
+            <CustomDialog
+                open
+                title=Signal::derive(move || format!("Earlier versions of {}", file_name.get()))
+                show_cancel=true
+                show_confirm=false
+            >
+                <RevisionList revisions on_select_for_download />
+            </CustomDialog>
         </RevisionsProvider>
     }
 }
