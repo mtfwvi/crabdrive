@@ -11,7 +11,7 @@ use crabdrive_common::payloads::node::response::node::{
     PostMoveNodeResponse, PostMoveNodeToTrashResponse,
 };
 use std::collections::VecDeque;
-
+use tracing::error;
 use crate::http::AppState;
 use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
@@ -44,9 +44,12 @@ pub async fn delete_node(
         return (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict));
     }
 
-    match state.node_repository.purge_tree(node_id) {
+    match state.node_repository.purge_tree_from_trash(node_id) {
         Ok(_) => (StatusCode::OK, Json(DeleteNodeResponse::Ok)),
-        Err(_) => (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict)),
+        Err(err) => {
+            error!("{}", err);
+            (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict))
+        },
     }
 }
 

@@ -351,6 +351,12 @@ impl NodeRepository for NodeRepositoryImpl {
 
                 all_revisions.extend(revisions);
 
+                diesel::update(NodeDsl::Node)
+                    .filter(NodeDsl::id.eq(node.id))
+                    .set(NodeDsl::current_revision.eq(None::<NodeId>))
+                    .execute(conn)
+                    .context("Failed to update node to remove active revision")?;
+
                 diesel::delete(RevisionDsl::Revision)
                     .filter(RevisionDsl::file_id.eq(node.id))
                     .execute(conn)
