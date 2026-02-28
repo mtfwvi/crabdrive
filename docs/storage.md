@@ -2,7 +2,8 @@
 
 Crabdrive currently supports two storage backends:
 - The `SFS` (S~~tupid~~imple File System) is a very basic, synchronous storage backend, which implements minimal functionality.
-- `C3` (please don't sue us) is an asynchronous, (hopefully) high-performance, storage backend which also includes caching. In some of my personal benchmarks, it outperforms `SFS` in downloading by 3-4 seconds (on a 750MB file). Keep in mind, that these tests are however not reliable.
+- `C3` (please don't sue us) is an asynchronous, overengineered, (hopefully) high-performance, storage backend which also includes caching. In some of my personal benchmarks, it outperforms `SFS` in downloading by 3-4 seconds (on a 750MB file). These tests may not represent real-time scnearios.
+
 
 ## Configuration
 
@@ -18,8 +19,8 @@ Keep in mind, that storage directories may not be automatically created. Further
 
 When selecting `C3` as storage backend, you can customize some cache settings:
 
-- `CACHE_SIZE`: The maximum capacity of the cache for the (in-memory) cache. Defaults to 20 chunks (20 * 17 MiB = ca. 350 MB)
-- `CACHE_AHEAD`: This determines how many chunks should be cached ahead of transfer
+- `CRABDRIVE_CACHE_SIZE`: The maximum capacity of the cache for the (in-memory) cache. Defaults to 20 chunks (20 * 17 MiB = ca. 350 MB)
+- `CRABDRIVE_CACHE_AHEAD`: This determines how many chunks should be cached ahead of transfer
 
 ### Garbage Collection
 

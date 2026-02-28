@@ -37,7 +37,12 @@ pub struct C3 {
 }
 
 impl C3 {
-    pub async fn new(storage_directory: PathBuf, db_pool: DbPool) -> Self {
+    pub async fn new(
+        storage_directory: PathBuf,
+        db_pool: DbPool,
+        cache_size: usize,
+        cache_ahead: u8,
+    ) -> Self {
         if !storage_directory.exists() {
             panic!("Storage directory does not exist!");
         }
@@ -76,7 +81,7 @@ impl C3 {
         }
 
         let cache: Cache<(UUID, ChunkIndex), CachedChunk> = Cache::builder()
-            .max_capacity(20) // 20 * 17MiB = ca. 350 MB
+            .max_capacity(crabdrive_common::da!(16 MiB).as_bytes() / cache_size as u64) // 20 * 17MiB = ca. 350 MB
             // In the current cache strategy, chunks are cached sequentially. This means, if client requests CHUNK A,
             // C3 will start to load CHUNK B, CHUNK C, and so on into the cache. If a chunk is not accessed during
             // these 60 seconds, the client has either a horrible bandwith or simply abandoned the download.
@@ -90,7 +95,7 @@ impl C3 {
             transfers: Arc::new(transfers),
             cache: Arc::new(cache),
             db_pool,
-            cache_ahead: 4,
+            cache_ahead,
         };
 
         c3.spawn_gc();
@@ -225,7 +230,7 @@ impl FileRepository for C3 {
         let path = utils::shard_path(*key, &self.staging_path);
         fs::create_dir_all(&path).await?;
 
-        tracing::debug!("File chunks will be staged in {}", path.display());
+        tracing::trace!("File chunks will be staged in {}", path.display());
 
         let transfer = FileTransfer::new(path);
         self.transfers.insert(*key, transfer);
@@ -371,7 +376,7 @@ impl FileRepository for C3 {
         let bytes = self
             .cache
             .try_get_with(cache_key, async {
-                tracing::debug!("Cache miss");
+                tracing::trace!("Cache missed - Falling back to disk loading");
                 // If the chunk was not cached, read it from disk
                 let path = utils::shard_path_with_index(*key, &self.persistent_path, index);
                 let bytes = utils::read_chunk(&path).await?;

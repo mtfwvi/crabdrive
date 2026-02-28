@@ -48,7 +48,15 @@ impl AppState {
         let vfs: Arc<RwLock<dyn FileRepository + Send + Sync>> =
             match config.storage.backend.as_ref() {
                 "SFS" => Arc::new(RwLock::new(Sfs::new(path))),
-                "C3" => Arc::new(RwLock::new(C3::new(path, pool.clone()).await)),
+                "C3" => Arc::new(RwLock::new(
+                    C3::new(
+                        path,
+                        pool.clone(),
+                        config.storage.cache_size,
+                        config.storage.cache_ahead,
+                    )
+                    .await,
+                )),
                 _ => panic!("Impossible"),
             };
 

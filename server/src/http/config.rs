@@ -140,11 +140,23 @@ pub struct StorageConfig {
     #[config(env = "CRABDRIVE_STORAGE_DIR")]
     pub dir: String,
 
-    /// The storage limit for ALL files, in Bytes.
+    /// The maximum size of the cache, in Bytes.
     ///
-    /// **Default**: `500_000_000` (500MB)
-    #[config(env = "CRABDRIVE_STORAGE_LIMIT")]
-    pub limit: usize,
+    /// **Notes**: The option is only respected by C3.
+    ///
+    /// **Default**: `350_000_000` (350MB)
+    #[config(env = "CRABDRIVE_CACHE_SIZE")]
+    pub cache_size: usize,
+
+    /// How many (sequential) chunks should be cached ahead, when downloading.
+    /// For example, when a user downloads a file, C3 will always have two chunks
+    /// (by default) *ahead of time* cached in memory, to allow fast downloads.
+    ///
+    /// **Notes**: The option is only respected by C3.
+    ///
+    /// **Default**: `2` (2 Chunks)
+    #[config(env = "CRABDRIVE_CACHE_AHEAD")]
+    pub cache_ahead: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Config)]
@@ -188,7 +200,8 @@ impl AppConfig {
             storage: StorageConfigLayer {
                 backend: Some("C3".into()),
                 dir: Some(":temp:".into()),
-                limit: Some(500_000_000),
+                cache_size: Some(350_000_000),
+                cache_ahead: Some(2),
             },
             log: LogConfigLayer {
                 minimum_level: Some(if cfg!(debug_assertions) {
@@ -314,7 +327,8 @@ impl std::fmt::Display for AppConfig {
         writeln!(f, "├─┬ Storage:")?;
         writeln!(f, "│ ├── Backend:     {}", self.storage.backend)?;
         writeln!(f, "│ ├── Directory:   {}", self.storage.dir)?;
-        writeln!(f, "│ └── Limit:       {} bytes", self.storage.limit)?;
+        writeln!(f, "│ └── Cache Size:  {}", self.storage.cache_size)?;
+        writeln!(f, "│ └── Cache Ahead: {}", self.storage.cache_ahead)?;
         writeln!(f, "└─┬ Logging:")?;
         writeln!(f, "  ├── Min Level:   {}", self.log.minimum_level)?;
         writeln!(f, "  └── Targets:     {:?}", self.log.targets)?;
