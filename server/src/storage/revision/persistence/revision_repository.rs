@@ -1,13 +1,13 @@
 use crate::db::connection::DbPool;
-use crate::db::operations::{
+use crate::db::operations::revision::{
     delete_revision, get_all_revisions_by_node, insert_revision, select_revision, update_revision,
 };
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
-use anyhow::Result;
-use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use std::sync::Arc;
+use anyhow::{Context, Result};
+use chrono::NaiveDateTime;
 
 pub(crate) trait RevisionRepository {
     /// Creates a new (unfinished) revision, associated with a node.
@@ -51,6 +51,7 @@ impl RevisionRepository for RevisionService {
         iv: IV,
         chunk_count: ChunkIndex,
     ) -> Result<RevisionEntity> {
+        let mut conn = self.db_pool.get().context("Failed to get db connection")?;
         let revision = RevisionEntity {
             id: RevisionId::random(),
             file_id,
@@ -59,24 +60,28 @@ impl RevisionRepository for RevisionService {
             iv,
             chunk_count,
         };
-        insert_revision(&self.db_pool, &revision)
+        insert_revision(&mut conn, &revision)
     }
 
     fn get_revision(&self, id: RevisionId) -> Result<Option<RevisionEntity>> {
-        select_revision(&self.db_pool, id)
+        let mut conn = self.db_pool.get().context("Failed to get db connection")?;
+        select_revision(&mut conn, id)
     }
 
     fn get_all_revisions_by_node(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>> {
-        get_all_revisions_by_node(&self.db_pool, node_id)
+        let mut conn = self.db_pool.get().context("Failed to get db connection")?;
+        get_all_revisions_by_node(&mut conn, node_id)
     }
 
     fn update_revision(&self, file_version: RevisionEntity) -> Result<()> {
-        update_revision(&self.db_pool, &file_version)?;
+        let mut conn = self.db_pool.get().context("Failed to get db connection")?;
+        update_revision(&mut conn, &file_version)?;
         Ok(())
     }
 
     fn delete_revision(&self, id: RevisionId) -> Result<RevisionEntity> {
-        delete_revision(&self.db_pool, id)
+        let mut conn = self.db_pool.get().context("Failed to get db connection")?;
+        delete_revision(&mut conn, id)
     }
 
     fn get_revision_history(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>> {
