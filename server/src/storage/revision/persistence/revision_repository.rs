@@ -3,11 +3,11 @@ use crate::db::operations::revision::{
     delete_revision, get_all_revisions_by_node, insert_revision, select_revision, update_revision,
 };
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use anyhow::{Context, Result};
+use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use std::sync::Arc;
-use anyhow::{Context, Result};
-use chrono::NaiveDateTime;
 
 pub(crate) trait RevisionRepository {
     /// Creates a new (unfinished) revision, associated with a node.
