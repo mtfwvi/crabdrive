@@ -33,17 +33,17 @@ pub(crate) trait RevisionRepository {
     fn get_revision_history(&self, node_id: NodeId) -> Result<Vec<RevisionEntity>>;
 }
 
-pub struct RevisionService {
+pub struct RevisionRepositoryImpl {
     db_pool: Arc<DbPool>,
 }
 
-impl RevisionService {
+impl RevisionRepositoryImpl {
     pub fn new(db_pool: Arc<DbPool>) -> Self {
         Self { db_pool }
     }
 }
 
-impl RevisionRepository for RevisionService {
+impl RevisionRepository for RevisionRepositoryImpl {
     fn create_revision(
         &self,
         file_id: NodeId,

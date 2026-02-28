@@ -96,17 +96,17 @@ pub(crate) trait NodeRepository {
     fn get_access_list(&self, node: NodeId) -> Result<Vec<(UserId, String)>>;
 }
 
-pub struct NodeState {
+pub struct NodeRepositoryImpl {
     db_pool: Arc<DbPool>,
 }
 
-impl NodeState {
+impl NodeRepositoryImpl {
     pub fn new(db_pool: Arc<DbPool>) -> Self {
         Self { db_pool }
     }
 }
 
-impl NodeRepository for NodeState {
+impl NodeRepository for NodeRepositoryImpl {
     fn create_node(
         &self,
         parent: Option<NodeId>,
