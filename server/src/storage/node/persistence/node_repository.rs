@@ -39,6 +39,7 @@ pub(crate) trait NodeRepository {
     /// - the id of the node to move
     /// - the metadata of the old parent (remove the encryption key of the node we are moving)
     /// - the metadata of the new parent (add the encryption key of the node we are moving)
+    ///
     /// Constraints:
     /// - the node cannot be moved into one of its own children
     /// - the to_node must be a folder
