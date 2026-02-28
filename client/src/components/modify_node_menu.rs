@@ -6,10 +6,11 @@ use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
 use crabdrive_common::storage::NodeType;
+use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use thaw::{
-    Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Toast, ToastIntent, ToastOptions,
-    ToastTitle, ToasterInjection,
+    Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Spinner, SpinnerSize, Toast, ToastIntent,
+    ToastOptions, ToastTitle, ToastTitleMedia, ToasterInjection,
 };
 use web_sys::File;
 
@@ -20,6 +21,26 @@ pub(crate) fn ModifyNodeMenu(
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
+    let upload_in_progress_toast_id = UUID::random();
+    let add_upload_in_progress_toast = move || {
+        toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>
+                            "Uploading new file version..." <ToastTitleMedia slot>
+                                <Spinner size=SpinnerSize::Tiny />
+                            </ToastTitleMedia>
+                        </ToastTitle>
+                    </Toast>
+                }
+            },
+            ToastOptions::default()
+                .with_id(upload_in_progress_toast_id.into())
+                .with_intent(ToastIntent::Info)
+                .with_timeout(INFINITE_TOAST_TIMEOUT),
+        )
+    };
     let add_toast = move |text: String, intent: ToastIntent| {
         toaster.dispatch_toast(
             move || {
@@ -109,6 +130,9 @@ pub(crate) fn ModifyNodeMenu(
 
     let upload_new_version_action = Action::new_local(move |input: &File| {
         let file = input.to_owned();
+
+        add_upload_in_progress_toast();
+
         async move {
             create_file_version(file, node.get_untracked())
                 .await
@@ -118,6 +142,7 @@ pub(crate) fn ModifyNodeMenu(
     Effect::new(move || {
         let status = upload_new_version_action.value().get();
         if status.is_some() {
+            toaster.dismiss_toast(upload_in_progress_toast_id.into());
             match status.unwrap() {
                 Ok(_) => {
                     add_toast(
