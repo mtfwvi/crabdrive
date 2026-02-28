@@ -1,8 +1,7 @@
+use crate::http::{AppConfig, AppState};
 use crate::storage::node::NodeRepository;
 use crate::storage::revision::RevisionRepository;
 use crate::user::UserRepository;
-use crate::user::auth::decode_bearer_token;
-use crate::http::{AppConfig, AppState};
 
 use super::TestUserEntity;
 
@@ -11,8 +10,8 @@ use std::sync::Arc;
 
 use axum_test::TestServer;
 use bytes::Bytes;
-use rand::{distr::Alphanumeric, Rng};
-use sha2::{Sha256, Digest};
+use rand::{Rng, distr::Alphanumeric};
+use sha2::{Digest, Sha256};
 
 pub struct TestContext {
     pub server: Arc<TestServer>,
@@ -21,7 +20,7 @@ pub struct TestContext {
     // repos
     pub user: Arc<dyn UserRepository + Send + Sync>,
     pub node: Arc<dyn NodeRepository + Send + Sync>,
-    pub revision: Arc<dyn RevisionRepository + Send + Sync>
+    pub revision: Arc<dyn RevisionRepository + Send + Sync>,
 }
 
 impl TestContext {
@@ -54,17 +53,11 @@ impl TestContext {
     }
 
     pub fn validate_jwt(&self, token: &str) -> bool {
-        let token = decode_bearer_token(token, &self.state.keys.decoding_key);
-        if let Ok(token) = token {
-            let user = self
-                .state
-                .user_repository
-                .get_user(token.user_id)
-                .expect("Failed to validate JWT!");
-            user.is_some()
-        } else {
-            false
-        }
+        self.state
+            .user_repository
+            .verify_jwt(&token)
+            .unwrap()
+            .is_some()
     }
 
     pub fn validate_checksum(expected: &str, bytes: &Bytes) {

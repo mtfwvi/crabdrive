@@ -1,3 +1,4 @@
+use crate::db::operations;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 
@@ -8,10 +9,13 @@ use axum::{Router, middleware};
 use axum::response::Response;
 use bytes::Bytes;
 use http_body_util::Full;
+use tokio::{task, time};
 use std::any::Any;
 use std::io::ErrorKind;
+use std::time::Duration;
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
+use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
     let _ = tokio::signal::ctrl_c().await;
@@ -37,13 +41,14 @@ pub fn create_app(config: AppConfig) -> (Router, AppState) {
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
     let (app, state) = create_app(config.clone());
+    let db_pool = state.db_pool.clone();
 
     let addr = config.addr();
 
     let listener = match tokio::net::TcpListener::bind(&addr).await {
         Ok(listener) => Ok(listener),
         Err(err) => {
-            tracing::error!(
+            error!(
                 "Failed to bind to {}. {}",
                 addr,
                 match err.kind() {
@@ -58,7 +63,34 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
         }
     }?;
 
-    tracing::info!("Server running on http://{}", &addr);
+    info!("Server running on http://{}", &addr);
+
+
+
+    task::spawn(async move {
+        let mut duration = time::interval(Duration::from_secs(60 * 15));
+        loop {
+            duration.tick().await;
+            tracing::info!("Removing expired tokens from blacklist");
+            let mut conn = match db_pool.get() {
+                Ok(conn) => conn,
+                Err(e) => {
+                    tracing::error!("Unable to remove expired tokens: {e}");
+                    break;
+                }
+            };
+            let now = chrono::Local::now().naive_utc();
+            // Ignore on error to prevent server crash
+            let count = operations::token::delete_expired_blacklisted_tokens(&mut conn, now)
+                .inspect_err(|e| {
+                    tracing::error!("Unable to remove expired tokens: {e}");
+                })
+                .ok()
+                .unwrap_or(0);
+
+            tracing::info!("Removed {count} tokens from blacklist!");
+        }
+    });
 
     axum::serve(listener, app)
         .with_graceful_shutdown(graceful_shutdown(state.clone()))
@@ -82,7 +114,7 @@ pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<
         "Unknown panic message".to_string()
     };
 
-    tracing::error!("Request handler panicked!: {:?}", details);
+    error!("panic: {:?}", details);
 
     let body = serde_json::json!({
         "error": {

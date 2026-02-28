@@ -74,6 +74,7 @@ pub fn auth_routes() -> Router<AppState> {
     Router::new()
         .route(routes::auth::ROUTE_LOGIN, post(post_login))
         .route(routes::auth::ROUTE_REGISTER, post(post_register))
+        .route(routes::auth::ROUTE_REFRESH, post(post_refresh))
         .route(routes::auth::ROUTE_LOGOUT, post(post_logout))
         .route(routes::auth::ROUTE_INFO, get(get_user_info))
 }

@@ -1,7 +1,6 @@
 use crate::http::AppState;
-use crate::user::UserEntity;
 use crate::storage::node::NodeEntity;
-use crate::user::auth::new_bearer_token;
+use crate::user::UserEntity;
 
 use super::{NodeBuilder, TestNodeEntity};
 
@@ -14,7 +13,6 @@ use crabdrive_common::uuid::UUID;
 use std::sync::Arc;
 
 use axum_test::{TestRequest, TestServer};
-
 
 pub struct TestUserEntity {
     pub server: Arc<TestServer>,
@@ -67,12 +65,10 @@ impl TestUserEntity {
             .update_user(user_entity.clone())
             .expect("Failed to insert nodes for user!");
 
-        let token = new_bearer_token(
-            user_entity.id,
-            state.config.auth.jwt_expiration_period,
-            &state.keys.encoding_key,
-        )
-        .expect("Failed to create token");
+        let (_, token) = state
+            .user_repository
+            .create_session(user_entity.id)
+            .expect("Failed to create token");
 
         Self {
             server,
@@ -86,25 +82,34 @@ impl TestUserEntity {
         }
     }
 
-
     pub fn get(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server.get(url.as_ref()).authorization_bearer(&self.token)
+        self.server
+            .get(url.as_ref())
+            .authorization_bearer(&self.token)
     }
 
     pub fn post(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server.post(url.as_ref()).authorization_bearer(&self.token)
+        self.server
+            .post(url.as_ref())
+            .authorization_bearer(&self.token)
     }
 
     pub fn put(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server.put(url.as_ref()).authorization_bearer(&self.token)
+        self.server
+            .put(url.as_ref())
+            .authorization_bearer(&self.token)
     }
 
     pub fn patch(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server.patch(url.as_ref()).authorization_bearer(&self.token)
+        self.server
+            .patch(url.as_ref())
+            .authorization_bearer(&self.token)
     }
 
     pub fn delete(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server.delete(url.as_ref()).authorization_bearer(&self.token)
+        self.server
+            .delete(url.as_ref())
+            .authorization_bearer(&self.token)
     }
 
     pub fn get_root(&self) -> NodeId {
@@ -117,7 +122,8 @@ impl TestUserEntity {
 
     /// Genrate a random folder in the root node
     pub async fn generate_random_folder(&self) -> TestNodeEntity {
-        self.generate_folder_in(self.entity.root_node.expect("Root node missing")).await
+        self.generate_folder_in(self.entity.root_node.expect("Root node missing"))
+            .await
     }
 
     /// Genrate a random folder in a parent node
@@ -131,7 +137,8 @@ impl TestUserEntity {
 
     /// Genrate a random file in the root node
     pub async fn generate_random_file(&self) -> TestNodeEntity {
-        self.generate_file_in(self.entity.root_node.expect("Root node missing")).await
+        self.generate_file_in(self.entity.root_node.expect("Root node missing"))
+            .await
     }
 
     /// Genrate a file in a parent node in a parent node
@@ -153,7 +160,11 @@ impl TestUserEntity {
     }
 
     /// Genrate a file in a parent node with a number of chunks
-    pub async fn generate_file_with_chunks_in(&self, parent_id: NodeId, chunks: u32) -> TestNodeEntity {
+    pub async fn generate_file_with_chunks_in(
+        &self,
+        parent_id: NodeId,
+        chunks: u32,
+    ) -> TestNodeEntity {
         NodeBuilder::new(&self.state, self.id)
             .file()
             .with_chunks(chunks)
@@ -162,14 +173,20 @@ impl TestUserEntity {
             .await
     }
 
-
     /// Fetches the fresh node directly from the repository
     pub fn fetch_node_from_db(&self, node_id: NodeId) -> Option<NodeEntity> {
-        self.state.node_repository.get_node(node_id).expect("Database error during node fetch")
+        self.state
+            .node_repository
+            .get_node(node_id)
+            .expect("Database error during node fetch")
     }
 
     /// Fetches the raw bytes of a specific chunk
-    pub async fn fetch_chunk_data(&self, revision_id: UUID, chunk_index: ChunkIndex) -> bytes::Bytes {
+    pub async fn fetch_chunk_data(
+        &self,
+        revision_id: UUID,
+        chunk_index: ChunkIndex,
+    ) -> bytes::Bytes {
         let vfs = self.state.vfs.write().await;
         vfs.read_chunk(&revision_id, chunk_index)
             .await

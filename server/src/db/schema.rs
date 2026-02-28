@@ -20,6 +20,25 @@ diesel::table! {
 
 diesel::table! {
     #[allow(non_snake_case)]
+    RefreshToken (token) {
+        token -> Binary,
+        user_id -> Text,
+        session_id -> Text,
+        expires_at -> Timestamp,
+        invalidated_at -> Nullable<Timestamp>
+    }
+}
+
+diesel::table! {
+    #[allow(non_snake_case)]
+    TokenBlacklist (id) {
+        id -> Text,
+        expires_at -> Timestamp
+    }
+}
+
+diesel::table! {
+    #[allow(non_snake_case)]
     Node (id) {
         id -> Text,
         parent_id -> Nullable<Text>,
@@ -58,4 +77,5 @@ diesel::table! {
     }
 }
 
+diesel::allow_tables_to_appear_in_same_query!(User, RefreshToken);
 diesel::allow_tables_to_appear_in_same_query!(Revision, Node, User, Share);

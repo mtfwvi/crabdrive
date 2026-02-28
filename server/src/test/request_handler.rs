@@ -1,13 +1,5 @@
-use crate::db::connection::create_pool;
-use crate::http::middleware::logging_middleware;
-use crate::http::{AppConfig, AppState};
-use crate::storage::node::persistence::node_repository::NodeState;
-use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::vfs::backend::Sfs;
-use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::UserState;
+use crate::http::AppConfig;
 use axum::http::StatusCode;
-use axum::{Router, middleware};
 use axum_test::{TestRequest, TestServer};
 use bytes::Bytes;
 
@@ -36,10 +28,9 @@ use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::user::UserKeys;
 use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
-use std::sync::Arc;
 
-use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crabdrive_common::encryption_key::EncryptionKey;
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
@@ -48,11 +39,9 @@ use crabdrive_common::payloads::node::response::share::{
     PostShareNodeResponse,
 };
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
@@ -605,18 +594,89 @@ pub async fn test_file() {
     assert_eq!(commit_file_response2, expected_commit_file_response2);
 }
 
+#[tokio::test]
+pub async fn test_logout_invalidates_session() {
+    let server = get_server().await;
+    let (jwt, _) = login1(&server).await;
+
+    let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_ok();
+
+    let logout_url = API_BASE_PATH.to_owned() + &routes::auth::logout();
+    let res = server
+        .post(&logout_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_ok();
+
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_unauthorized();
+}
+
+#[tokio::test]
+pub async fn test_token_refresh_flow() {
+    let server = get_server().await;
+
+    let login_payload = PostLoginRequest {
+        username: TEST_USERNAME1.to_string(),
+        password: TEST_USERNAME1.to_string(),
+    };
+
+    let login_res = server
+        .post(&(API_BASE_PATH.to_owned() + ROUTE_LOGIN))
+        .json(&login_payload)
+        .await;
+
+    let refresh_cookie = login_res.cookie("refresh_token");
+
+    let refresh_url = API_BASE_PATH.to_owned() + &routes::auth::refresh();
+    let refresh_res = server.post(&refresh_url).add_cookie(refresh_cookie).await;
+
+    refresh_res.assert_status_ok();
+    let body: PostRefreshResponse = refresh_res.json();
+
+    if let PostRefreshResponse::Ok(refresh_body) = body {
+        let new_jwt = refresh_body.bearer_token;
+        assert_ne!(new_jwt, "".to_string());
+
+        let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+        server
+            .get(&info_url)
+            .add_header("Authorization", format!("Bearer {}", new_jwt))
+            .await
+            .assert_status_ok();
+    } else {
+        panic!("Refresh failed");
+    }
+}
+
+#[tokio::test]
+pub async fn test_unauthorized_access() {
+    let server = get_server().await;
+    let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+
+    server.get(&info_url).await.assert_status_unauthorized();
+
+    server
+        .get(&info_url)
+        .add_header("Authorization", "Bearer this.is.not.a.jwt")
+        .await
+        .assert_status_unauthorized();
+}
+
 pub async fn get_server() -> TestServer {
     let mut config = AppConfig::load(&PathBuf::from("./crabdrive.toml")).unwrap();
     // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
-    config.db.path  = format!("file:{}?mode=memory&cache=shared", UUID::random());
+    config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
 
-    let state = AppState::new(config.clone());
-
-    let app = Router::<AppState>::new()
-        .merge(crate::http::routes::routes())
-        .with_state(state.clone())
-        .layer(middleware::from_fn(logging_middleware))
-        .layer(CatchPanicLayer::custom(crate::http::server::handle_panic));
+    let (app, _) = crate::http::server::create_app(config);
 
     let server = TestServer::new(app).unwrap();
 
@@ -648,7 +708,6 @@ pub async fn get_server() -> TestServer {
 
     server
 }
-
 
 pub async fn login1(server: &TestServer) -> (String, NodeId) {
     login(server, TEST_USERNAME1.to_string()).await
