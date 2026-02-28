@@ -1,16 +1,5 @@
-use crate::db::connection::create_pool;
-use crate::http::middleware::logging_middleware;
-use crate::http::{AppConfig, AppState};
-use crate::storage::node::NodeRepository;
-use crate::storage::node::persistence::node_repository::NodeState;
-use crate::storage::revision::RevisionRepository;
-use crate::storage::revision::persistence::revision_repository::RevisionService;
-use crate::storage::vfs::FileRepository;
-use crate::storage::vfs::backend::Sfs;
-use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::{UserRepository, UserState};
+use crate::http::AppConfig;
 use axum::http::StatusCode;
-use axum::{Router, middleware};
 use axum_test::{TestRequest, TestServer};
 use bytes::Bytes;
 
@@ -39,11 +28,9 @@ use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
 use crabdrive_common::user::UserKeys;
 use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
-use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crabdrive_common::encryption_key::EncryptionKey;
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 use crabdrive_common::payloads::node::request::share::{
     PostAcceptShareRequest, PostShareNodeRequest,
 };
@@ -52,11 +39,9 @@ use crabdrive_common::payloads::node::response::share::{
     PostShareNodeResponse,
 };
 use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use tower_http::catch_panic::CatchPanicLayer;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
@@ -609,45 +594,89 @@ pub async fn test_file() {
     assert_eq!(commit_file_response2, expected_commit_file_response2);
 }
 
+#[tokio::test]
+pub async fn test_logout_invalidates_session() {
+    let server = get_server().await;
+    let (jwt, _) = login1(&server).await;
+
+    let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_ok();
+
+    let logout_url = API_BASE_PATH.to_owned() + &routes::auth::logout();
+    let res = server
+        .post(&logout_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_ok();
+
+    let res = server
+        .get(&info_url)
+        .add_header("Authorization", format!("Bearer {}", jwt))
+        .await;
+    res.assert_status_unauthorized();
+}
+
+#[tokio::test]
+pub async fn test_token_refresh_flow() {
+    let server = get_server().await;
+
+    let login_payload = PostLoginRequest {
+        username: TEST_USERNAME1.to_string(),
+        password: TEST_USERNAME1.to_string(),
+    };
+
+    let login_res = server
+        .post(&(API_BASE_PATH.to_owned() + ROUTE_LOGIN))
+        .json(&login_payload)
+        .await;
+
+    let refresh_cookie = login_res.cookie("refresh_token");
+
+    let refresh_url = API_BASE_PATH.to_owned() + &routes::auth::refresh();
+    let refresh_res = server.post(&refresh_url).add_cookie(refresh_cookie).await;
+
+    refresh_res.assert_status_ok();
+    let body: PostRefreshResponse = refresh_res.json();
+
+    if let PostRefreshResponse::Ok(refresh_body) = body {
+        let new_jwt = refresh_body.bearer_token;
+        assert_ne!(new_jwt, "".to_string());
+
+        let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+        server
+            .get(&info_url)
+            .add_header("Authorization", format!("Bearer {}", new_jwt))
+            .await
+            .assert_status_ok();
+    } else {
+        panic!("Refresh failed");
+    }
+}
+
+#[tokio::test]
+pub async fn test_unauthorized_access() {
+    let server = get_server().await;
+    let info_url = API_BASE_PATH.to_owned() + &routes::auth::info();
+
+    server.get(&info_url).await.assert_status_unauthorized();
+
+    server
+        .get(&info_url)
+        .add_header("Authorization", "Bearer this.is.not.a.jwt")
+        .await
+        .assert_status_unauthorized();
+}
+
 pub async fn get_server() -> TestServer {
-    let config = AppConfig::load(&PathBuf::from("./crabdrive.toml")).unwrap();
-
+    let mut config = AppConfig::load(&PathBuf::from("./crabdrive.toml")).unwrap();
     // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
-    let db_path = format!("file:{}?mode=memory&cache=shared", UUID::random());
+    config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
 
-    let pool = create_pool(&db_path, config.db.pool_size);
-
-    let vfs: Arc<RwLock<dyn FileRepository + Send + Sync>> =
-        Arc::new(RwLock::new(Sfs::new(&config.storage.dir)));
-
-    let node_repository: Arc<dyn NodeRepository + Send + Sync> =
-        Arc::new(NodeState::new(Arc::new(pool.clone())));
-    let revision_repository: Arc<dyn RevisionRepository + Send + Sync> =
-        Arc::new(RevisionService::new(Arc::new(pool.clone())));
-    let user_repository: Arc<dyn UserRepository + Send + Sync> =
-        Arc::new(UserState::new(Arc::new(pool.clone())));
-    let share_repository = Arc::new(ShareRepositoryImpl::new(Arc::new(pool.clone())));
-
-    let keys = Keys::new(&config.auth.jwt_secret);
-
-    let state = AppState::new(
-        config.clone(),
-        pool,
-        vfs,
-        node_repository,
-        revision_repository,
-        user_repository,
-        share_repository,
-        keys,
-    );
-
-    prepare_db(&state);
-
-    let app = Router::<AppState>::new()
-        .merge(crate::http::routes::routes())
-        .with_state(state.clone())
-        .layer(middleware::from_fn(logging_middleware))
-        .layer(CatchPanicLayer::custom(crate::http::server::handle_panic));
+    let (app, _) = crate::http::server::create_app(config).await;
 
     let server = TestServer::new(app).unwrap();
 
@@ -678,15 +707,6 @@ pub async fn get_server() -> TestServer {
     assert_eq!(register_response2.status_code(), StatusCode::CREATED);
 
     server
-}
-
-// copied from server.rs/start
-fn prepare_db(state: &AppState) {
-    const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./res/migrations/");
-    {
-        let mut conn = state.db_pool.get().unwrap();
-        conn.run_pending_migrations(MIGRATIONS).unwrap();
-    }
 }
 
 pub async fn login1(server: &TestServer) -> (String, NodeId) {

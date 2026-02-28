@@ -7,12 +7,16 @@ use crate::{api, utils};
 
 use crabdrive_common::da;
 use crabdrive_common::iv::IV;
-use crabdrive_common::payloads::node::request::file::PostCreateFileRequest;
+use crabdrive_common::payloads::node::request::file::{
+    PostCreateFileRequest, PostUpdateFileRequest,
+};
 use crabdrive_common::payloads::node::response::file::{
-    PostCommitFileResponse, PostCreateFileResponse,
+    PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
 use crabdrive_common::storage::{FileRevision, NodeId, RevisionId};
 
+use crate::api::requests::file::post_update_file;
+use crate::utils::encryption::random::get_random_iv;
 use anyhow::{Context, Result, anyhow};
 use chrono::Local;
 use tracing::debug_span;
@@ -133,6 +137,36 @@ pub async fn create_file(
     }
 }
 
+pub async fn create_file_version(file: File, node: DecryptedNode) -> Result<DecryptedNode> {
+    let file_iv = get_random_iv()?;
+    let chunk_count = (file.size() / CHUNK_SIZE).ceil() as i64;
+
+    let update_file_request = PostUpdateFileRequest {
+        file_iv,
+        chunk_count,
+    };
+
+    let update_file_response = post_update_file(node.id, update_file_request).await?;
+
+    let revision = match update_file_response {
+        PostUpdateFileResponse::Ok(revision) => revision,
+        PostUpdateFileResponse::NotFound => {
+            return Err(anyhow!(
+                "server returned not found when trying to upload new version"
+            ));
+        }
+        PostUpdateFileResponse::BadRequest => return Err(anyhow!("server returned bad request")),
+    };
+
+    let NodeMetadata::V1(metadata) = node.metadata;
+    let file_key = metadata
+        .file_key
+        .ok_or_else(|| anyhow!("node does not have file key"))?;
+
+    let node = upload_file(file, node.encryption_key, file_key, &revision, node.id).await?;
+    Ok(node)
+}
+
 async fn upload_file(
     file: File,
     metadata_key: MetadataKey,
@@ -140,7 +174,6 @@ async fn upload_file(
     revision: &FileRevision,
     node_id: NodeId,
 ) -> Result<DecryptedNode> {
-    //TODO test this
     let _guard = debug_span!("uploadFile").entered();
 
     utils::file::load_file_by_chunk(file, |chunk| {

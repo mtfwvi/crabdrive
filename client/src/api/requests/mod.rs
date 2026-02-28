@@ -6,9 +6,11 @@ pub mod node;
 pub mod share;
 
 use crate::utils::auth::{get_token, go_to_login};
-use crate::utils::browser::{LocalStorage, get_origin, get_window};
+use crate::utils::browser::{LocalStorage, SessionStorage, get_origin, get_window};
 use crate::utils::error::{dyn_into, future_from_js_promise, wrap_js_err};
-use anyhow::{Result, anyhow};
+use anyhow::{Context, Result, anyhow};
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
+use crabdrive_common::routes;
 use leptos::wasm_bindgen::JsValue;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
@@ -38,17 +40,18 @@ enum RequestBody {
     Bytes(Uint8Array),
 }
 
-async fn request(
+// Helper method to prevent async recursion issues when re-fetching token
+async fn execute_request(
     url_path: &str,
-    method: RequestMethod,
-    body: RequestBody,
-    auth_token: Option<&String>,
+    method: &RequestMethod,
+    body: &RequestBody,
+    auth_token: Option<&str>,
     use_api_base_path: bool,
-) -> Result<Response> {
+) -> Result<(Response, String)> {
     let opts = RequestInit::new();
     opts.set_method(&method.to_string());
 
-    match &body {
+    match body {
         RequestBody::Empty => {}
         RequestBody::Json(json) => {
             opts.set_body(&JsValue::from_str(json));
@@ -74,7 +77,7 @@ async fn request(
 
     let request = wrap_js_err(Request::new_with_str_and_init(&url, &opts))?;
 
-    match &body {
+    match body {
         RequestBody::Empty => {}
         RequestBody::Json(_) => {
             add_header(&request, ("Content-Type", "application/json"))?;
@@ -84,17 +87,73 @@ async fn request(
         }
     }
 
-    if let Some(auth_token) = auth_token {
-        add_header(&request, ("authorization", &format!("Bearer {auth_token}")))?;
+    if let Some(token) = auth_token {
+        add_header(&request, ("Authorization", &format!("Bearer {token}")))?;
     }
 
-    // obtain reference to the browser window object to use the request api
     let window = get_window()?;
-
-    // the actual request
     let response_value: JsValue =
         future_from_js_promise(window.fetch_with_request(&request)).await?;
     let response: Response = dyn_into(response_value)?;
+
+    Ok((response, url))
+}
+
+async fn request(
+    url_path: &str,
+    method: RequestMethod,
+    body: RequestBody,
+    auth_token: Option<&String>,
+    use_api_base_path: bool,
+) -> Result<Response> {
+    let (response, resolved_url) = execute_request(
+        url_path,
+        &method,
+        &body,
+        auth_token.map(|s| s.as_str()),
+        use_api_base_path,
+    )
+    .await?;
+
+    if response.status() == 401 && !resolved_url.contains(routes::auth::ROUTE_REFRESH) {
+        tracing::info!("Unauthorized - Attempting to refetch a new JWT");
+
+        // JWT possibly expired, attempt to refresh
+        let (jwt_refetch, _) = execute_request(
+            routes::auth::ROUTE_REFRESH,
+            &RequestMethod::POST,
+            &RequestBody::Empty,
+            None,
+            use_api_base_path,
+        )
+        .await?;
+
+        let response_string = string_from_response(jwt_refetch).await?;
+
+        let refresh_response: PostRefreshResponse = serde_json::from_str(&response_string)
+            .map_err(|_| anyhow!("Failed to parse JSON response: {:?}", response_string))?;
+
+        if let PostRefreshResponse::Ok(refresh_response) = refresh_response {
+            tracing::info!("Success: Received re-freshed token!");
+
+            SessionStorage::set("bearer", &refresh_response.bearer_token)
+                .context("Failed to persist login information.")?;
+
+            // Retry original request with new token
+            let (retry_response, _) = execute_request(
+                url_path,
+                &method,
+                &body,
+                Some(&refresh_response.bearer_token),
+                use_api_base_path,
+            )
+            .await?;
+
+            return Ok(retry_response);
+        } else {
+            tracing::warn!("Refresh invalid! Has the session been revoked?");
+        }
+    }
 
     Ok(response)
 }

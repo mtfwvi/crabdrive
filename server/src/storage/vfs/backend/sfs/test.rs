@@ -9,14 +9,18 @@ mod tests {
     use crabdrive_common::uuid::UUID;
 
     use rand::{Rng, rng};
+    use tempfile::TempDir;
 
     use crate::storage::vfs::model::FileStatus;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]
     async fn test_sfs_write_read_cycle() {
+        let tempdir = TempDir::new().expect("Failed to create temporary directory.");
+        let path = tempdir.path().to_path_buf();
+
         // This test writes all files into a temporary directory, which are then deleted directly after.
-        let mut sfs = Sfs::new(&":temp:".to_string());
+        let mut sfs = Sfs::new(path);
 
         // Test with 16 files, containing 16 chunks à 100KB of garbage data each.
         // For testing, 100KB should be enough.
@@ -97,5 +101,7 @@ mod tests {
             let exists = sfs.file_status(&file_keys[i as usize]).await;
             assert_eq!(exists, FileStatus::Persisted);
         }
+
+        drop(tempdir)
     }
 }

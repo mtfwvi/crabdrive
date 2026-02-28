@@ -7,8 +7,7 @@ use std::{
     fs::OpenOptions,
     io::{Read, Write},
 };
-use tempfile::TempDir;
-use tracing::{debug, error, info, instrument};
+use tracing::{debug, error, instrument};
 
 use crate::storage::vfs::model::{FileStatus, FileSystemError};
 use crabdrive_common::storage::RevisionId;
@@ -16,47 +15,15 @@ use std::{collections::HashMap, path::PathBuf};
 
 /// S(tupid)imple File System
 pub struct Sfs {
-    // Internal guard object, which drops the directory
-    _temp_dir: Option<TempDir>,
     storage_dir: PathBuf,
     sessions: HashMap<RevisionId, PathBuf>,
 }
 
 impl Sfs {
     #[instrument]
-    pub fn new(storage_dir: &String) -> Self {
-        let temp_dir = if storage_dir == ":temp:" {
-            debug!("Configuration requests temporary directory");
-            let directory = tempfile::tempdir().expect("Unable to create temporary directory!");
-            info!(
-                "Temporary Directory: {} (auto-deleted upon server stop)",
-                &directory.path().display()
-            );
-            // Altough it seems tempting, the method `.keep()` (which returns a `PathBuf`), actually
-            // disables automatic deletion of the directoy.
-            Some(directory)
-        } else {
-            None
-        };
-
-        let storage_dir = if let Some(temp_dir) = &temp_dir {
-            temp_dir.path().to_path_buf()
-        } else {
-            let mut directory = PathBuf::new();
-
-            directory.push(storage_dir);
-            if !directory.exists() || !directory.is_dir() {
-                error!(
-                    "Storage directory {} either does not exist, or is no directory",
-                    &storage_dir
-                );
-                panic!("Invalid storage directory!");
-            }
-            directory
-        };
-
+    pub fn new(storage_dir: PathBuf) -> Self {
+        tracing::info!("Files will be stored in {}", storage_dir.display());
         Self {
-            _temp_dir: temp_dir,
             storage_dir,
             sessions: HashMap::new(),
         }
