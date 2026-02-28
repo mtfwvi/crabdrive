@@ -19,4 +19,5 @@ mod path_breadcrumb;
 mod revision_list;
 mod shared_view;
 mod trash_empty_button;
+mod trash_item_delete_button;
 mod trash_view;

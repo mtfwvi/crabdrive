@@ -2,6 +2,7 @@ use crate::components::file_download_button::FileDownloadButton;
 use crate::components::file_history_button::FileHistoryButton;
 use crate::components::modify_node_menu::ModifyNodeMenu;
 use crate::components::node_share_button::NodeShareButton;
+use crate::components::trash_item_delete_button::TrashItemDeleteButton;
 use crate::model::node::DecryptedNode;
 use crate::model::node::NodeMetadata;
 use crate::utils::ui::{
@@ -129,9 +130,7 @@ pub(crate) fn NodeDetails(
                             >
                                 "Restore"
                             </Button>
-                            <Button block=true icon=icondata_mdi::MdiDeleteForeverOutline>
-                                "Delete forever"
-                            </Button>
+                            <TrashItemDeleteButton node on_deleted=on_modified />
                         </Space>
                     </Show>
                 </Space>
