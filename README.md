@@ -1,3 +1,6 @@
+# Requirements
+[docs/submission/requirements.md](docs/submission/requirements.md) 
+
 # Deployment
 ### Podman/Docker
 To start the container run `podman compose up --build` / `docker compose up --build`
