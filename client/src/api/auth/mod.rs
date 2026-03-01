@@ -2,11 +2,8 @@ mod login;
 mod logout;
 mod register;
 
-#[allow(unused_imports)]
 pub use login::login;
-#[allow(unused_imports)]
 pub use logout::logout;
-#[allow(unused_imports)]
 pub use register::register;
 
 use crate::model::encryption::MetadataKey;

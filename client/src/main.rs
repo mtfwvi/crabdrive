@@ -1,5 +1,3 @@
-//#![allow(dead_code)] // TODO: Remove before submission
-
 mod api;
 mod components;
 mod constants;
