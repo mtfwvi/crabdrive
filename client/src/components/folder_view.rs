@@ -1,11 +1,10 @@
-use crate::api::get_children;
-use crate::components::basic::resource_wrapper::ResourceWrapper;
-use crate::components::content_frame::ContentViewType;
+use crate::components::data_provider::children_provider::ChildrenProvider;
 use crate::components::folder_bottom_bar::FolderBottomBar;
-use crate::components::node_details::NodeDetails;
+use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
 use crate::components::path_breadcrumb::PathBreadcrumb;
 use crate::model::node::DecryptedNode;
+use crate::utils::browser::SessionStorage;
 use leptos::prelude::*;
 use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Space};
@@ -16,8 +15,8 @@ pub(crate) fn FolderView(
     request_path_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
-    let navigate_to_node = Callback::new(move |node_id| {
-        navigate(&format!("/{}", node_id), Default::default());
+    let navigate_to_node = Callback::new(move |node: DecryptedNode| {
+        navigate(&format!("/{}", node.id), Default::default());
     });
 
     let current_node = Signal::derive(move || {
@@ -26,13 +25,11 @@ pub(crate) fn FolderView(
             .expect("Failed to get current node due to empty path")
             .clone()
     });
-    let children_res = LocalResource::new(move || {
-        let current_node = current_node.get();
-        async move {
-            get_children(current_node)
-                .await
-                .map_err(|err| err.to_string())
-        }
+    let path_root_node = Signal::derive(move || {
+        path.get()
+            .first()
+            .expect("Failed to get path root due to empty path")
+            .clone()
     });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
@@ -55,16 +52,7 @@ pub(crate) fn FolderView(
     });
 
     view! {
-        <ResourceWrapper
-            resource=children_res
-            error_text=Signal::derive(move || {
-                format!(
-                    "The children of '{}' could not be loaded from the server",
-                    current_node.get().id,
-                )
-            })
-            let:children
-        >
+        <ChildrenProvider node=current_node let:children let:refetch_children>
             <Space vertical=true class="flex-1 flex-column p-8 gap-3 justify-between">
                 <Space vertical=true>
                     <PathBreadcrumb path on_select=navigate_to_node />
@@ -85,16 +73,21 @@ pub(crate) fn FolderView(
             <Show when=move || selection.get().is_some()>
                 <NodeDetails
                     node=Signal::derive(move || selection.get().unwrap())
-                    content_type=Signal::derive(move || ContentViewType::Folder(
-                        current_node.get().id,
-                    ))
+                    content_type=Signal::derive(move || {
+                        let trash_id = SessionStorage::get("trash_id").unwrap_or_default();
+                        if trash_id == Some(path_root_node.get().id) {
+                            DetailsViewType::ReadOnly
+                        } else {
+                            DetailsViewType::Folder(Box::new(current_node.get()))
+                        }
+                    })
                     on_close=Callback::new(move |_| selection.set(None))
                     on_modified=Callback::new(move |_| {
-                        children_res.refetch();
+                        refetch_children.run(());
                         selection.set(None);
                     })
                 />
             </Show>
-        </ResourceWrapper>
+        </ChildrenProvider>
     }
 }

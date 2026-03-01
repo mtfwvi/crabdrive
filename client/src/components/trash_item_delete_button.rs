@@ -1,13 +1,14 @@
-use crate::api::empty_trash;
+use crate::api::delete_node_tree;
 use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
+use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
-use thaw::{
-    Button, ButtonAppearance, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection,
-};
+use thaw::{Button, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection};
 
-// TODO: Extract these kinds of buttons to component with only success and error toast + action content
 #[component]
-pub(crate) fn TrashEmptyButton(on_emptied: Callback<()>) -> impl IntoView {
+pub(crate) fn TrashItemDeleteButton(
+    node: Signal<DecryptedNode>,
+    on_deleted: Callback<()>,
+) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
     let add_toast = move |text: String, intent: ToastIntent| {
@@ -29,30 +30,35 @@ pub(crate) fn TrashEmptyButton(on_emptied: Callback<()>) -> impl IntoView {
         )
     };
 
-    let empty_action =
-        Action::new_local(|_| async move { empty_trash().await.map_err(|err| err.to_string()) });
+    let delete_action = Action::new_local(move |_| async move {
+        delete_node_tree(node.get_untracked())
+            .await
+            .map_err(|err| err.to_string())
+    });
 
     Effect::new(move || {
-        let status = empty_action.value().get();
+        let status = delete_action.value().get();
         if status.is_some() {
             match status.unwrap() {
-                Ok(_) => add_toast("Emptied trash".to_string(), ToastIntent::Success),
-                Err(e) => add_toast(format!("Failed to empty trash: {}", e), ToastIntent::Error),
+                Ok(_) => add_toast(
+                    "Deleted item successfully".to_string(),
+                    ToastIntent::Success,
+                ),
+                Err(e) => add_toast(format!("Failed to delete item: {}", e), ToastIntent::Error),
             }
-            on_emptied.run(());
+            on_deleted.run(());
         }
     });
 
     view! {
         <Button
             on_click=move |_| {
-                empty_action.dispatch(());
+                delete_action.dispatch(());
             }
-            appearance=ButtonAppearance::Secondary
-            icon=icondata_mdi::MdiDeleteEmptyOutline
+            icon=icondata_mdi::MdiDeleteForeverOutline
             block=true
         >
-            "Empty trash"
+            "Delete forever"
         </Button>
     }
 }

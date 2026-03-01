@@ -1,8 +1,8 @@
-use crate::components::accepted_nodes_provider::AcceptedNodesProvider;
+use crate::components::data_provider::accepted_nodes_provider::AcceptedNodesProvider;
+use crate::components::data_provider::path_provider::PathProvider;
+use crate::components::data_provider::trash_provider::TrashProvider;
 use crate::components::folder_view::FolderView;
-use crate::components::path_provider::PathProvider;
 use crate::components::shared_view::SharedView;
-use crate::components::trash_provider::TrashProvider;
 use crate::components::trash_view::TrashView;
 use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;

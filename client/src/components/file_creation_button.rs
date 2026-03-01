@@ -52,9 +52,13 @@ pub(crate) fn FileCreationButton(
                     </Toast>
                 }
             },
-            ToastOptions::default()
-                .with_intent(intent)
-                .with_timeout(DEFAULT_TOAST_TIMEOUT),
+            ToastOptions::default().with_intent(intent).with_timeout(
+                if matches!(intent, ToastIntent::Error) {
+                    INFINITE_TOAST_TIMEOUT
+                } else {
+                    DEFAULT_TOAST_TIMEOUT
+                },
+            ),
         )
     };
 

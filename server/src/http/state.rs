@@ -1,15 +1,15 @@
 use crate::db::connection::create_pool;
 use crate::storage::node::NodeRepository;
-use crate::storage::node::persistence::node_repository::NodeState;
+use crate::storage::node::persistence::node_repository::NodeRepositoryImpl;
 use crate::storage::revision::RevisionRepository;
-use crate::storage::revision::persistence::revision_repository::RevisionService;
+use crate::storage::revision::persistence::revision_repository::RevisionRepositoryImpl;
 use crate::storage::share::persistence::share_repository::ShareRepository;
 use crate::storage::share::persistence::share_repository::ShareRepositoryImpl;
 use crate::storage::vfs::FileRepository;
 use crate::storage::vfs::backend::Sfs;
 use crate::storage::vfs::backend::c3::C3;
 use crate::user::auth::secrets::Keys;
-use crate::user::persistence::user_repository::{UserRepository, UserState};
+use crate::user::persistence::user_repository::{UserRepository, UserRepositoryImpl};
 use crate::{db::connection::DbPool, http::AppConfig};
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -62,9 +62,9 @@ impl AppState {
 
         let keys = Keys::new(&config.auth.jwt_secret);
 
-        let node_repository = NodeState::new(Arc::new(pool.clone()));
-        let revision_repository = RevisionService::new(Arc::new(pool.clone()));
-        let user_repository = UserState::new(Arc::new(pool.clone()), keys.clone());
+        let node_repository = NodeRepositoryImpl::new(Arc::new(pool.clone()));
+        let revision_repository = RevisionRepositoryImpl::new(Arc::new(pool.clone()));
+        let user_repository = UserRepositoryImpl::new(Arc::new(pool.clone()), keys.clone());
         let share_repository = ShareRepositoryImpl::new(Arc::new(pool.clone()));
 
         Self {

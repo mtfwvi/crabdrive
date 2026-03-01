@@ -39,7 +39,7 @@ async fn create_move_node_request(
     let post_move_node_request = MoveNodeData {
         from_node_change_counter: from.change_count,
         from_node_metadata: encrypted_from_metadata,
-        to_node_change_counter: 0,
+        to_node_change_counter: to.change_count,
         to_node_metadata: encrypted_to_metadata,
         to_node_id: to.id,
     };
