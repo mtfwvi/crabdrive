@@ -295,7 +295,7 @@ pub async fn get_file_versions(
 
     let version_entities = state
         .revision_repository
-        .get_all_revisions_by_node(file_id)
+        .get_revision_history(file_id)
         .expect("db error");
 
     let versions = version_entities
