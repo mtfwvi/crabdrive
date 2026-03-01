@@ -64,29 +64,18 @@ pub fn insert_node(
     })
 }
 
-/// Update a node and (optionally) the metadata of the parent
+/// Update a node and increase its metadata counter
 #[instrument(skip(conn), err)]
-pub fn update_node(
-    conn: &mut SqliteConnection,
-    node: &NodeEntity,
-    parent_mdata: Option<&EncryptedMetadata>,
-) -> Result<NodeEntity> {
+pub fn update_node(conn: &mut SqliteConnection, node: &NodeEntity) -> Result<NodeEntity> {
     conn.transaction(|conn| {
         let node = diesel::update(NodeDsl::Node)
             .filter(NodeDsl::id.eq(node.id))
-            .set(node)
+            .set((
+                node,
+                NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
+            ))
             .returning(NodeEntity::as_select())
             .get_result(conn)?;
-        // In certain cases, the parent metadata does not need to be updated (f.e. when changing a revision)
-        if let Some(parent_mdata) = parent_mdata {
-            diesel::update(NodeDsl::Node)
-                .filter(NodeDsl::id.eq(node.parent_id.unwrap()))
-                .set((
-                    NodeDsl::metadata.eq(parent_mdata),
-                    NodeDsl::metadata_change_counter.eq(NodeDsl::metadata_change_counter + 1),
-                ))
-                .execute(conn)?;
-        }
         Ok(node)
     })
 }
