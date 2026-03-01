@@ -211,7 +211,7 @@ pub async fn test_logout() {
     let logout_request = user1.post(routes::auth::logout()).await;
     logout_request.assert_status_ok();
 
-    let info_request = user1.get(&routes::auth::info()).await;
+    let info_request = user1.get(routes::auth::info()).await;
     info_request.assert_status_unauthorized();
 }
 
