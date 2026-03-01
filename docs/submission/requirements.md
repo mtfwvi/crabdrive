@@ -32,7 +32,7 @@ project can be built/run using
     The steps to run the server in the container should be the same as for running it directly
 
 ### (C8) he code is tested with a sensible testing method
-see [docs/submission/testing.md](docs/submission/testing.md) 
+see [docs/submission/testing.md](./testing.md) 
 
 ### (D1) The documentation contains all steps to run the project
 see C2 for running it.
@@ -40,10 +40,10 @@ see C2 for running it.
 After compiling the client and running the server, the frontend should be available on `http://localhost:2722`. To use client one needs to register an account. The default invite code is `crabdrive`. After registering you can log in.
 
 ### (D2) The documentation lists all implemented features and how to discover them if non obvious
-see [docs/features.md](docs/features.md) 
+see [docs/features.md](../features.md) 
 
 ### (D4) IFI Rule: State all used AI/LLMs and for what purpose they were used
-see [docs/submission/ai-usage](docs/submission/ai-usage)
+see [docs/submission/ai-usage](.//ai-usage)
 
 ### (D6) The documentation describes how the testing was done and explains why the testing method is well founded.
-see [docs/submission/testing.md](docs/submission/testing.md) 
+see [docs/submission/testing.md](./testing.md) 
