@@ -10,6 +10,7 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(
+    Associations,
     Queryable,
     Selectable,
     Serialize,
@@ -19,7 +20,6 @@ use serde::{Deserialize, Serialize};
     AsChangeset,
     Clone,
     Copy,
-    Associations,
 )]
 #[diesel(table_name = crate::db::schema::Revision)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]

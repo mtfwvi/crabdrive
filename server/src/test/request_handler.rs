@@ -676,7 +676,7 @@ pub async fn get_server() -> TestServer {
     // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
     config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
 
-    let (app, _) = crate::http::server::create_app(config);
+    let (app, _) = crate::http::server::create_app(config).await;
 
     let server = TestServer::new(app).unwrap();
 
