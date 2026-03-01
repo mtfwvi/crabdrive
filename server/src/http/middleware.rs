@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use axum::body::Body;
 use axum::http::{HeaderName, HeaderValue};
-use tracing::{debug, trace_span};
+use tracing::{debug, error_span};
 
 pub async fn logging_middleware(mut request: Request<Body>, next: Next) -> Response {
     let req_id = nanoid::nanoid!();
@@ -14,7 +14,7 @@ pub async fn logging_middleware(mut request: Request<Body>, next: Next) -> Respo
         HeaderValue::from_str(&req_id).unwrap(),
     );
 
-    let span = trace_span!(
+    let span = error_span!(
         "request",
         method = %request.method(),
         uri = %request.uri(),
