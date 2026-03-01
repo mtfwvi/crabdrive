@@ -177,6 +177,8 @@ pub async fn test_user_info() {
         SelfUserInfo {
             user_id: user.id,
             username: user.username.clone(),
+            storage_limit: crabdrive_common::da!(128 MiB), // In test environments: 128 MiB limit, otherwise 15GB
+            storage_used: crabdrive_common::da!(0 B),
         }
     );
 }

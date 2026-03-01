@@ -1,7 +1,5 @@
 use crate::http::{AppConfig, AppState};
 use crate::storage::node::NodeRepository;
-use crate::storage::revision::RevisionRepository;
-use crate::user::persistence::user_repository::UserRepository;
 
 use super::TestUserEntity;
 
@@ -20,9 +18,7 @@ pub struct TestContext {
     pub state: AppState,
     pub users: Vec<TestUserEntity>,
     // repos
-    pub user: Arc<dyn UserRepository + Send + Sync>,
     pub node: Arc<dyn NodeRepository + Send + Sync>,
-    pub revision: Arc<dyn RevisionRepository + Send + Sync>,
 }
 
 impl TestContext {
@@ -53,8 +49,6 @@ impl TestContext {
             server: arc,
             users,
             node: state.node_repository.clone(),
-            user: state.user_repository.clone(),
-            revision: state.revision_repository.clone(),
             state,
         }
     }

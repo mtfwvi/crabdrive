@@ -6,7 +6,7 @@ use super::{NodeBuilder, TestNodeEntity};
 
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::storage::{ChunkIndex, NodeId, NodeType};
+use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::user::UserKeys;
 use crabdrive_common::uuid::UUID;
 
@@ -96,12 +96,6 @@ impl TestUserEntity {
             .authorization_bearer(&self.token)
     }
 
-    pub fn put(&self, url: impl AsRef<str>) -> TestRequest {
-        self.server
-            .put(url.as_ref())
-            .authorization_bearer(&self.token)
-    }
-
     pub fn patch(&self, url: impl AsRef<str>) -> TestRequest {
         self.server
             .patch(url.as_ref())
@@ -161,38 +155,11 @@ impl TestUserEntity {
             .await
     }
 
-    /// Genrate a file in a parent node with a number of chunks
-    pub async fn generate_file_with_chunks_in(
-        &self,
-        parent_id: NodeId,
-        chunks: u32,
-    ) -> TestNodeEntity {
-        NodeBuilder::new(&self.state, self.id)
-            .file()
-            .with_chunks(chunks)
-            .with_parent(parent_id)
-            .build()
-            .await
-    }
-
     /// Fetches the fresh node directly from the repository
     pub fn fetch_node_from_db(&self, node_id: NodeId) -> Option<NodeEntity> {
         self.state
             .node_repository
             .get_node(node_id)
             .expect("Database error during node fetch")
-    }
-
-    /// Fetches the raw bytes of a specific chunk
-    pub async fn fetch_chunk_data(
-        &self,
-        revision_id: UUID,
-        chunk_index: ChunkIndex,
-    ) -> bytes::Bytes {
-        let vfs = self.state.vfs.write().await;
-        vfs.read_chunk(&revision_id, chunk_index)
-            .await
-            .expect("Failed to read chunk from VFS")
-            .data
     }
 }

@@ -53,11 +53,6 @@ impl<'a> NodeBuilder<'a> {
         self
     }
 
-    pub fn with_chunk_size(mut self, size: usize) -> Self {
-        self.chunk_size = size;
-        self
-    }
-
     pub async fn build(self) -> TestNodeEntity {
         let mut node = self
             .state
@@ -73,8 +68,6 @@ impl<'a> NodeBuilder<'a> {
 
         let mut test_node_entity = TestNodeEntity {
             id: node.id,
-            node_type: self.node_type,
-            children: Vec::new(),
             active_revision: None,
         };
 
@@ -108,7 +101,6 @@ impl<'a> NodeBuilder<'a> {
                 rng.fill_bytes(&mut bytes);
 
                 test_revision_entity.chunks.push(TestChunk {
-                    index: index as ChunkIndex,
                     checksum: format!("{:x}", Sha256::digest(&bytes)),
                 });
 
