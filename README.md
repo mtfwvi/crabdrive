@@ -18,7 +18,7 @@ git clone https://github.com/mtfwvi/crabdrive
 cd ./client
 trunk build --release
 cd ..
-cargo build --bin crabdrive-server --release
+cargo run --bin crabdrive-server --release
 ```
 
 # Development
