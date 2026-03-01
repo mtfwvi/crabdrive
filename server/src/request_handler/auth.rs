@@ -10,8 +10,6 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
-use sha2::Digest;
-use tracing::error;
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
@@ -19,6 +17,8 @@ use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
 use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
 use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
+use sha2::Digest;
+use tracing::error;
 
 use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
 use crabdrive_common::payloads::auth::response::register::{
@@ -108,12 +108,12 @@ pub async fn post_register(
         return (
             StatusCode::CONFLICT,
             Json(PostRegisterResponse::Conflict(
-                RegisterConflictReason::IllegalUsername
+                RegisterConflictReason::IllegalUsername,
             )),
         );
     }
 
-    let invite_code_hash = format!("{:02x}",sha2::Sha512::digest(invite_code.as_bytes()));
+    let invite_code_hash = format!("{:02x}", sha2::Sha512::digest(invite_code.as_bytes()));
 
     error!(invite_code);
     error!(invite_code_hash);

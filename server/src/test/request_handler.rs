@@ -29,6 +29,7 @@ use crabdrive_common::user::UserKeys;
 use crabdrive_common::uuid::UUID;
 use std::path::PathBuf;
 
+use crate::DEFAULT_INVITE_CODE;
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 use crabdrive_common::payloads::node::request::share::{
@@ -42,7 +43,6 @@ use crabdrive_common::routes::auth::{ROUTE_LOGIN, ROUTE_REGISTER};
 use pretty_assertions::assert_eq;
 use rand::rngs::SmallRng;
 use rand::{RngCore, SeedableRng};
-use crate::DEFAULT_INVITE_CODE;
 
 const API_BASE_PATH: &str = "http://localhost:2722";
 const TEST_USERNAME1: &str = "admin";
