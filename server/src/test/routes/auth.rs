@@ -12,8 +12,8 @@ use crabdrive_common::routes;
 
 use crate::test::utils::TestContext;
 
-use axum::http::StatusCode;
 use crate::DEFAULT_INVITE_CODE;
+use axum::http::StatusCode;
 
 #[tokio::test]
 pub async fn test_register() {
