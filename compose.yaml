@@ -1,0 +1,19 @@
+services:
+  server:
+    build: .
+    ports:
+      - "2722:2722"
+    volumes:
+      - crabdrive-db:/crabdrive/db
+      - crabdrive-files:/crabdrive/files
+    environment:
+      CRABDRIVE_DB_PATH: "file:/crabdrive/db/data.db"
+      CRABDRIVE_LOG_TARGETS: ":stdout:"
+      CRABDRIVE_STORAGE_DIR: "/crabdrive/files/"
+      CRABDRIVE_ADDR: "0.0.0.0"
+    cap_drop:
+      - ALL
+    read_only: true
+volumes:
+  crabdrive-db:
+  crabdrive-files:

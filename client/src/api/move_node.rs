@@ -39,7 +39,7 @@ async fn create_move_node_request(
     let post_move_node_request = MoveNodeData {
         from_node_change_counter: from.change_count,
         from_node_metadata: encrypted_from_metadata,
-        to_node_change_counter: 0,
+        to_node_change_counter: to.change_count,
         to_node_metadata: encrypted_to_metadata,
         to_node_id: to.id,
     };
@@ -82,10 +82,11 @@ pub async fn move_node_to_trash(node: DecryptedNode) -> Result<()> {
     let response = post_move_node_to_trash(node.id, move_node_data).await?;
     match response {
         PostMoveNodeToTrashResponse::Ok => Ok(()),
-        PostMoveNodeToTrashResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeToTrashResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeToTrashResponse::NotFound => {
+            bail!("one of the nodes referenced could not be found")
+        }
+        PostMoveNodeToTrashResponse::BadRequest => bail!("Cannot move into a file"),
+        PostMoveNodeToTrashResponse::Conflict => bail!("refresh the page and try again"),
     }
 }
 
@@ -97,9 +98,10 @@ pub async fn move_node_out_of_trash(node: DecryptedNode, mut to: DecryptedNode) 
     let response = post_move_node_out_of_trash(node.id, move_node_data).await?;
     match response {
         PostMoveNodeOutOfTrashResponse::Ok => Ok(()),
-        PostMoveNodeOutOfTrashResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeOutOfTrashResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeOutOfTrashResponse::NotFound => {
+            bail!("one of the nodes referenced could not be found")
+        }
+        PostMoveNodeOutOfTrashResponse::BadRequest => bail!("Cannot move into a file"),
+        PostMoveNodeOutOfTrashResponse::Conflict => bail!("refresh the page and try again"),
     }
 }

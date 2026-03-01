@@ -16,7 +16,7 @@ use crate::request_handler::share::{
 };
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use axum::routing::{delete, get, post};
+use axum::routing::{get, post};
 use tower_http::compression::CompressionLayer;
 use tower_http::services::{ServeDir, ServeFile};
 
@@ -42,7 +42,7 @@ pub fn nodes_routes() -> Router<AppState> {
         .route(routes::node::ROUTE_MOVE, post(post_move_node))
         .route(
             routes::node::ROUTE_MOVE_TO_TRASH,
-            delete(post_move_node_to_trash),
+            post(post_move_node_to_trash),
         )
         .route(
             routes::node::ROUTE_MOVE_OUT_OF_TRASH,
@@ -53,10 +53,6 @@ pub fn nodes_routes() -> Router<AppState> {
         .route(routes::node::file::ROUTE_COMMIT, post(post_commit_file))
         .route(routes::node::folder::ROUTE_CREATE, post(post_create_folder))
         .route(routes::node::ROUTE_CHILDREN, get(get_node_children))
-        .route(
-            routes::node::ROUTE_PATH_BETWEEN,
-            get(get_path_between_nodes),
-        )
         .route(routes::node::ROUTE_VERSIONS, get(get_file_versions))
         .route(
             routes::node::ROUTE_CHUNKS,

@@ -1,5 +1,4 @@
-use crate::components::content_frame::ContentViewType;
-use crate::components::node_details::NodeDetails;
+use crate::components::node_details::{DetailsViewType, NodeDetails};
 use crate::components::node_list::NodeList;
 use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
@@ -12,8 +11,8 @@ pub(crate) fn SharedView(
     request_accepted_nodes_refetch: Callback<()>,
 ) -> impl IntoView {
     let navigate = use_navigate();
-    let navigate_to_node = Callback::new(move |node_id| {
-        navigate(&format!("/{}", node_id), Default::default());
+    let navigate_to_node = Callback::new(move |node: DecryptedNode| {
+        navigate(&format!("/{}", node.id), Default::default());
     });
 
     let selection: RwSignal<Option<DecryptedNode>> = RwSignal::new(None);
@@ -48,7 +47,7 @@ pub(crate) fn SharedView(
         <Show when=move || selection.get().is_some()>
             <NodeDetails
                 node=Signal::derive(move || selection.get().unwrap())
-                content_type=ContentViewType::Shared
+                content_type=DetailsViewType::Shared
                 on_close=Callback::new(move |_| selection.set(None))
                 on_modified=Callback::new(move |_| {
                     request_accepted_nodes_refetch.run(());

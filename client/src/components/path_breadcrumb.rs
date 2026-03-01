@@ -1,6 +1,5 @@
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::browser::SessionStorage;
-use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 use thaw::{
     Breadcrumb, BreadcrumbButton, BreadcrumbDivider, BreadcrumbItem, Icon, Space, SpaceAlign, Text,
@@ -9,7 +8,7 @@ use thaw::{
 #[component]
 pub(crate) fn PathBreadcrumb(
     #[prop(into)] path: Signal<Vec<DecryptedNode>>,
-    on_select: Callback<NodeId>,
+    on_select: Callback<DecryptedNode>,
     #[prop(optional, default = false)] compact: bool,
 ) -> impl IntoView {
     let accessible_root_node = move || path.get().first().expect("Path was empty").clone();
@@ -59,9 +58,9 @@ fn PathBreadcrumbItem(
     #[prop(optional, into)] is_last: Signal<bool>,
     leaf_node_style: &'static str,
     inner_node_style: &'static str,
-    on_click: Callback<NodeId>,
+    on_click: Callback<DecryptedNode>,
 ) -> impl IntoView {
-    let on_click = move |_| on_click.run(node.get().id);
+    let on_click = move |_| on_click.run(node.get());
 
     let name = Signal::derive(move || {
         let NodeMetadata::V1(metadata) = node.get().metadata;

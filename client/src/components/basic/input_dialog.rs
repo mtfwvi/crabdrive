@@ -1,8 +1,6 @@
+use crate::components::basic::custom_dialog::CustomDialog;
 use leptos::prelude::*;
-use thaw::{
-    Button, ButtonAppearance, ComponentRef, Dialog, DialogActions, DialogBody, DialogContent,
-    DialogSurface, DialogTitle, Input, InputRef,
-};
+use thaw::{ComponentRef, Input, InputRef};
 
 #[component]
 pub(crate) fn InputDialog(
@@ -27,41 +25,26 @@ pub(crate) fn InputDialog(
     };
 
     view! {
-        <Dialog open>
-            <DialogSurface class="w-fit">
-                <DialogBody>
-                    <DialogTitle>{title}</DialogTitle>
-                    <DialogContent>
-                        <Input
-                            value
-                            placeholder
-                            comp_ref=input_ref
-                            class="!border-none w-full"
-                            on:keypress=move |e| {
-                                if e.key() == "Enter" && !value.get().is_empty() {
-                                    handle_confirm();
-                                }
-                            }
-                        />
-                    </DialogContent>
-
-                    <DialogActions>
-                        <Button
-                            appearance=ButtonAppearance::Secondary
-                            on_click=move |_| open.set(false)
-                        >
-                            "Cancel"
-                        </Button>
-                        <Button
-                            appearance=ButtonAppearance::Primary
-                            on_click=move |_| handle_confirm()
-                            disabled=Signal::derive(move || value.get().is_empty())
-                        >
-                            {confirm_label}
-                        </Button>
-                    </DialogActions>
-                </DialogBody>
-            </DialogSurface>
-        </Dialog>
+        <CustomDialog
+            open
+            title
+            show_cancel=true
+            show_confirm=true
+            confirm_label
+            confirm_disabled=Signal::derive(move || value.get().is_empty())
+            on_confirm=handle_confirm
+        >
+            <Input
+                value
+                placeholder
+                comp_ref=input_ref
+                class="!border-none w-full"
+                on:keypress=move |e| {
+                    if e.key() == "Enter" && !value.get().is_empty() {
+                        handle_confirm();
+                    }
+                }
+            />
+        </CustomDialog>
     }
 }
