@@ -1,10 +1,7 @@
 use crate::test::utils::TestContext;
 
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::payloads::node::{
-    request::node::*,
-    response::node::*,
-};
+use crabdrive_common::payloads::node::{request::node::*, response::node::*};
 use crabdrive_common::routes;
 use crabdrive_common::uuid::UUID;
 
@@ -120,12 +117,25 @@ pub async fn test_delete_node() {
     let user = ctx.get_user(0);
 
     let folder = user.generate_random_folder().await;
-    let root_node = user.fetch_node_from_db(user.get_root()).unwrap();
 
+    // Move node to trash
+    let payload = PostMoveNodeRequest {
+        from_node_change_counter: 1,
+        from_node_metadata: EncryptedMetadata::random(),
+        to_node_change_counter: 0,
+        to_node_metadata: EncryptedMetadata::random(),
+        to_node_id: user.get_trash(),
+    };
 
+    let response = user
+        .post(routes::node::move_to_trash(folder.id))
+        .json(&payload)
+        .await;
+
+    response.assert_status_ok();
 
     let payload = DeleteNodeRequest {
-        parent_change_count: root_node.metadata_change_counter,
+        parent_change_count: 1,
         parent_node_metadata: EncryptedMetadata::random(),
     };
 
@@ -133,8 +143,6 @@ pub async fn test_delete_node() {
         .delete(routes::node::by_id(folder.id))
         .json(&payload)
         .await;
-
-    dbg!(&response);
 
     assert_eq!(response.status_code(), StatusCode::OK);
 
@@ -407,7 +415,9 @@ pub async fn test_move_node_to_trash() {
 
     let get_resp = user.get(routes::node::by_id(folder.id)).await;
     assert_eq!(get_resp.status_code(), StatusCode::OK);
-    let GetNodeResponse::Ok(moved_node) = get_resp.json() else { panic!("Expected Ok") };
+    let GetNodeResponse::Ok(moved_node) = get_resp.json() else {
+        panic!("Expected Ok")
+    };
     assert_eq!(moved_node.parent_id.unwrap(), trash_node.id);
 }
 
@@ -457,7 +467,9 @@ pub async fn test_move_node_out_of_trash() {
 
     let get_resp = user.get(routes::node::by_id(folder.id)).await;
     assert_eq!(get_resp.status_code(), StatusCode::OK);
-    let GetNodeResponse::Ok(moved_node) = get_resp.json() else { panic!("Expected Ok") };
+    let GetNodeResponse::Ok(moved_node) = get_resp.json() else {
+        panic!("Expected Ok")
+    };
     assert_eq!(moved_node.parent_id.unwrap(), root_node.id);
 }
 
@@ -482,7 +494,7 @@ pub async fn test_get_children() {
 
     let returned_nodes = match response.json::<GetNodeChildrenResponse>() {
         GetNodeChildrenResponse::Ok(encrypted_nodes) => encrypted_nodes,
-        GetNodeChildrenResponse::NotFound => panic!("Wrong HTTP status code"),
+        _ => panic!("Wrong HTTP status code"),
     };
 
     let mut sent_ids = returned_nodes.iter().map(|f| f.id).collect::<Vec<UUID>>();
@@ -509,14 +521,7 @@ pub async fn test_get_children_of_file() {
     let file = user.generate_random_file().await;
     let response = user.get(routes::node::children(file.id)).await;
 
-    assert_eq!(response.status_code(), StatusCode::OK);
-
-    let children = match response.json::<GetNodeChildrenResponse>() {
-        GetNodeChildrenResponse::Ok(encrypted_nodes) => encrypted_nodes,
-        GetNodeChildrenResponse::NotFound => panic!("Invalid status code"),
-    };
-
-    assert_eq!(children.len(), 0)
+    assert_eq!(response.status_code(), StatusCode::BAD_REQUEST);
 }
 
 // get accessible path

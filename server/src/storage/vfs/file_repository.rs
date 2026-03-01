@@ -5,7 +5,7 @@ use crabdrive_common::storage::ChunkIndex;
 pub(crate) trait FileRepository {
     async fn chunk_exists(&self, key: &FileKey, index: ChunkIndex) -> bool;
     /// Check if a file exists
-    async fn file_exists(&self, key: &FileKey) -> FileStatus;
+    async fn file_status(&self, key: &FileKey) -> FileStatus;
     /// Create a new file with the given key in the staging area.
     async fn create_file(&mut self, key: &FileKey) -> Result<(), FileSystemError>;
     /// Write a new chunk into a file key

@@ -106,12 +106,6 @@ pub mod node {
         ROUTE_CHILDREN.replace("{id}", &id.to_string())
     }
 
-    pub const ROUTE_PATH_BETWEEN: &str = "/api/path_between_nodes/";
-    /// `/api/path_between_nodes/`
-    pub fn path_between_nodes(from_id: NodeId, to_id: NodeId) -> String {
-        format!("{}?from_id={}&to_id={}", ROUTE_PATH_BETWEEN, from_id, to_id)
-    }
-
     pub const ROUTE_VERSIONS: &str = "/api/node/{id}/versions/";
     /// `/api/node/{id}/versions/`
     pub fn versions(id: NodeId) -> String {

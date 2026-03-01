@@ -1,4 +1,4 @@
-use crate::db::RevisionDsl;
+use crate::db::{NodeDsl, RevisionDsl};
 use crate::storage::revision::RevisionEntity;
 
 use crabdrive_common::storage::{NodeId, RevisionId};
@@ -78,5 +78,18 @@ pub fn get_all_revisions_by_node(
             .filter(RevisionDsl::file_id.eq(node_id))
             .load::<RevisionEntity>(conn)?;
         Ok(revisions)
+    })
+}
+
+#[instrument(skip(conn), err)]
+pub fn get_all_uncommitted_revisions(conn: &mut SqliteConnection) -> Result<Vec<RevisionId>> {
+    conn.transaction(|conn| {
+        let results = RevisionDsl::Revision
+            .inner_join(NodeDsl::Node)
+            .filter(NodeDsl::node_type.eq("FILE"))
+            .filter(RevisionDsl::upload_ended_on.is_null())
+            .select(RevisionDsl::id)
+            .load::<RevisionId>(conn)?;
+        Ok(results)
     })
 }

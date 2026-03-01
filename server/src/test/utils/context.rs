@@ -1,7 +1,7 @@
 use crate::http::{AppConfig, AppState};
 use crate::storage::node::NodeRepository;
 use crate::storage::revision::RevisionRepository;
-use crate::user::UserRepository;
+use crate::user::persistence::user_repository::UserRepository;
 
 use super::TestUserEntity;
 
@@ -31,7 +31,7 @@ impl TestContext {
         // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
         config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
 
-        let (router, state) = crate::http::server::create_app(config);
+        let (router, state) = crate::http::server::create_app(config).await;
 
         let server = TestServer::new(router).expect("Failed to create test server!");
         let arc = Arc::new(server);
