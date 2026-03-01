@@ -46,6 +46,7 @@ pub async fn empty_trash() -> Result<()> {
     // TODO this is completely inefficient
     // the solution would be to add a server request that allows you to upload a new
     // (empty) trash node/metadata and possible a list of nodes to be deleted
+    // the node respository should already support this
 
     let trash = get_trash_node().await?;
     let trashed_items = get_children(trash).await?;

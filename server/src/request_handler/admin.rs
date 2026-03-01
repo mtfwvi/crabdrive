@@ -1,9 +1,9 @@
 use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
-use crabdrive_common::payloads::admin::request::user::{PatchUserRequest, PostUserRequest};
+use crabdrive_common::payloads::admin::request::user::PostUserRequest;
 use crabdrive_common::payloads::admin::response::user::{
-    DeleteUserResponse, GetUserResponse, PatchUserResponse, PostUserResponse, UserInfo,
+    DeleteUserResponse, GetUserResponse, PostUserResponse, UserInfo,
 };
 use crabdrive_common::user::{UserId, UserType};
 
@@ -31,17 +31,6 @@ pub async fn delete_user(Path(_user_id): Path<UserId>) -> (StatusCode, Json<Dele
     (
         StatusCode::OK,
         Json(DeleteUserResponse::Ok(get_example_user_info())),
-    )
-}
-
-pub async fn patch_user(
-    Path(_user_id): Path<UserId>,
-    Json(_payload): Json<PatchUserRequest>,
-) -> (StatusCode, Json<PatchUserResponse>) {
-    //TODO implement
-    (
-        StatusCode::OK,
-        Json(PatchUserResponse::Ok(get_example_user_info())),
     )
 }
 

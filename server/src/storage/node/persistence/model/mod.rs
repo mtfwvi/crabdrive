@@ -1,1 +1,1 @@
-pub(crate) mod node_entity;
+pub mod node_entity;

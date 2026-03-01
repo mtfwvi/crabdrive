@@ -1,3 +1,4 @@
+use crate::data::DataAmount;
 use crate::user::UserId;
 use serde::{Deserialize, Serialize};
 
@@ -5,6 +6,8 @@ use serde::{Deserialize, Serialize};
 pub struct SelfUserInfo {
     pub username: String,
     pub user_id: UserId,
+    pub storage_limit: DataAmount,
+    pub storage_used: DataAmount,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

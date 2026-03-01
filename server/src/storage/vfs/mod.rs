@@ -1,9 +1,9 @@
-pub(crate) mod backend;
-pub(crate) mod file_repository;
-pub(crate) mod model;
+pub mod backend;
+pub mod file_repository;
+pub mod model;
 
-pub(crate) use file_repository::FileRepository;
-pub(crate) use model::FileChunk;
-pub(crate) use model::FileKey;
-pub(crate) use model::FileStatus;
-pub(crate) use model::FileSystemError;
+pub use file_repository::FileRepository;
+pub use model::FileChunk;
+pub use model::FileKey;
+pub use model::FileStatus;
+pub use model::FileSystemError;

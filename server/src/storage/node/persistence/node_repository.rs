@@ -18,7 +18,7 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use std::sync::Arc;
 
-pub(crate) trait NodeRepository {
+pub trait NodeRepository {
     fn create_node(
         &self,
         parent: Option<NodeId>,

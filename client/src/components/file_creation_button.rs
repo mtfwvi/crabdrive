@@ -12,7 +12,7 @@ use thaw::{
 use web_sys::File;
 
 #[component]
-pub(crate) fn FileCreationButton(
+pub fn FileCreationButton(
     #[prop(into)] parent_node: Signal<DecryptedNode>,
     on_created: Callback<()>,
 ) -> impl IntoView {

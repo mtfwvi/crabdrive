@@ -8,7 +8,7 @@ use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Icon, Space, SpaceAlign, Text};
 
 #[component]
-pub(crate) fn TrashView(
+pub fn TrashView(
     trash_node: Signal<DecryptedNode>,
     request_trash_node_refetch: Callback<()>,
 ) -> impl IntoView {

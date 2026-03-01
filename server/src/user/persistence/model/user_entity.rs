@@ -20,7 +20,7 @@ use serde::{Deserialize, Serialize};
 )]
 #[diesel(table_name = crate::db::schema::User)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub(crate) struct UserEntity {
+pub struct UserEntity {
     pub user_type: UserType,
     pub id: UserId,
     pub created_at: NaiveDateTime,
@@ -28,6 +28,7 @@ pub(crate) struct UserEntity {
     pub username: String,
     pub password_hash: String,
     pub storage_limit: DataAmount,
+    pub storage_used: DataAmount,
     pub encryption_uninitialized: bool, // default: false
 
     // encrypted with key derived from user password

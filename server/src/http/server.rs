@@ -126,7 +126,7 @@ async fn shutdown(_state: AppState) {
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
-pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
+pub fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
     let details = if let Some(s) = err.downcast_ref::<String>() {
         s.clone()
     } else if let Some(s) = err.downcast_ref::<&str>() {

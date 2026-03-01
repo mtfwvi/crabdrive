@@ -8,14 +8,14 @@ use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 
 #[derive(PartialEq, Clone, Copy, Debug)]
-pub(crate) enum ContentViewType {
+pub enum ContentViewType {
     Folder(NodeId),
     Shared,
     Trash,
 }
 
 #[component]
-pub(crate) fn ContentFrame(#[prop(into)] content_type: Signal<ContentViewType>) -> impl IntoView {
+pub fn ContentFrame(#[prop(into)] content_type: Signal<ContentViewType>) -> impl IntoView {
     view! {
         <Show when=move || matches!(content_type.get(), ContentViewType::Folder(_))>
             <PathProvider

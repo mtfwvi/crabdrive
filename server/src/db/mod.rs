@@ -1,6 +1,6 @@
-pub(crate) mod connection;
-pub(crate) mod operations;
-pub(crate) mod schema;
+pub mod connection;
+pub mod operations;
+pub mod schema;
 
 pub use schema::Node::dsl as NodeDsl;
 pub use schema::RefreshToken::dsl as RefreshTokenDsl;

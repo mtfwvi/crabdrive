@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use thaw::{Divider, Space};
 
 #[component]
-pub(crate) fn FolderBottomBar(
+pub fn FolderBottomBar(
     #[prop(into)] current_node: Signal<DecryptedNode>,
     on_children_modified: Callback<()>,
 ) -> impl IntoView {

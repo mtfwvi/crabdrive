@@ -1,1 +1,1 @@
-pub(crate) mod revision_entity;
+pub mod revision_entity;

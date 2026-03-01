@@ -8,7 +8,7 @@ use leptos::prelude::*;
 use thaw::Divider;
 
 #[component]
-pub(crate) fn FolderSelectionDialog(
+pub fn FolderSelectionDialog(
     #[prop(into)] open: RwSignal<bool>,
     on_confirm: Callback<DecryptedNode>,
     #[prop(into)] title: Signal<String>,

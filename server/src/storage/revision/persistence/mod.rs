@@ -1,2 +1,2 @@
-pub(crate) mod model;
-pub(crate) mod revision_repository;
+pub mod model;
+pub mod revision_repository;

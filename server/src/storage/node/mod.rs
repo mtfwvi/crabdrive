@@ -1,4 +1,4 @@
-pub(crate) mod persistence;
+pub mod persistence;
 
-pub(crate) use persistence::model::node_entity::NodeEntity;
-pub(crate) use persistence::node_repository::NodeRepository;
+pub use persistence::model::node_entity::NodeEntity;
+pub use persistence::node_repository::NodeRepository;

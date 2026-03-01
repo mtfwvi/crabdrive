@@ -1,6 +1,4 @@
 mod model;
-#[cfg(test)]
-mod test;
 mod utils;
 
 use crate::db::connection::DbPool;
@@ -30,8 +28,6 @@ pub struct C3 {
     /// List of all active transfers
     transfers: Arc<DashMap<UUID, FileTransfer>>,
     cache: Arc<Cache<(UUID, ChunkIndex), CachedChunk>>,
-    // Uses the database to track active transfers
-    db_pool: DbPool,
     /// Configuration option for caching behavior.
     cache_ahead: u8,
 }
@@ -94,7 +90,6 @@ impl C3 {
             persistent_path,
             transfers: Arc::new(transfers),
             cache: Arc::new(cache),
-            db_pool,
             cache_ahead,
         };
 
