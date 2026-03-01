@@ -1,5 +1,5 @@
 Marvin
-- used llms to set up github actions
+- used llms to fix my LCOV github action (after it failed ca. 50 times)
 - explaining
 - testing
 
