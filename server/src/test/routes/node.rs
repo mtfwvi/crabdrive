@@ -81,7 +81,6 @@ pub async fn test_patch_invalid_node() {
 
 #[tokio::test]
 pub async fn test_patch_node_metadata_mismatch() {
-    return; // TODO: Fix
     let ctx = TestContext::new(1).await;
 
     let user1 = ctx.get_user(0);
@@ -110,7 +109,41 @@ pub async fn test_patch_node_metadata_mismatch() {
         .json(&payload)
         .await;
 
-    assert_eq!(response.status_code(), StatusCode::CONFLICT);
+    assert_eq!(response.status_code(), StatusCode::CONFLICT); // TODO CHANGE
+}
+
+// delete node
+
+#[tokio::test]
+pub async fn test_delete_node() {
+    let ctx = TestContext::new(1).await;
+    let user = ctx.get_user(0);
+
+    let folder = user.generate_random_folder().await;
+    let root_node = user.fetch_node_from_db(user.get_root()).unwrap();
+
+
+
+    let payload = DeleteNodeRequest {
+        parent_change_count: root_node.metadata_change_counter,
+        parent_node_metadata: EncryptedMetadata::random(),
+    };
+
+    let response = user
+        .delete(routes::node::by_id(folder.id))
+        .json(&payload)
+        .await;
+
+    dbg!(&response);
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let DeleteNodeResponse::Ok = response.json() else {
+        panic!("Expected Ok");
+    };
+
+    let get_resp = user.get(routes::node::by_id(folder.id)).await;
+    assert_eq!(get_resp.status_code(), StatusCode::NOT_FOUND);
 }
 
 // move node
@@ -137,7 +170,7 @@ pub async fn test_move_file_into_folder() {
         .json(&payload)
         .await;
 
-    assert_eq!(response.status_code(), StatusCode::OK);
+    assert_eq!(response.status_code(), StatusCode::CONFLICT);
 }
 
 #[tokio::test]
@@ -185,7 +218,31 @@ pub async fn test_move_folder_into_folder() {
         .json(&payload)
         .await;
 
-    assert_eq!(response.status_code(), StatusCode::OK);
+    assert_eq!(response.status_code(), StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+pub async fn test_move_to_descendants() {
+    let ctx = TestContext::new(1).await;
+    let user = ctx.get_user(0);
+
+    let parent_folder = user.generate_random_folder().await;
+    let child_folder = user.generate_folder_in(parent_folder.id).await;
+
+    let payload = PostMoveNodeRequest {
+        to_node_id: child_folder.id,
+        from_node_metadata: EncryptedMetadata::random(),
+        to_node_metadata: EncryptedMetadata::random(),
+        from_node_change_counter: 0,
+        to_node_change_counter: 0,
+    };
+
+    let response = user
+        .post(routes::node::move_to(parent_folder.id))
+        .json(&payload)
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::CONFLICT);
 }
 
 #[tokio::test]
@@ -260,7 +317,6 @@ pub async fn test_move_to_invalid_node() {
 
 #[tokio::test]
 pub async fn test_move_node_with_invalid_metadata_change_counter() {
-    return; // TODO: Fix
     let ctx = TestContext::new(1).await;
     let user = ctx.get_user(0);
 
@@ -319,6 +375,90 @@ pub async fn test_move_root_and_trash_node() {
         .await;
 
     response.assert_status_internal_server_error();
+}
+
+#[tokio::test]
+pub async fn test_move_node_to_trash() {
+    let ctx = TestContext::new(1).await;
+    let user = ctx.get_user(0);
+
+    let folder = user.generate_random_folder().await;
+    let root_node = user.fetch_node_from_db(user.get_root()).unwrap();
+    let trash_node = user.fetch_node_from_db(user.get_trash()).unwrap();
+
+    let payload = PostMoveNodeToTrashRequest {
+        to_node_id: trash_node.id,
+        from_node_metadata: EncryptedMetadata::random(),
+        to_node_metadata: EncryptedMetadata::random(),
+        from_node_change_counter: root_node.metadata_change_counter,
+        to_node_change_counter: trash_node.metadata_change_counter,
+    };
+
+    let response = user
+        .post(routes::node::move_to_trash(folder.id))
+        .json(&payload)
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let PostMoveNodeToTrashResponse::Ok = response.json() else {
+        panic!("Expected Ok");
+    };
+
+    let get_resp = user.get(routes::node::by_id(folder.id)).await;
+    assert_eq!(get_resp.status_code(), StatusCode::OK);
+    let GetNodeResponse::Ok(moved_node) = get_resp.json() else { panic!("Expected Ok") };
+    assert_eq!(moved_node.parent_id.unwrap(), trash_node.id);
+}
+
+#[tokio::test]
+pub async fn test_move_node_out_of_trash() {
+    let ctx = TestContext::new(1).await;
+    let user = ctx.get_user(0);
+
+    let folder = user.generate_random_folder().await;
+    let root_node = user.fetch_node_from_db(user.get_root()).unwrap();
+    let trash_node = user.fetch_node_from_db(user.get_trash()).unwrap();
+
+    let payload_to_trash = PostMoveNodeToTrashRequest {
+        to_node_id: trash_node.id,
+        from_node_metadata: EncryptedMetadata::random(),
+        to_node_metadata: EncryptedMetadata::random(),
+        from_node_change_counter: root_node.metadata_change_counter,
+        to_node_change_counter: trash_node.metadata_change_counter,
+    };
+
+    user.post(routes::node::move_to_trash(folder.id))
+        .json(&payload_to_trash)
+        .await
+        .assert_status_ok();
+
+    let root_node = user.fetch_node_from_db(user.get_root()).unwrap();
+    let trash_node = user.fetch_node_from_db(user.get_trash()).unwrap();
+
+    let payload_out_of_trash = PostMoveNodeOutOfTrashRequest {
+        to_node_id: root_node.id,
+        from_node_metadata: EncryptedMetadata::random(),
+        to_node_metadata: EncryptedMetadata::random(),
+        from_node_change_counter: trash_node.metadata_change_counter,
+        to_node_change_counter: root_node.metadata_change_counter,
+    };
+
+    let response = user
+        .post(routes::node::move_out_of_trash(folder.id))
+        .json(&payload_out_of_trash)
+        .await;
+
+    assert_eq!(response.status_code(), StatusCode::OK);
+
+    let PostMoveNodeOutOfTrashResponse::Ok = response.json() else {
+        panic!("Expected Ok");
+    };
+
+    let get_resp = user.get(routes::node::by_id(folder.id)).await;
+    assert_eq!(get_resp.status_code(), StatusCode::OK);
+    let GetNodeResponse::Ok(moved_node) = get_resp.json() else { panic!("Expected Ok") };
+    assert_eq!(moved_node.parent_id.unwrap(), root_node.id);
 }
 
 // get children of a node

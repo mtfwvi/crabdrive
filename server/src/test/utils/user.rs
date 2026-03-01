@@ -23,6 +23,7 @@ pub struct TestUserEntity {
     pub password: String,
     pub keys: UserKeys,
     pub token: String,
+    pub refresh_token: String,
 }
 
 impl TestUserEntity {
@@ -65,7 +66,7 @@ impl TestUserEntity {
             .update_user(user_entity.clone())
             .expect("Failed to insert nodes for user!");
 
-        let (_, token) = state
+        let (refresh_token, token) = state
             .user_repository
             .create_session(user_entity.id)
             .expect("Failed to create token");
@@ -78,6 +79,7 @@ impl TestUserEntity {
             username,
             password,
             keys,
+            refresh_token,
             token,
         }
     }

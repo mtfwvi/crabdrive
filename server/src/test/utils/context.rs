@@ -10,8 +10,10 @@ use std::sync::Arc;
 
 use axum_test::TestServer;
 use bytes::Bytes;
+use crabdrive_common::uuid::UUID;
 use rand::{Rng, distr::Alphanumeric};
 use sha2::{Digest, Sha256};
+use tracing::Level;
 
 pub struct TestContext {
     pub server: Arc<TestServer>,
@@ -25,13 +27,22 @@ pub struct TestContext {
 
 impl TestContext {
     pub async fn new(amount_users: u32) -> Self {
-        let config = AppConfig::test();
+        let mut config = AppConfig::test();
+        // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
+        config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
+
         let (router, state) = crate::http::server::create_app(config);
 
         let server = TestServer::new(router).expect("Failed to create test server!");
         let arc = Arc::new(server);
 
         let mut users = Vec::with_capacity(amount_users as usize);
+
+        tracing_subscriber::fmt()
+            .with_max_level(Level::TRACE)
+            .with_test_writer()
+            .try_init()
+            .ok();
 
         for _ in 0..amount_users {
             let user = TestUserEntity::new(arc.clone(), state.clone()).await;

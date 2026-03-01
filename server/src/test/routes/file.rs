@@ -13,7 +13,6 @@ use crabdrive_common::uuid::UUID;
 use axum::http::StatusCode;
 use pretty_assertions::assert_eq;
 
-
 #[tokio::test]
 pub async fn test_create_file() {
     let ctx = TestContext::new(1).await;
@@ -303,8 +302,6 @@ pub async fn test_create_file_and_not_upload_all_chunks() {
             .bytes(bytes)
             .await;
 
-        dbg!(&request);
-
         assert_eq!(request.status_code(), StatusCode::CREATED);
     }
 
@@ -586,4 +583,73 @@ pub async fn test_parent_metadata_mismatch() {
         .await;
 
     assert_eq!(request.status_code(), StatusCode::CONFLICT);
+}
+
+#[tokio::test]
+pub async fn test_update_file() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let file = user1.generate_random_file().await;
+
+    let update_file_body = PostUpdateFileRequest {
+        file_iv: IV::random(),
+        chunk_count: 5,
+    };
+
+    let request = user1
+        .post(routes::node::file::update(file.id))
+        .json(&update_file_body)
+        .await;
+
+    assert_eq!(request.status_code(), StatusCode::OK);
+
+    let PostUpdateFileResponse::Ok(rev) = request.json() else {
+        panic!("Invalid HTTP status code!");
+    };
+
+    assert_eq!(rev.chunk_count, 5);
+}
+
+#[tokio::test]
+pub async fn test_update_invalid_file() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let update_file_body = PostUpdateFileRequest {
+        file_iv: IV::random(),
+        chunk_count: 5,
+    };
+
+    let request = user1
+        .post(routes::node::file::update(UUID::random()))
+        .json(&update_file_body)
+        .await;
+
+    assert_eq!(request.status_code(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+pub async fn test_update_folder_as_file() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let folder = user1.generate_random_folder().await;
+
+    let update_file_body = PostUpdateFileRequest {
+        file_iv: IV::random(),
+        chunk_count: 5,
+    };
+
+    let request = user1
+        .post(routes::node::file::update(folder.id))
+        .json(&update_file_body)
+        .await;
+
+    assert_eq!(request.status_code(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+pub async fn test_get_file_versions() {
+
 }

@@ -17,7 +17,6 @@ pub enum PatchNodeResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeResponse {
     Ok,
-    BadRequest,
     NotFound,
     Conflict,
 }

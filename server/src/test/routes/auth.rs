@@ -1,10 +1,14 @@
+use std::time::Duration;
+
+use axum_extra::extract::cookie::Cookie;
+use crabdrive_common::payloads::auth::response::refresh::PostRefreshResponse;
 use crabdrive_common::user::UserKeys;
 
-use crabdrive_common::routes;
 use crabdrive_common::payloads::auth::{
     request::{login::*, register::*},
     response::{info::*, login::*, register::*},
 };
+use crabdrive_common::routes;
 
 use crate::test::utils::TestContext;
 
@@ -93,6 +97,25 @@ pub async fn test_login() {
 }
 
 #[tokio::test]
+pub async fn test_login_with_wrong_password() {
+    let ctx = TestContext::new(1).await;
+
+    let user = ctx.get_user(0);
+    let login_body = PostLoginRequest {
+        username: user.username.clone(),
+        password: TestContext::random_text(),
+    };
+
+    let login_request = ctx
+        .server
+        .post(&routes::auth::login())
+        .json(&login_body)
+        .await;
+
+    login_request.assert_status_unauthorized();
+}
+
+#[tokio::test]
 pub async fn test_register_account_and_login() {
     let ctx = TestContext::new(1).await;
 
@@ -142,40 +165,154 @@ pub async fn test_user_info() {
     let ctx = TestContext::new(1).await;
 
     let user = ctx.get_user(0);
-    let info_request = user.get(&routes::auth::info())
-        .await;
+    let info_request = user.get(&routes::auth::info()).await;
 
     let info_response = match info_request.json::<GetSelfInfoResponse>() {
         GetSelfInfoResponse::Ok(self_user_info) => self_user_info,
     };
 
     info_request.assert_status_ok();
-    assert_eq!(info_response, SelfUserInfo {
-        user_id: user.id,
-        username: user.username.clone(),
-    });
+    assert_eq!(
+        info_response,
+        SelfUserInfo {
+            user_id: user.id,
+            username: user.username.clone(),
+        }
+    );
 }
 
 #[tokio::test]
 pub async fn test_missing_token() {
     let ctx = TestContext::new(1).await;
 
-    let info_request = ctx.server
-        .get(&routes::auth::info())
-        .await;
+    let info_request = ctx.server.get(&routes::auth::info()).await;
 
     info_request.assert_status_unauthorized();
-    // TODO: Check response body
 }
 
 #[tokio::test]
 pub async fn test_wrong_token() {
     let ctx = TestContext::new(1).await;
 
-    let info_request = ctx.server
+    let info_request = ctx
+        .server
         .get(&routes::auth::info())
         .authorization_bearer("CrabdriveIsBest")
         .await;
 
     info_request.assert_status_unauthorized();
+}
+
+#[tokio::test]
+pub async fn test_logout() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let logout_request = user1.post(routes::auth::logout()).await;
+    logout_request.assert_status_ok();
+
+    let info_request = user1.get(&routes::auth::info()).await;
+    info_request.assert_status_unauthorized();
+}
+
+#[tokio::test]
+pub async fn test_logout_without_authorization() {
+    let ctx = TestContext::new(1).await;
+
+    let request = ctx.server.post(&routes::auth::logout()).await;
+
+    request.assert_status_unauthorized();
+}
+
+#[tokio::test]
+pub async fn test_jwt_reusal_after_logout() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let logout_request = user1.post(routes::auth::logout()).await;
+    logout_request.assert_status_ok();
+}
+
+#[tokio::test]
+pub async fn test_refresh_token() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let request = user1
+        .post(routes::auth::refresh())
+        .add_cookie(Cookie::new("refresh_token", user1.refresh_token.clone()))
+        .await;
+
+    request.assert_status_ok();
+
+    let response = match request.json::<PostRefreshResponse>() {
+        PostRefreshResponse::Ok(refresh_body) => refresh_body,
+        PostRefreshResponse::Err => panic!("Wrong status code"),
+    };
+
+    assert_ne!(response.bearer_token, user1.token);
+
+    let refresh_token = request.cookie("refresh_token");
+
+    assert!(refresh_token.secure().expect("Failed to check cookie"));
+    assert_eq!(
+        refresh_token.path().expect("Failed to check cookie"),
+        routes::auth::ROUTE_REFRESH
+    );
+    assert!(refresh_token.http_only().expect("Failed to check cookie"));
+}
+
+#[tokio::test]
+pub async fn test_refresh_token_reusal_in_grace_period() {
+    let ctx = TestContext::new(1).await;
+    let user1 = ctx.get_user(0);
+
+    let request = user1
+        .post(routes::auth::refresh())
+        .add_cookie(Cookie::new("refresh_token", user1.refresh_token.clone()))
+        .await;
+
+    request.assert_status_ok();
+
+    let response = match request.json::<PostRefreshResponse>() {
+        PostRefreshResponse::Ok(refresh_body) => refresh_body,
+        PostRefreshResponse::Err => panic!("Wrong status code"),
+    };
+
+    assert_ne!(response.bearer_token, user1.token);
+
+    let refresh_token = request.cookie("refresh_token");
+
+    assert!(refresh_token.secure().expect("Failed to check cookie"));
+    assert_eq!(
+        refresh_token.path().expect("Failed to check cookie"),
+        routes::auth::ROUTE_REFRESH
+    );
+    assert!(refresh_token.http_only().expect("Failed to check cookie"));
+
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    let request = user1
+        .post(routes::auth::refresh())
+        // Reuse old refresh token
+        .add_cookie(Cookie::new("refresh_token", user1.refresh_token.clone()))
+        .await;
+
+    request.assert_status_ok();
+
+    let response = match request.json::<PostRefreshResponse>() {
+        PostRefreshResponse::Ok(refresh_body) => refresh_body,
+        PostRefreshResponse::Err => panic!("Wrong status code"),
+    };
+
+    assert_ne!(response.bearer_token, user1.token);
+
+    let refresh_token = request.cookie("refresh_token");
+
+    assert!(refresh_token.secure().expect("Failed to check cookie"));
+    assert_eq!(
+        refresh_token.path().expect("Failed to check cookie"),
+        routes::auth::ROUTE_REFRESH
+    );
+    assert!(refresh_token.http_only().expect("Failed to check cookie"));
 }

@@ -4,7 +4,7 @@ use crate::http::{AppConfig, AppState, routes};
 
 
 use axum::http::StatusCode;
-use axum::http::header::{self, AUTHORIZATION, CONTENT_TYPE};
+use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
 use axum::{Router, middleware};
 use axum::response::Response;
 use bytes::Bytes;
@@ -19,7 +19,7 @@ use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
     let ctrl_c = async {
-        signal::ctrl_c()
+        tokio::signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");
     };
