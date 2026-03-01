@@ -38,8 +38,8 @@ pub async fn _login_user(username: &str, password: &str) {
 
 #[cfg(debug_assertions)]
 #[wasm_bindgen]
-pub async fn _register_user(username: &str, password: &str) {
-    let result = register(username, password).await;
+pub async fn _register_user(username: &str, password: &str, invite_code: &str) {
+    let result = register(username, password, invite_code).await;
     if result.is_err() {
         tracing::error!("Failed to register: {:?}", result);
     }

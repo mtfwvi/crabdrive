@@ -12,6 +12,7 @@ use crabdrive_common::routes;
 
 use crate::test::utils::TestContext;
 
+use crate::DEFAULT_INVITE_CODE;
 use axum::http::StatusCode;
 
 #[tokio::test]
@@ -22,6 +23,7 @@ pub async fn test_register() {
         username: TestContext::random_text(),
         password: TestContext::random_text(),
         keys: UserKeys::nil(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
     };
 
     let register_response = ctx
@@ -41,6 +43,7 @@ pub async fn test_register_with_conflicting_username() {
         username: TestContext::random_text(),
         password: TestContext::random_text(),
         keys: UserKeys::nil(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
     };
 
     let register_response = ctx
@@ -127,6 +130,7 @@ pub async fn test_register_account_and_login() {
         username: username.clone(),
         password: password.clone(),
         keys: keys.clone(),
+        invite_code: DEFAULT_INVITE_CODE.to_string(),
     };
 
     let register_response = ctx

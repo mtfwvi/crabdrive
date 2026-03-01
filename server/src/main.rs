@@ -8,12 +8,16 @@ mod user;
 mod test;
 
 use clap::{Arg, Command, crate_version, value_parser};
-use tracing::trace;
+use tracing::{error, trace};
 use tracing_subscriber::{filter::LevelFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use std::io::Write;
 
 use crate::http::{AppConfig, server};
+
+pub const DEFAULT_JWT_SECRET: &str = "not_so_secret";
+pub const DEFAULT_INVITE_CODE_HASH: &str = "cf99fdbe0e5915c6b687d2b85c15ab50c9bd4c3752fafce5f46c72c79c5a75cafb4e6514cffc95254176e52411b6f8506aacfce9c32c12437ae575121111e3d9";
+pub const DEFAULT_INVITE_CODE: &str = "crabdrive";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -77,6 +81,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 _ => unreachable!("How the hell did you do that?"),
             })
             .init();
+    }
+
+    if config.auth.jwt_secret.eq(DEFAULT_JWT_SECRET) {
+        error!("USING DEFAULT_JWT_SECRET. this is not secret so it should be changed")
+    }
+
+    if config.auth.invite_code_hash.eq(DEFAULT_INVITE_CODE_HASH) {
+        error!("USING default invite code. this is not secret so it should be changed")
     }
 
     trace!("\n{}", config);

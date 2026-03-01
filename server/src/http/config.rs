@@ -3,6 +3,7 @@ use crate::http::config::confique_database_config_layer::DatabaseConfigLayer;
 use crate::http::config::confique_log_config_layer::LogConfigLayer;
 use crate::http::config::confique_server_config_layer::ServerConfigLayer;
 use crate::http::config::confique_storage_config_layer::StorageConfigLayer;
+use crate::{DEFAULT_INVITE_CODE_HASH, DEFAULT_JWT_SECRET};
 use confique::Config;
 use serde::{Deserialize, Serialize};
 use tracing_subscriber::{Layer, Registry};
@@ -172,6 +173,10 @@ pub struct AuthConfig {
     /// **Default**: `86400` (one day)
     #[config(env = "JWT_EXPIRATION_PERIOD")]
     pub jwt_expiration_period: i64,
+
+    /// invite code used to register
+    #[config(env = "INVITE_CODE_HASH")]
+    pub invite_code_hash: String,
 }
 
 type ConfLayer = <AppConfig as Config>::Layer;
@@ -209,15 +214,12 @@ impl AppConfig {
                 } else {
                     "WARN".to_string()
                 }),
-                targets: Some(if cfg!(debug_assertions) {
-                    vec![":stdout:".to_string()]
-                } else {
-                    vec!["/var/log/crabdrive/".to_string()]
-                }),
+                targets: Some(vec![":stdout:".to_string()]),
             },
             auth: AuthConfigLayer {
-                jwt_secret: Some("not_so_secret".to_string()),
+                jwt_secret: Some(DEFAULT_JWT_SECRET.to_string()),
                 jwt_expiration_period: Some(86400),
+                invite_code_hash: Some(DEFAULT_INVITE_CODE_HASH.to_string()),
             },
         }
     }
@@ -245,6 +247,7 @@ impl AppConfig {
                 targets: vec![":stdout:".into()],
             },
             auth: AuthConfig {
+                invite_code_hash: DEFAULT_INVITE_CODE_HASH.to_string(),
                 jwt_secret: "crabdrive_test".into(),
                 jwt_expiration_period: 86400,
             },

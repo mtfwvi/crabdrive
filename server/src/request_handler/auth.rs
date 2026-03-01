@@ -10,7 +10,6 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
-
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
@@ -18,6 +17,7 @@ use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
 use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
 use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
+use sha2::Digest;
 
 use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
 use crabdrive_common::payloads::auth::response::register::{
@@ -98,9 +98,28 @@ pub async fn post_register(
 ) -> (StatusCode, Json<PostRegisterResponse>) {
     let username = payload.username;
     let password = payload.password;
+    let invite_code = payload.invite_code;
     let keys = payload.keys;
 
     //TODO maybe check for weird characters in usernames
+
+    if !username.chars().all(char::is_alphanumeric) {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostRegisterResponse::Conflict(
+                RegisterConflictReason::IllegalUsername,
+            )),
+        );
+    }
+
+    let invite_code_hash = format!("{:02x}", sha2::Sha512::digest(invite_code.as_bytes()));
+
+    if !invite_code_hash.eq(&state.config.auth.invite_code_hash) {
+        return (
+            StatusCode::FORBIDDEN,
+            Json(PostRegisterResponse::Unauthorized),
+        );
+    }
 
     if state
         .user_repository
