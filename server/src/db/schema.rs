@@ -78,5 +78,6 @@ diesel::table! {
     }
 }
 
+diesel::joinable!(Revision -> Node (file_id));
 diesel::allow_tables_to_appear_in_same_query!(User, RefreshToken);
 diesel::allow_tables_to_appear_in_same_query!(Revision, Node, User, Share);

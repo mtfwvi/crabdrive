@@ -14,6 +14,7 @@ chrono = { workspace = true }
 clap = { workspace = true, features = ["cargo"] }
 confique = { workspace = true, features = ["toml"] }
 crabdrive-common = { workspace = true, features = ["server"] }
+dashmap = { workspace = true }
 diesel = { workspace = true, default-features = true, features = ["sqlite", "r2d2", "chrono", "returning_clauses_for_sqlite_3_35"] }
 diesel_migrations = { workspace = true }
 dotenvy = { workspace = true }
@@ -38,3 +39,4 @@ sha2 = { workspace = true }
 axum-test = { workspace = true }
 pretty_assertions = { workspace = true }
 rand = { workspace = true }
+test-case = { workspace = true }

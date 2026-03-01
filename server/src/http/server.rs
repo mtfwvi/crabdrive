@@ -43,8 +43,8 @@ async fn graceful_shutdown(state: AppState) {
     shutdown(state).await;
 }
 
-pub fn create_app(config: AppConfig) -> (Router, AppState) {
-    let state = AppState::new(config);
+pub async fn create_app(config: AppConfig) -> (Router, AppState) {
+    let state = AppState::new(config).await;
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission
         .allow_origin(tower_http::cors::Any)
@@ -61,7 +61,7 @@ pub fn create_app(config: AppConfig) -> (Router, AppState) {
 }
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
-    let (app, state) = create_app(config.clone());
+    let (app, state) = create_app(config.clone()).await;
     let db_pool = state.db_pool.clone();
 
     let addr = config.addr();

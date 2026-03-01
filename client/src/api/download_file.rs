@@ -41,6 +41,7 @@ pub async fn download_file(node: DecryptedNode, revision: Option<FileRevision>) 
 
     let mut chunks = Vec::with_capacity(revision.chunk_count as usize);
 
+    web_sys::console::time_with_label("Download time");
     for i in 1..=revision.chunk_count {
         let decrypted_chunk_result =
             download_chunk_and_decrypt(node.id, &revision, &file_key, i, &token)
@@ -48,6 +49,7 @@ pub async fn download_file(node: DecryptedNode, revision: Option<FileRevision>) 
                 .inspect_err(|e| tracing::error!("Failed to download chunks: {}", e))?;
         chunks.push(decrypted_chunk_result);
     }
+    web_sys::console::time_end_with_label("Download time");
 
     let name = match &node.metadata {
         NodeMetadata::V1(n) => &n.name,
