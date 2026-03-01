@@ -12,4 +12,15 @@ Wherever possible, we wrote unit tests to test small parts of our code.
 Some tests in the client required a browser environment (especially integration with browser apis). We used `wasm_bindgen_test` to execute those tests in the browser
 
 ## Server tests
-The request handlers were tested using `axum-test` in `server/src/test/`
+
+### Request Handler
+
+The request handlers in the server were tested using `axum-test` in `server/src/test/`. The tests make requests against a mock server, and we compare the expected result manually. The payload for requests is (as far as possible) randomly generated.
+
+### Database Functions
+
+Because Diesel aims to provide strong compile-time safety, we test database operations primarily through integration via the request handlers.
+
+### Virtual File System
+
+Dedicated storage backend tests for the VFS are maintained in `server/src/test/storage/`.
