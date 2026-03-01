@@ -214,11 +214,7 @@ impl AppConfig {
                 } else {
                     "WARN".to_string()
                 }),
-                targets: Some(if cfg!(debug_assertions) {
-                    vec![":stdout:".to_string()]
-                } else {
-                    vec![":stdout:".to_string()]
-                }),
+                targets: Some(vec![":stdout:".to_string()]),
             },
             auth: AuthConfigLayer {
                 jwt_secret: Some(DEFAULT_JWT_SECRET.to_string()),

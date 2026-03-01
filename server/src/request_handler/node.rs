@@ -168,7 +168,22 @@ pub async fn post_move_node(
         );
     }
 
-    if to_node.owner_id != current_user.id || from_node.owner_id != current_user.id {
+    let access = [
+        state
+            .node_repository
+            .has_access(to_node.id, current_user.id)
+            .expect("db error"),
+        state
+            .node_repository
+            .has_access(from_node.id, current_user.id)
+            .expect("db error"),
+        state
+            .node_repository
+            .has_access(node.id, current_user.id)
+            .expect("db error"),
+    ];
+
+    if access.iter().any(|x| !x) {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
