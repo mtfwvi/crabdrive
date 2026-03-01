@@ -19,6 +19,7 @@ use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHasher};
 use argon2::{PasswordHash, PasswordVerifier};
 use chrono::{DateTime, Local, TimeDelta, Utc};
+use crabdrive_common::da;
 use diesel::Connection;
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
 use nanoid::nanoid;
@@ -147,6 +148,7 @@ impl UserRepository for UserRepositoryImpl {
             username: username.to_string(),
             password_hash,
             storage_limit,
+            storage_used: da!(0 B),
             // Currently unused. Maybe useful for admin routes.
             encryption_uninitialized: false,
             master_key: keys.master_key,

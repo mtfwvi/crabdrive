@@ -1,19 +1,21 @@
-CREATE TABLE User (
-    id                          TEXT        NOT NULL PRIMARY KEY,
-    user_type                   TEXT        NOT NULL CHECK (user_type IN ('ADMIN', 'USER', 'RESTRICTED')),
-    username                    TEXT        NOT NULL UNIQUE,
-    password_hash               TEXT        NOT NULL,
-    storage_limit               INTEGER     NOT NULL,
-    created_at                  TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    encryption_uninitialized    INTEGER     NOT NULL DEFAULT 0,
-    master_key                  BLOB        NOT NULL,
-    private_key                 BLOB        NOT NULL,
-    public_key                  BLOB        NOT NULL,
-    root_key                    BLOB        NOT NULL,
+CREATE TABLE User
+(
+    id                       TEXT      NOT NULL PRIMARY KEY,
+    user_type                TEXT      NOT NULL CHECK (user_type IN ('ADMIN', 'USER', 'RESTRICTED')),
+    username                 TEXT      NOT NULL UNIQUE,
+    password_hash            TEXT      NOT NULL,
+    storage_limit            INTEGER   NOT NULL,
+    storage_used             INTEGER   NOT NULL,
+    created_at               TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    encryption_uninitialized INTEGER   NOT NULL DEFAULT 0,
+    master_key               BLOB      NOT NULL,
+    private_key              BLOB      NOT NULL,
+    public_key               BLOB      NOT NULL,
+    root_key                 BLOB      NOT NULL,
     -- DEFERRABLE INITIALLY DEFERRED only checks foreign key constraint on transaction end (see https://sqlite.org/foreignkeys.html)
-    root_node                   TEXT            NULL REFERENCES Node(id) DEFERRABLE INITIALLY DEFERRED,
-    trash_key                   BLOB        NOT NULL,
-    trash_node                  TEXT            NULL REFERENCES Node(id) DEFERRABLE INITIALLY DEFERRED
+    root_node                TEXT      NULL REFERENCES Node (id) DEFERRABLE INITIALLY DEFERRED,
+    trash_key                BLOB      NOT NULL,
+    trash_node               TEXT      NULL REFERENCES Node (id) DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE TABLE RefreshToken (

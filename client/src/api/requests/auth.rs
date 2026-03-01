@@ -1,11 +1,13 @@
 use anyhow::Result;
+use crabdrive_common::payloads::auth::response::info::SelfUserInfo;
 use crabdrive_common::payloads::auth::{
     request::{login::PostLoginRequest, register::PostRegisterRequest},
     response::{login::PostLoginResponse, register::PostRegisterResponse},
 };
+use crabdrive_common::routes;
 
 use crate::{
-    api::requests::{RequestBody, RequestMethod, request, string_from_response},
+    api::requests::{RequestBody, RequestMethod, json_api_request, request, string_from_response},
     utils,
 };
 
@@ -22,7 +24,7 @@ pub async fn post_login(body: PostLoginRequest) -> Result<PostLoginResponse> {
 }
 
 pub async fn post_register(body: PostRegisterRequest) -> Result<PostRegisterResponse> {
-    let url = crabdrive_common::routes::auth::register();
+    let url = routes::auth::register();
     let body = RequestBody::Json(serde_json::to_string(&body)?);
 
     let response = request(&url, RequestMethod::POST, body, None, true).await?;
@@ -34,7 +36,7 @@ pub async fn post_register(body: PostRegisterRequest) -> Result<PostRegisterResp
 }
 
 pub async fn post_logout() -> Result<()> {
-    let url = crabdrive_common::routes::auth::logout();
+    let url = routes::auth::logout();
     let token = utils::auth::get_token()?;
     let _ = request(
         &url,
@@ -45,4 +47,9 @@ pub async fn post_logout() -> Result<()> {
     )
     .await?;
     Ok(())
+}
+
+pub async fn get_self_user_info() -> Result<SelfUserInfo> {
+    let url = routes::auth::info();
+    json_api_request(&url, RequestMethod::GET, ()).await
 }

@@ -8,6 +8,7 @@ mod get_accepted_nodes;
 mod get_accessible_path;
 mod get_children;
 mod get_root_node;
+mod get_self_info;
 mod get_shared_node_encryption_key;
 mod get_trash_node;
 mod get_versions;
@@ -38,3 +39,6 @@ pub use move_node::move_node_to_trash;
 
 pub use delete::delete_node_tree;
 pub use delete::empty_trash;
+
+#[allow(unused_imports)]
+pub use get_self_info::get_self_info;
