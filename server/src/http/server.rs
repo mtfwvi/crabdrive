@@ -10,8 +10,7 @@ use bytes::Bytes;
 use http_body_util::Full;
 use std::any::Any;
 use std::io::ErrorKind;
-use tokio::signal;
-use tokio::time::Duration;
+use std::time::Duration;
 use tokio::{task, time};
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
@@ -19,14 +18,14 @@ use tracing::{error, info};
 
 async fn graceful_shutdown(state: AppState) {
     let ctrl_c = async {
-        signal::ctrl_c()
+        tokio::signal::ctrl_c()
             .await
             .expect("failed to install Ctrl+C handler");
     };
 
     #[cfg(unix)]
     let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
             .await;
@@ -120,7 +119,7 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
 }
 
 async fn shutdown(_state: AppState) {
-    info!("Stopping server");
+    tracing::info!("Stopping server");
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html

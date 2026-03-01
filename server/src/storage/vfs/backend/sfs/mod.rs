@@ -1,5 +1,3 @@
-mod test;
-
 use crate::storage::vfs::{FileChunk, FileKey, FileRepository};
 use bytes::BytesMut;
 use crabdrive_common::{da, storage::ChunkIndex};

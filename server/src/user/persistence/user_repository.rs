@@ -238,6 +238,7 @@ impl UserRepository for UserRepositoryImpl {
     fn refresh_session(&self, refresh_token: &str) -> Result<Option<(String, String)>> {
         let mut conn = self.db_pool.get()?;
 
+        // TODO - Should also probably blacklist the JWT here
         let now = Local::now().naive_local();
 
         let refresh_token_hash = Sha256::digest(refresh_token.as_bytes()).to_vec();

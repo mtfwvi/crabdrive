@@ -46,6 +46,17 @@ impl IV {
 
         full_iv
     }
+
+    #[cfg(any(test, feature = "server-tests"))]
+    pub fn random() -> Self {
+        use rand::RngCore;
+
+        let mut rng = rand::rng();
+        let mut iv_buf = [0u8; 12];
+        rng.fill_bytes(&mut iv_buf);
+
+        IV::new(iv_buf)
+    }
 }
 
 pub type IvWithPrefix = [u8; 16];
