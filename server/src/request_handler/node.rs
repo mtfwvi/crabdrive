@@ -3,21 +3,21 @@ use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use crabdrive_common::payloads::node::request::node::{
-    DeleteNodeRequest, PatchNodeRequest, PathConstraints, PostMoveNodeOutOfTrashRequest,
-    PostMoveNodeRequest, PostMoveNodeToTrashRequest,
+    DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
+    PostMoveNodeToTrashRequest,
 };
 use crabdrive_common::payloads::node::response::node::{
     DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse,
-    GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse,
-    PostMoveNodeResponse, PostMoveNodeToTrashResponse,
+    PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
+    PostMoveNodeToTrashResponse,
 };
-use crabdrive_common::storage::FileRevision;
-use crabdrive_common::storage::{EncryptedNode, NodeId};
 use std::collections::VecDeque;
-use tracing::error;
+
+use crabdrive_common::storage::{EncryptedNode, NodeId};
+use crabdrive_common::storage::{FileRevision, NodeType};
 
 pub async fn delete_node(
     current_user: UserEntity,
@@ -50,10 +50,7 @@ pub async fn delete_node(
 
     match state.node_repository.purge_tree_from_trash(node_id) {
         Ok(_) => (StatusCode::OK, Json(DeleteNodeResponse::Ok)),
-        Err(err) => {
-            error!("{}", err);
-            (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict))
-        }
+        Err(_) => (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict)),
     }
 }
 
@@ -134,6 +131,7 @@ pub async fn post_move_node(
     Json(payload): Json<PostMoveNodeRequest>,
 ) -> (StatusCode, Json<PostMoveNodeResponse>) {
     let node = state.node_repository.get_node(node_id).expect("db error");
+
     if node.is_none() {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
@@ -151,6 +149,7 @@ pub async fn post_move_node(
         .node_repository
         .get_node(payload.to_node_id)
         .expect("db error");
+
     let from_node = state
         .node_repository
         .get_node(node.parent_id.expect("node to be moved has no parent"))
@@ -159,17 +158,24 @@ pub async fn post_move_node(
     if to_node.is_none() || from_node.is_none() {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
+
     let (to_node, from_node) = (to_node.unwrap(), from_node.unwrap());
+
+    if to_node.node_type != NodeType::Folder {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(PostMoveNodeResponse::BadRequest),
+        );
+    }
 
     if to_node.owner_id != current_user.id || from_node.owner_id != current_user.id {
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
-    if to_node.metadata_change_counter != payload.to_node_change_counter {
-        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
-    }
-
-    if from_node.metadata_change_counter != payload.from_node_change_counter {
+    if from_node.metadata_change_counter != payload.from_node_change_counter
+        || to_node.metadata_change_counter != payload.to_node_change_counter
+    {
+        // TODO - This is not thread-safe
         return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
     }
 
@@ -230,14 +236,16 @@ pub async fn post_move_node_to_trash(
     let from_node = from_node.unwrap();
     let trash_node = trash_node.unwrap();
 
-    if trash_node.metadata_change_counter != payload.to_node_change_counter {
+    if trash_node.node_type != NodeType::Folder {
         return (
-            StatusCode::CONFLICT,
-            Json(PostMoveNodeToTrashResponse::Conflict),
+            StatusCode::BAD_REQUEST,
+            Json(PostMoveNodeToTrashResponse::BadRequest),
         );
     }
 
-    if from_node.metadata_change_counter != payload.from_node_change_counter {
+    if trash_node.metadata_change_counter != payload.to_node_change_counter
+        || from_node.metadata_change_counter != payload.from_node_change_counter
+    {
         return (
             StatusCode::CONFLICT,
             Json(PostMoveNodeToTrashResponse::Conflict),
@@ -350,51 +358,6 @@ pub async fn post_move_node_out_of_trash(
     }
 }
 
-pub async fn get_path_between_nodes(
-    current_user: UserEntity,
-    State(state): State<AppState>,
-    path_constraints: Query<PathConstraints>,
-) -> (StatusCode, Json<GetPathBetweenNodesResponse>) {
-    //TODO maybe write recursive sql
-
-    let to_node_id = path_constraints.0.to_id;
-    let from_node_id = path_constraints.0.from_id;
-
-    let path = state
-        .node_repository
-        .get_path_between_nodes(from_node_id, to_node_id)
-        .expect("db error");
-    match path {
-        None => (
-            StatusCode::NO_CONTENT,
-            Json(GetPathBetweenNodesResponse::NoContent),
-        ),
-        Some(path_entites) => {
-            if !state
-                .node_repository
-                .has_access(path_entites[0].id, current_user.id)
-                .expect("db error")
-                || !state
-                    .node_repository
-                    .has_access(path_entites.last().unwrap().id, current_user.id)
-                    .expect("db error")
-            {
-                return (
-                    StatusCode::NOT_FOUND,
-                    Json(GetPathBetweenNodesResponse::NotFound),
-                );
-            }
-
-            let path = path_entites
-                .iter()
-                .map(|entity| entity_to_encrypted_node(entity.clone(), &state).expect("db error"))
-                .collect();
-
-            (StatusCode::OK, Json(GetPathBetweenNodesResponse::Ok(path)))
-        }
-    }
-}
-
 pub async fn get_node_children(
     current_user: UserEntity,
     State(state): State<AppState>,
@@ -409,14 +372,23 @@ pub async fn get_node_children(
         );
     }
 
+    let node = node.unwrap();
+
     if !state
         .node_repository
-        .has_access(node.unwrap().id, current_user.id)
+        .has_access(node.id, current_user.id)
         .expect("db error")
     {
         return (
             StatusCode::NOT_FOUND,
             Json(GetNodeChildrenResponse::NotFound),
+        );
+    }
+
+    if node.node_type != NodeType::Folder {
+        return (
+            StatusCode::BAD_REQUEST,
+            Json(GetNodeChildrenResponse::BadRequest),
         );
     }
 
@@ -500,6 +472,7 @@ pub fn entity_to_encrypted_node(
         has_access: state.node_repository.get_access_list(node.id)?,
     })
 }
+
 pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {
     FileRevision {
         id: revision.id,
