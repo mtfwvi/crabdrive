@@ -1,3 +1,6 @@
+# Requirements
+[docs/submission/requirements.md](docs/submission/requirements.md) 
+
 # Deployment
 ### Podman/Docker
 To start the container run `podman compose up --build` / `docker compose up --build`
@@ -12,11 +15,10 @@ Prerequisites:
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
 ```
 git clone https://github.com/mtfwvi/crabdrive
-cargo build --bin crabdrive-server --release`
 cd ./client
 trunk build --release
 cd ..
-./target/release/crabdrive-server
+cargo run --bin crabdrive-server --release
 ```
 
 # Development
