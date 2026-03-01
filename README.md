@@ -47,6 +47,9 @@ The default address is http://127.0.0.1:2722/ or http://localhost:2722/, however
 
 Pressing `Crtl + C` will gracefully shut down the server.
 
+### Registering
+By default, the server requires an invite code to register. This is set to `crabdrive` by default
+
 ### Developement Resources
 
 - [Logging](./docs/developement/server/logging.md)
