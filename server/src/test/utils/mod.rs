@@ -5,7 +5,7 @@ pub mod user;
 
 pub use builder::NodeBuilder;
 pub use context::TestContext;
-pub use user::TestUserEntity;
+pub use entities::TestChunk;
 pub use entities::TestNodeEntity;
 pub use entities::TestRevisionEntity;
-pub use entities::TestChunk;
+pub use user::TestUserEntity;

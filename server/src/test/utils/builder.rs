@@ -1,6 +1,6 @@
+use super::{TestChunk, TestNodeEntity, TestRevisionEntity};
 use crate::http::AppState;
 use crate::storage::vfs::FileChunk;
-use super::{TestChunk, TestNodeEntity, TestRevisionEntity};
 
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
@@ -93,7 +93,9 @@ impl<'a> NodeBuilder<'a> {
             };
 
             let mut vfs = self.state.vfs.write().await;
-            vfs.create_file(&revision.id).await.expect("Failed to create file in VFS");
+            vfs.create_file(&revision.id)
+                .await
+                .expect("Failed to create file in VFS");
 
             for index in 0..chunk_count {
                 let mut bytes = BytesMut::with_capacity(self.chunk_size);
@@ -115,7 +117,9 @@ impl<'a> NodeBuilder<'a> {
                 .expect("Failed to write chunk to VFS");
             }
 
-            vfs.commit_file(&revision.id).await.expect("Failed to commit VFS file");
+            vfs.commit_file(&revision.id)
+                .await
+                .expect("Failed to commit VFS file");
 
             node.current_revision = Some(revision.id);
             self.state

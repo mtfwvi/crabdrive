@@ -2,17 +2,16 @@ use crate::db::operations;
 use crate::http::middleware::logging_middleware;
 use crate::http::{AppConfig, AppState, routes};
 
-
 use axum::http::StatusCode;
 use axum::http::header::{AUTHORIZATION, CONTENT_TYPE};
-use axum::{Router, middleware};
 use axum::response::Response;
+use axum::{Router, middleware};
 use bytes::Bytes;
 use http_body_util::Full;
-use tokio::{task, time};
 use std::any::Any;
 use std::io::ErrorKind;
 use std::time::Duration;
+use tokio::{task, time};
 use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::cors::CorsLayer;
 use tracing::{error, info};
@@ -26,7 +25,7 @@ async fn graceful_shutdown(state: AppState) {
 
     #[cfg(unix)]
     let terminate = async {
-        signal::unix::signal(signal::unix::SignalKind::terminate())
+        tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
             .expect("failed to install signal handler")
             .recv()
             .await;
@@ -85,8 +84,6 @@ pub async fn start(config: AppConfig) -> Result<(), ()> {
     }?;
 
     info!("Server running on http://{}", &addr);
-
-
 
     task::spawn(async move {
         let mut duration = time::interval(Duration::from_secs(60 * 15));

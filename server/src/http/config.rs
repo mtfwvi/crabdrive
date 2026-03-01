@@ -238,7 +238,7 @@ impl AppConfig {
                 backend: "C3".to_string(),
                 dir: ":temp:".into(),
                 cache_ahead: 2,
-                cache_size: 300_000_000
+                cache_size: 300_000_000,
             },
             log: LogConfig {
                 minimum_level: "WARN".into(),

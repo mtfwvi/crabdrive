@@ -2,10 +2,7 @@ use crate::test::utils::TestContext;
 
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::iv::IV;
-use crabdrive_common::payloads::node::{
-    request::file::*,
-    response::file::*,
-};
+use crabdrive_common::payloads::node::{request::file::*, response::file::*};
 use crabdrive_common::routes;
 use crabdrive_common::storage::NodeType;
 use crabdrive_common::uuid::UUID;
@@ -566,6 +563,4 @@ pub async fn test_update_folder_as_file() {
 }
 
 #[tokio::test]
-pub async fn test_get_file_versions() {
-
-}
+pub async fn test_get_file_versions() {}
