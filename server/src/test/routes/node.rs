@@ -106,7 +106,7 @@ pub async fn test_patch_node_metadata_mismatch() {
         .json(&payload)
         .await;
 
-    assert_eq!(response.status_code(), StatusCode::CONFLICT); // TODO CHANGE
+    assert_eq!(response.status_code(), StatusCode::CONFLICT);
 }
 
 // delete node
@@ -197,12 +197,12 @@ pub async fn test_move_file_into_file() {
         to_node_change_counter: 0,
     };
 
-    let _ = user
+    let request = user
         .post(routes::node::move_to(file1.id))
         .json(&payload)
         .await;
 
-    assert!(true); // TODO: Implement
+    request.assert_status_bad_request();
 }
 
 #[tokio::test]

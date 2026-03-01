@@ -87,7 +87,7 @@ pub async fn test_login() {
         PostLoginResponse::Unauthorized(_) => panic!("Server returned wrong status code!"),
     };
 
-    assert_eq!(ctx.validate_jwt(&login_responese.bearer_token), true);
+    assert!(ctx.validate_jwt(&login_responese.bearer_token));
     assert_eq!(login_responese.user_keys, Some(user.keys.clone()));
     assert_eq!(login_responese.root_node_id, user.entity.root_node.unwrap());
     assert_eq!(
@@ -156,7 +156,7 @@ pub async fn test_register_account_and_login() {
         PostLoginResponse::Unauthorized(_) => panic!("Server returned wrong status code!"),
     };
 
-    assert_eq!(ctx.validate_jwt(&login_responese.bearer_token), true);
+    assert!(ctx.validate_jwt(&login_responese.bearer_token));
     assert_eq!(login_responese.user_keys, Some(keys.clone()));
 }
 
@@ -165,11 +165,9 @@ pub async fn test_user_info() {
     let ctx = TestContext::new(1).await;
 
     let user = ctx.get_user(0);
-    let info_request = user.get(&routes::auth::info()).await;
+    let info_request = user.get(routes::auth::info()).await;
 
-    let info_response = match info_request.json::<GetSelfInfoResponse>() {
-        GetSelfInfoResponse::Ok(self_user_info) => self_user_info,
-    };
+    let GetSelfInfoResponse::Ok(info_response) = info_request.json::<GetSelfInfoResponse>();
 
     info_request.assert_status_ok();
     assert_eq!(

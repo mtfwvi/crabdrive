@@ -60,7 +60,7 @@ impl TestContext {
     pub fn validate_jwt(&self, token: &str) -> bool {
         self.state
             .user_repository
-            .verify_jwt(&token)
+            .verify_jwt(token)
             .unwrap()
             .is_some()
     }
