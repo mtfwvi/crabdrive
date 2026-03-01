@@ -14,13 +14,13 @@ use thaw::{
 };
 
 #[derive(PartialEq, Clone, Copy)]
-pub(crate) enum LoginType {
+pub enum LoginType {
     Register,
     Login,
 }
 
 #[component]
-pub(crate) fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl IntoView {
+pub fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to_register = navigate.clone();
     let navigate_to_register =

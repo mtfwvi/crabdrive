@@ -23,7 +23,7 @@ pub type SessionId = UUID;
 #[diesel(table_name = crate::db::schema::RefreshToken)]
 #[diesel(belongs_to(UserEntity, foreign_key = user_id))]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub(crate) struct RefreshTokenEntity {
+pub struct RefreshTokenEntity {
     /// The hash of the token
     pub token: Vec<u8>,
     /// The ID of the user assosciated with the token
@@ -39,7 +39,7 @@ pub(crate) struct RefreshTokenEntity {
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Insertable, AsChangeset, Clone)]
 #[diesel(table_name = crate::db::schema::TokenBlacklist)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
-pub(crate) struct BlacklistedTokenEntity {
+pub struct BlacklistedTokenEntity {
     /// The JTI of the token
     pub id: String,
     /// Date when the tokes

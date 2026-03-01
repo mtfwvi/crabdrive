@@ -17,6 +17,7 @@ pub enum PatchNodeResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeResponse {
     Ok,
+    BadRequest,
     NotFound,
     Conflict,
 }
@@ -24,6 +25,7 @@ pub enum PostMoveNodeResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeToTrashResponse {
     Ok,
+    BadRequest,
     NotFound,
     Conflict,
 }
@@ -31,6 +33,7 @@ pub enum PostMoveNodeToTrashResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum PostMoveNodeOutOfTrashResponse {
     Ok,
+    BadRequest,
     NotFound,
     Conflict,
 }
@@ -43,13 +46,6 @@ pub enum DeleteNodeResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
-pub enum GetPathBetweenNodesResponse {
-    Ok(Vec<EncryptedNode>),
-    NoContent,
-    NotFound,
-}
-
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub enum GetAccessiblePathResponse {
     Ok(Vec<EncryptedNode>),
     NotFound,
@@ -58,5 +54,6 @@ pub enum GetAccessiblePathResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub enum GetNodeChildrenResponse {
     Ok(Vec<EncryptedNode>),
+    BadRequest,
     NotFound,
 }

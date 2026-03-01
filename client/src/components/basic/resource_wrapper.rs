@@ -4,7 +4,7 @@ use std::fmt::Debug;
 use thaw::{Spinner, Text};
 
 #[component]
-pub(crate) fn ResourceWrapper<T, F, V>(
+pub fn ResourceWrapper<T, F, V>(
     resource: LocalResource<Result<T, String>>,
     children: F,
     #[prop(into)] error_text: Signal<String>,

@@ -21,7 +21,7 @@ use crabdrive_common::payloads::node::response::file::{
 };
 use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
 use crabdrive_common::payloads::node::response::node::{
-    GetAccessiblePathResponse, GetNodeResponse, GetPathBetweenNodesResponse,
+    GetAccessiblePathResponse, GetNodeResponse,
 };
 use crabdrive_common::routes;
 use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
@@ -163,103 +163,6 @@ pub async fn test_folder() {
     });
 
     assert_eq!(expected_response, create_folder_response);
-}
-
-#[tokio::test]
-pub async fn test_path_between_nodes() {
-    let server = get_server().await;
-    let (jwt, root_node_id) = login1(&server).await;
-    let create_node_request1 = PostCreateFolderRequest {
-        parent_metadata_version: 0,
-        parent_metadata: random_metadata(),
-        node_metadata: random_metadata(),
-        node_id: NodeId::random(),
-    };
-
-    let create_node_request2 = PostCreateFolderRequest {
-        parent_metadata_version: 0,
-        parent_metadata: random_metadata(),
-        node_metadata: random_metadata(),
-        node_id: NodeId::random(),
-    };
-
-    let create_node_request3 = PostCreateFolderRequest {
-        parent_metadata_version: 1,
-        parent_metadata: random_metadata(),
-        node_metadata: random_metadata(),
-        node_id: NodeId::random(),
-    };
-
-    let create_folder_in_root_url =
-        API_BASE_PATH.to_owned() + &routes::node::folder::create(root_node_id);
-    let create_node_request1_response = server
-        .post(&create_folder_in_root_url)
-        .add_header("Authorization", format!("Bearer {}", jwt))
-        .json(&create_node_request1)
-        .await;
-
-    assert_eq!(
-        create_node_request1_response.status_code(),
-        StatusCode::CREATED
-    );
-
-    let create_folder_url =
-        API_BASE_PATH.to_owned() + &routes::node::folder::create(create_node_request1.node_id);
-
-    let create_node_request2_response = server
-        .post(&create_folder_url)
-        .add_header("Authorization", format!("Bearer {}", jwt))
-        .json(&create_node_request2)
-        .await;
-    assert_eq!(
-        create_node_request2_response.status_code(),
-        StatusCode::CREATED
-    );
-
-    let create_node_request3_response = server
-        .post(&create_folder_in_root_url)
-        .add_header("Authorization", format!("Bearer {}", jwt))
-        .json(&create_node_request3)
-        .await;
-    assert_eq!(
-        create_node_request3_response.status_code(),
-        StatusCode::CREATED
-    );
-
-    let path_between_nodes_url1 = API_BASE_PATH.to_owned()
-        + &routes::node::path_between_nodes(root_node_id, create_node_request2.node_id);
-
-    let path_between_nodes_response1 = server
-        .get(&path_between_nodes_url1)
-        .add_header("Authorization", format!("Bearer {}", jwt))
-        .await;
-
-    let path_between_nodes_url2 = API_BASE_PATH.to_owned()
-        + &routes::node::path_between_nodes(
-            create_node_request3.node_id,
-            create_node_request2.node_id,
-        );
-
-    let path_between_nodes_response2 = server
-        .get(&path_between_nodes_url2)
-        .add_header("Authorization", format!("Bearer {}", jwt))
-        .await;
-
-    match path_between_nodes_response1.json::<GetPathBetweenNodesResponse>() {
-        GetPathBetweenNodesResponse::Ok(path) => {
-            assert_eq!(path[0].id, root_node_id);
-            assert_eq!(path[1].id, create_node_request1.node_id);
-            assert_eq!(path[2].id, create_node_request2.node_id);
-        }
-        _ => {
-            panic!("unexpected response");
-        }
-    }
-
-    assert_eq!(
-        path_between_nodes_response2.json::<GetPathBetweenNodesResponse>(),
-        GetPathBetweenNodesResponse::NoContent
-    );
 }
 
 #[tokio::test]
@@ -542,7 +445,7 @@ pub async fn test_file() {
         .await
         .json();
 
-    let node;
+    let mut node;
     match commit_file_response {
         PostCommitFileResponse::Ok(_node) => node = _node,
         _ => {
@@ -559,6 +462,8 @@ pub async fn test_file() {
         .add_header("Authorization", format!("Bearer {}", jwt))
         .await
         .json();
+
+    node.change_count += 1;
 
     match node_response {
         GetNodeResponse::Ok(same_node_as_before) => {
@@ -679,7 +584,7 @@ pub async fn get_server() -> TestServer {
     // https://stackoverflow.com/questions/58649529/how-to-create-multiple-memory-databases-in-sqlite3
     config.db.path = format!("file:{}?mode=memory&cache=shared", UUID::random());
 
-    let (app, _) = crate::http::server::create_app(config);
+    let (app, _) = crate::http::server::create_app(config).await;
 
     let server = TestServer::new(app).unwrap();
 

@@ -37,6 +37,7 @@ pub async fn get_children(parent: DecryptedNode) -> Result<Vec<DecryptedNode>> {
 
             Ok(decrypted_children)
         }
-        GetNodeChildrenResponse::NotFound => Err(anyhow!("Could not query children: 404")),
+        GetNodeChildrenResponse::NotFound => anyhow::bail!("Could not query children: 404"),
+        GetNodeChildrenResponse::BadRequest => anyhow::bail!("Cannot query children of a file!"),
     }
 }

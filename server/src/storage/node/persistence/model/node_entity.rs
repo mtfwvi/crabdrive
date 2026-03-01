@@ -25,7 +25,7 @@ use serde::{Deserialize, Serialize};
 #[diesel(table_name = crate::db::schema::Node)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 #[diesel(belongs_to(UserEntity, foreign_key = owner_id))]
-pub(crate) struct NodeEntity {
+pub struct NodeEntity {
     pub id: NodeId,
     pub parent_id: Option<NodeId>,
     pub owner_id: UserId,

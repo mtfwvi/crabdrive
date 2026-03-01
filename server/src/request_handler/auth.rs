@@ -184,7 +184,9 @@ pub async fn get_user_info(
 ) -> Json<GetSelfInfoResponse> {
     Json(GetSelfInfoResponse::Ok(SelfUserInfo {
         user_id: user.id,
+        storage_limit: user.storage_limit,
         username: user.username,
+        storage_used: user.storage_used,
     }))
 }
 

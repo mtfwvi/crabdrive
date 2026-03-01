@@ -50,6 +50,7 @@ impl LocalStorage {
         }
     }
 
+    #[allow(unused)]
     pub fn exists(key: &str) -> Result<bool> {
         let storage = Self::get_storage()?;
 
@@ -67,6 +68,7 @@ impl LocalStorage {
             .map_err(|_| anyhow!("Cannot remove from local storage"))
     }
 
+    #[allow(unused)]
     pub fn clear() -> Result<()> {
         let storage = Self::get_storage()?;
         storage

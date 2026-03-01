@@ -25,6 +25,7 @@ enum RequestMethod {
     POST,
     PATCH,
     DELETE,
+    #[cfg(test)]
     PUT,
 }
 
@@ -166,7 +167,6 @@ fn add_header(request: &Request, header: (&str, &str)) -> Result<()> {
     }
 }
 
-//TODO use this for all api requests
 async fn json_api_request<BodyT, ResponseT>(
     url: &str,
     request_method: RequestMethod,

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use thaw::Theme;
 
-pub(crate) fn get_theme(dark: bool) -> Theme {
+pub fn get_theme(dark: bool) -> Theme {
     let brand_colors: HashMap<i32, &str> = HashMap::from([
         (10, "#060201"),
         (20, "#25110F"),

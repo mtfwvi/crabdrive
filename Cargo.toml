@@ -28,6 +28,7 @@ confique = { version = "0.4.0", git = "https://github.com/mtfwvi/confique", bran
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 crabdrive-common = { path = "common" }
+dashmap = "6.1.0"
 diesel = { version = "=2.2.12", default-features = false }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15.7"

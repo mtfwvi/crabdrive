@@ -43,8 +43,8 @@ async fn graceful_shutdown(state: AppState) {
     shutdown(state).await;
 }
 
-pub fn create_app(config: AppConfig) -> (Router, AppState) {
-    let state = AppState::new(config);
+pub async fn create_app(config: AppConfig) -> (Router, AppState) {
+    let state = AppState::new(config).await;
 
     let cors = CorsLayer::new() // TODO: Make more specific before submission
         .allow_origin(tower_http::cors::Any)
@@ -61,7 +61,7 @@ pub fn create_app(config: AppConfig) -> (Router, AppState) {
 }
 
 pub async fn start(config: AppConfig) -> Result<(), ()> {
-    let (app, state) = create_app(config.clone());
+    let (app, state) = create_app(config.clone()).await;
     let db_pool = state.db_pool.clone();
 
     let addr = config.addr();
@@ -124,21 +124,27 @@ async fn shutdown(_state: AppState) {
 }
 
 // copied from here: https://docs.rs/tower-http/latest/tower_http/catch_panic/index.html
-pub(crate) fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
+pub fn handle_panic(err: Box<dyn Any + Send + 'static>) -> Response<Full<Bytes>> {
     let details = if let Some(s) = err.downcast_ref::<String>() {
         s.clone()
     } else if let Some(s) = err.downcast_ref::<&str>() {
         s.to_string()
     } else {
-        "Unknown panic message".to_string()
+        "[Unknown panic message]".to_string()
     };
 
-    error!("panic: {:?}", details);
+    error!("Request handler panicked: {:?}", details);
+
+    let client_details = if cfg!(debug_assertions) {
+        details
+    } else {
+        "Internal Server Error".to_string()
+    };
 
     let body = serde_json::json!({
         "error": {
             "kind": "panic",
-            "details": details,
+            "details": client_details,
         }
     });
     let body = serde_json::to_string(&body).unwrap();

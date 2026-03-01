@@ -4,32 +4,8 @@ use thaw::{
     DialogTitle,
 };
 
-#[derive(Clone)]
-pub struct CustomDialogAction {
-    label: String,
-    button_appearance: ButtonAppearance,
-    disabled: bool,
-    on_click: Callback<()>,
-}
-
-impl CustomDialogAction {
-    pub fn new(
-        label: String,
-        button_appearance: ButtonAppearance,
-        disabled: bool,
-        on_click: Callback<()>,
-    ) -> Self {
-        Self {
-            label,
-            button_appearance,
-            disabled,
-            on_click,
-        }
-    }
-}
-
 #[component]
-pub(crate) fn CustomDialog(
+pub fn CustomDialog(
     #[prop(into)] open: RwSignal<bool>,
     #[prop(into)] title: Signal<String>,
     #[prop(into)] show_cancel: Signal<bool>,

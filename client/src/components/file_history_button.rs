@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance};
 
 #[component]
-pub(crate) fn FileHistoryButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
+pub fn FileHistoryButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
     let file_history_dialog_open = RwSignal::new(false);
 
     view! {

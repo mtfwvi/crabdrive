@@ -5,31 +5,43 @@ use bytes::Bytes;
 use crabdrive_common::storage::{ChunkIndex, RevisionId};
 use thiserror::Error;
 
-#[derive(Error, Debug)]
+#[derive(Error, Debug, Clone)]
 pub enum FileSystemError {
     #[error("File not found.")]
     NotFound,
 
-    #[error("File already committed.")]
-    AlreadyCommitted,
+    #[error("File already exists.")]
+    AlreadyExists,
 
-    #[error("IO Error: {0}")]
-    Io(#[from] std::io::Error),
+    #[error("IO Error: {1} ({0})")]
+    Io(std::io::ErrorKind, String),
+}
+
+impl From<std::io::Error> for FileSystemError {
+    fn from(value: std::io::Error) -> Self {
+        FileSystemError::Io(value.kind(), value.to_string())
+    }
+}
+
+impl From<std::sync::Arc<FileSystemError>> for FileSystemError {
+    fn from(arc_err: std::sync::Arc<FileSystemError>) -> Self {
+        (*arc_err).clone()
+    }
 }
 
 impl IntoResponse for FileSystemError {
     fn into_response(self) -> Response {
         match self {
             FileSystemError::NotFound => (StatusCode::NOT_FOUND, Json(())),
-            FileSystemError::AlreadyCommitted => (StatusCode::BAD_REQUEST, Json(())),
-            FileSystemError::Io(_) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
+            FileSystemError::AlreadyExists => (StatusCode::CONFLICT, Json(())),
+            FileSystemError::Io(_, _) => (StatusCode::INTERNAL_SERVER_ERROR, Json(())),
         }
         .into_response()
     }
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum FileStatus {
+pub enum FileStatus {
     /// Reserved for future usage
     Stale,
     /// File is currently being uploaded
@@ -41,9 +53,9 @@ pub(crate) enum FileStatus {
 }
 
 /// Internal storage key for a file
-pub(crate) type FileKey = RevisionId;
+pub type FileKey = RevisionId;
 
-pub(crate) struct FileChunk {
+pub struct FileChunk {
     pub index: ChunkIndex,
     /// The chunk contents.
     /// The size of the file chunk can be accessed using `FileChunk::data::len()`. It is

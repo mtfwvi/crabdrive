@@ -1,3 +1,4 @@
-pub(crate) mod sfs;
+pub mod c3;
+pub mod sfs;
 
-pub(crate) use sfs::Sfs;
+pub use sfs::Sfs;

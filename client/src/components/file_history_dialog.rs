@@ -13,7 +13,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn FileHistoryDialog(
+pub fn FileHistoryDialog(
     #[prop(into)] open: RwSignal<bool>,
     node: Signal<DecryptedNode>,
 ) -> impl IntoView {

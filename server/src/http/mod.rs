@@ -1,8 +1,8 @@
-pub(crate) mod config;
-pub(crate) mod middleware;
-pub(crate) mod routes;
-pub(crate) mod server;
-pub(crate) mod state;
+pub mod config;
+pub mod middleware;
+pub mod routes;
+pub mod server;
+pub mod state;
 
 pub use config::AppConfig;
 pub use state::AppState;

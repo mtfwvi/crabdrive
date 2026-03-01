@@ -4,8 +4,8 @@ use crate::api::requests::node::{
 use crate::api::{get_accessible_path, get_trash_node};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::encryption::node::encrypt_metadata;
-use anyhow::Result;
 use anyhow::anyhow;
+use anyhow::{Result, bail};
 use crabdrive_common::payloads::node::request::node::MoveNodeData;
 use crabdrive_common::payloads::node::response::node::{
     PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse, PostMoveNodeToTrashResponse,
@@ -58,10 +58,9 @@ pub async fn move_node(
 
     match response {
         PostMoveNodeResponse::Ok => Ok(()),
-        PostMoveNodeResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeResponse::BadRequest => bail!("Cannot move a file into another file!"),
+        PostMoveNodeResponse::NotFound => bail!("One of the nodes referenced could not be found"),
+        PostMoveNodeResponse::Conflict => bail!("Refresh the page and try again!"),
     }
 }
 
@@ -83,10 +82,11 @@ pub async fn move_node_to_trash(node: DecryptedNode) -> Result<()> {
     let response = post_move_node_to_trash(node.id, move_node_data).await?;
     match response {
         PostMoveNodeToTrashResponse::Ok => Ok(()),
-        PostMoveNodeToTrashResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeToTrashResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeToTrashResponse::NotFound => {
+            bail!("one of the nodes referenced could not be found")
+        }
+        PostMoveNodeToTrashResponse::BadRequest => bail!("Cannot move into a file"),
+        PostMoveNodeToTrashResponse::Conflict => bail!("refresh the page and try again"),
     }
 }
 
@@ -98,9 +98,10 @@ pub async fn move_node_out_of_trash(node: DecryptedNode, mut to: DecryptedNode) 
     let response = post_move_node_out_of_trash(node.id, move_node_data).await?;
     match response {
         PostMoveNodeOutOfTrashResponse::Ok => Ok(()),
-        PostMoveNodeOutOfTrashResponse::NotFound => Err(anyhow!(
-            "one of the nodes referenced during the move operation could not be found"
-        )),
-        PostMoveNodeOutOfTrashResponse::Conflict => Err(anyhow!("refresh the page and try again")),
+        PostMoveNodeOutOfTrashResponse::NotFound => {
+            bail!("one of the nodes referenced could not be found")
+        }
+        PostMoveNodeOutOfTrashResponse::BadRequest => bail!("Cannot move into a file"),
+        PostMoveNodeOutOfTrashResponse::Conflict => bail!("refresh the page and try again"),
     }
 }

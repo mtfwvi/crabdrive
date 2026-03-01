@@ -18,7 +18,7 @@ use diesel::QueryDsl;
 use diesel::RunQueryDsl;
 use std::sync::Arc;
 
-pub(crate) trait NodeRepository {
+pub trait NodeRepository {
     fn create_node(
         &self,
         parent: Option<NodeId>,
@@ -150,7 +150,7 @@ impl NodeRepository for NodeRepositoryImpl {
 
     fn update_node(&self, node: &NodeEntity) -> Result<NodeEntity> {
         let mut conn = self.db_pool.get().context("Failed to get db connection")?;
-        update_node(&mut conn, node, None)
+        update_node(&mut conn, node)
             .map_err(|e| anyhow::anyhow!("{}", e))
             .context("Failed to update node")
     }
@@ -209,13 +209,12 @@ impl NodeRepository for NodeRepositoryImpl {
     ) -> Result<()> {
         let mut conn = self.db_pool.get().context("Failed to get db connection")?;
 
-        // to_node must be a folder
         let to_node = select_node(&mut conn, to)
             .context("Failed to select to_node")?
             .context("to_node not found")?;
 
         if to_node.node_type != NodeType::Folder {
-            anyhow::bail!("Cannot move a node into a non-folder node");
+            anyhow::bail!("Cannot move a node into a folder");
         }
 
         // node cannot be moved into one of its own children (i.e. to_node cannot be in the subtree of id)

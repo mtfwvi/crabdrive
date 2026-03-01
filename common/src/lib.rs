@@ -1,5 +1,3 @@
-#![allow(dead_code)] // TODO: Remove before submission
-
 pub mod data;
 pub mod encrypted_metadata;
 pub mod encryption_key;

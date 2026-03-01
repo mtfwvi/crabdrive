@@ -7,7 +7,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn TrashItemRestoreButton(
+pub fn TrashItemRestoreButton(
     node: Signal<DecryptedNode>,
     on_restored: Callback<()>,
 ) -> impl IntoView {
