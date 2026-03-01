@@ -4,7 +4,7 @@ use crate::model::node::DecryptedNode;
 use leptos::prelude::*;
 
 #[component]
-pub(crate) fn TrashProvider<C, V>(children: C) -> impl IntoView
+pub fn TrashProvider<C, V>(children: C) -> impl IntoView
 where
     C: Fn(Signal<DecryptedNode>, Callback<()>) -> V + Send + Sync + 'static,
     V: IntoView + 'static,

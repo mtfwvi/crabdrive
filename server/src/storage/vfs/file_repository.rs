@@ -2,7 +2,7 @@ use crate::storage::vfs::model::{FileChunk, FileKey, FileStatus, FileSystemError
 use crabdrive_common::storage::ChunkIndex;
 
 #[async_trait::async_trait]
-pub(crate) trait FileRepository {
+pub trait FileRepository {
     async fn chunk_exists(&self, key: &FileKey, index: ChunkIndex) -> bool;
     /// Check if a file exists
     async fn file_status(&self, key: &FileKey) -> FileStatus;

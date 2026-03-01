@@ -15,7 +15,7 @@ use thaw::{
 use web_sys::File;
 
 #[component]
-pub(crate) fn ModifyNodeMenu(
+pub fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,

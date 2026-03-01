@@ -6,7 +6,7 @@ use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Icon, Space, SpaceAlign, Text};
 
 #[component]
-pub(crate) fn SharedView(
+pub fn SharedView(
     accepted_nodes: Signal<Vec<DecryptedNode>>,
     request_accepted_nodes_refetch: Callback<()>,
 ) -> impl IntoView {

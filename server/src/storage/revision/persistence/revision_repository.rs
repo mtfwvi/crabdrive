@@ -9,7 +9,7 @@ use crabdrive_common::iv::IV;
 use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
 use std::sync::Arc;
 
-pub(crate) trait RevisionRepository {
+pub trait RevisionRepository {
     /// Creates a new (unfinished) revision, associated with a node.
     fn create_revision(
         &self,

@@ -7,7 +7,7 @@ use thaw::{
 
 // TODO: Extract these kinds of buttons to component with only success and error toast + action content
 #[component]
-pub(crate) fn TrashEmptyButton(on_emptied: Callback<()>) -> impl IntoView {
+pub fn TrashEmptyButton(on_emptied: Callback<()>) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
 
     let add_toast = move |text: String, intent: ToastIntent| {

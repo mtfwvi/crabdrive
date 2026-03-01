@@ -6,7 +6,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn PathBreadcrumb(
+pub fn PathBreadcrumb(
     #[prop(into)] path: Signal<Vec<DecryptedNode>>,
     on_select: Callback<DecryptedNode>,
     #[prop(optional, default = false)] compact: bool,

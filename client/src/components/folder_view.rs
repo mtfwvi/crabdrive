@@ -10,7 +10,7 @@ use leptos_router::hooks::use_navigate;
 use thaw::{Divider, Space};
 
 #[component]
-pub(crate) fn FolderView(
+pub fn FolderView(
     path: Signal<Vec<DecryptedNode>>,
     request_path_refetch: Callback<()>,
 ) -> impl IntoView {

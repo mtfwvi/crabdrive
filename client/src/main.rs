@@ -1,12 +1,12 @@
-#![allow(dead_code)] // TODO: Remove before submission
+//#![allow(dead_code)] // TODO: Remove before submission
 
-pub(crate) mod api;
-pub(crate) mod components;
-pub(crate) mod constants;
-pub(crate) mod model;
-pub(crate) mod pages;
+mod api;
+mod components;
+mod constants;
+mod model;
+mod pages;
 mod theme;
-pub(crate) mod utils;
+mod utils;
 
 use crate::theme::get_theme;
 use leptos::prelude::*;

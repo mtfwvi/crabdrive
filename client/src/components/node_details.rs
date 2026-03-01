@@ -14,7 +14,7 @@ use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, Divider, LayoutSider, Space, Text};
 
 #[derive(PartialEq, Clone, Debug)]
-pub(crate) enum DetailsViewType {
+pub enum DetailsViewType {
     Folder(Box<DecryptedNode>), // parent node
     Shared,
     Trash,
@@ -22,7 +22,7 @@ pub(crate) enum DetailsViewType {
 }
 
 #[component]
-pub(crate) fn NodeDetails(
+pub fn NodeDetails(
     #[prop(into)] node: Signal<DecryptedNode>,
     #[prop(into)] content_type: Signal<DetailsViewType>,
     on_modified: Callback<()>,

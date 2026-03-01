@@ -25,6 +25,7 @@ enum RequestMethod {
     POST,
     PATCH,
     DELETE,
+    #[cfg(test)]
     PUT,
 }
 

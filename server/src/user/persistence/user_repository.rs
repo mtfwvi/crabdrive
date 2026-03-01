@@ -29,7 +29,7 @@ const JWT_EXPIRY: i64 = 60 * 9;
 type Jwt = String;
 type RefreshToken = String;
 
-pub(crate) trait UserRepository {
+pub trait UserRepository {
     /// Create a new user
     fn create_user(
         &self,

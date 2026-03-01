@@ -5,7 +5,7 @@ use leptos::prelude::*;
 use thaw::{Button, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection};
 
 #[component]
-pub(crate) fn TrashItemDeleteButton(
+pub fn TrashItemDeleteButton(
     node: Signal<DecryptedNode>,
     on_deleted: Callback<()>,
 ) -> impl IntoView {

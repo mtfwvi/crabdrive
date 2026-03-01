@@ -5,7 +5,7 @@ use crabdrive_common::storage::FileRevision;
 use leptos::prelude::*;
 
 #[component]
-pub(crate) fn RevisionsProvider<C, V>(node: Signal<DecryptedNode>, children: C) -> impl IntoView
+pub fn RevisionsProvider<C, V>(node: Signal<DecryptedNode>, children: C) -> impl IntoView
 where
     C: Fn(Signal<Vec<FileRevision>>) -> V + Send + Sync + 'static,
     V: IntoView + 'static,

@@ -9,7 +9,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn NodeShareButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
+pub fn NodeShareButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
     let UseClipboardReturn { copy, .. } = use_clipboard();
     let toaster = ToasterInjection::expect_context();
 

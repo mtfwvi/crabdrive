@@ -5,7 +5,7 @@ use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 
 #[component]
-pub(crate) fn PathProvider<C, V>(
+pub fn PathProvider<C, V>(
     #[prop(into)] node_id: Signal<NodeId>,
     children: C,
 ) -> impl IntoView

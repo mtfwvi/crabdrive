@@ -1,10 +1,10 @@
-use crate::api::requests::{RequestMethod, json_api_request};
+use crate::api::requests::{json_api_request, RequestMethod};
 use anyhow::Result;
 use crabdrive_common::payloads::node::request::file::{
     PostCreateFileRequest, PostUpdateFileRequest,
 };
 use crabdrive_common::payloads::node::response::file::{
-    GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
+    PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
 };
 use crabdrive_common::storage::{NodeId, RevisionId};
 
@@ -30,9 +30,4 @@ pub async fn post_commit_file(
 ) -> Result<PostCommitFileResponse> {
     let url = crabdrive_common::routes::node::file::commit(node_id, version_id);
     json_api_request(&url, RequestMethod::POST, ()).await
-}
-
-pub async fn get_file_versions(node_id: NodeId) -> Result<GetVersionsResponse> {
-    let url = crabdrive_common::routes::node::versions(node_id);
-    json_api_request(&url, RequestMethod::GET, ()).await
 }

@@ -4,7 +4,7 @@ use thaw::{Divider, Space, Text, Upload, UploadDragger};
 use web_sys::{File, FileList};
 
 #[component]
-pub(crate) fn FileSelectionDialog(
+pub fn FileSelectionDialog(
     #[prop(into)] open: RwSignal<bool>,
     on_confirm: Callback<Vec<File>>,
     #[prop(into)] title: Signal<String>,
