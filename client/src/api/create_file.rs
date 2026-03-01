@@ -99,7 +99,7 @@ pub async fn create_file(
     match response {
         PostCreateFileResponse::Created(new_file) => {
             parent.metadata = new_parent_metadata;
-            parent.change_count += 1;
+            parent.change_count += 2;
 
             let file_revision = new_file.current_revision;
 
