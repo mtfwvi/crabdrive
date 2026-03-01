@@ -18,7 +18,6 @@ use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, Self
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
 use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
 use sha2::Digest;
-use tracing::error;
 
 use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
 use crabdrive_common::payloads::auth::response::register::{
@@ -114,9 +113,6 @@ pub async fn post_register(
     }
 
     let invite_code_hash = format!("{:02x}", sha2::Sha512::digest(invite_code.as_bytes()));
-
-    error!(invite_code);
-    error!(invite_code_hash);
 
     if !invite_code_hash.eq(&state.config.auth.invite_code_hash) {
         return (

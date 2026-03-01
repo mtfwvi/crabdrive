@@ -217,7 +217,7 @@ impl AppConfig {
                 targets: Some(if cfg!(debug_assertions) {
                     vec![":stdout:".to_string()]
                 } else {
-                    vec!["/var/log/crabdrive/".to_string()]
+                    vec![":stdout:".to_string()]
                 }),
             },
             auth: AuthConfigLayer {

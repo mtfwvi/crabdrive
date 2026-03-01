@@ -84,11 +84,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     if config.auth.jwt_secret.eq(DEFAULT_JWT_SECRET) {
-        error!("USING DEFAULT_JWT_SECRET. this is not so secret so it should be changed")
+        error!("USING DEFAULT_JWT_SECRET. this is not secret so it should be changed")
     }
 
     if config.auth.invite_code_hash.eq(DEFAULT_INVITE_CODE_HASH) {
-        error!("USING default invite code. this is not so secret so it should be changed")
+        error!("USING default invite code. this is not secret so it should be changed")
     }
 
     trace!("\n{}", config);
