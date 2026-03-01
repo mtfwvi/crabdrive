@@ -222,6 +222,35 @@ impl AppConfig {
         }
     }
 
+    /// Default values for test configuration
+    pub fn test() -> AppConfig {
+        AppConfig {
+            env: Environment::Prod,
+            server: ServerConfig {
+                address: "127.0.0.1".parse().unwrap(),
+                port: 2722,
+            },
+            db: DatabaseConfig {
+                path: ":memory:".into(),
+                pool_size: 5,
+            },
+            storage: StorageConfig {
+                backend: "C3".to_string(),
+                dir: ":temp:".into(),
+                cache_ahead: 2,
+                cache_size: 300_000_000,
+            },
+            log: LogConfig {
+                minimum_level: "WARN".into(),
+                targets: vec![":stdout:".into()],
+            },
+            auth: AuthConfig {
+                jwt_secret: "crabdrive_test".into(),
+                jwt_expiration_period: 86400,
+            },
+        }
+    }
+
     pub fn load(configfile: &std::path::PathBuf) -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
 

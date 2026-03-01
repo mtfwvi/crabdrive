@@ -51,7 +51,7 @@ impl AppState {
                 "C3" => Arc::new(RwLock::new(
                     C3::new(
                         path,
-                        pool.clone(),
+                        Arc::new(pool.clone()),
                         config.storage.cache_size,
                         config.storage.cache_ahead,
                     )

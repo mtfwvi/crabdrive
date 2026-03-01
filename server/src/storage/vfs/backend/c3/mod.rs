@@ -1,5 +1,5 @@
-mod model;
-mod utils;
+pub mod model;
+pub mod utils;
 
 use crate::db::connection::DbPool;
 use crate::db::operations::revision::get_all_uncommitted_revisions;
@@ -35,7 +35,7 @@ pub struct C3 {
 impl C3 {
     pub async fn new(
         storage_directory: PathBuf,
-        db_pool: DbPool,
+        db_pool: Arc<DbPool>,
         cache_size: usize,
         cache_ahead: u8,
     ) -> Self {

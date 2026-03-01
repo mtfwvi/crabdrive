@@ -6,13 +6,16 @@ edition = "2024"
 [features]
 default = []
 server = ["dep:diesel"]
+server-tests = ["dep:diesel", "dep:rand"]
 
 [dev-dependencies]
 pretty_assertions = { workspace = true }
 test-case = { workspace = true }
+rand = { workspace = true }
 
 [dependencies]
 chrono = { workspace = true, features = ["serde"] }
 diesel = { workspace = true, features = ["sqlite"], optional = true }
+rand = { workspace = true, optional= true }
 serde = { workspace = true }
 uuid = { workspace = true }
