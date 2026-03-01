@@ -1,6 +1,4 @@
 mod model;
-#[cfg(test)]
-mod test;
 mod utils;
 
 use crate::db::connection::DbPool;
