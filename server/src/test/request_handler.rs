@@ -62,9 +62,8 @@ pub fn random_metadata() -> EncryptedMetadata {
 pub async fn test_register() {
     let server = get_server().await;
 
-    let username = "test_user";
+    let username = "testuser";
     let password = "test_password";
-    let invite_code = DEFAULT_INVITE_CODE;
 
     let register = PostRegisterRequest {
         username: username.to_string(),
