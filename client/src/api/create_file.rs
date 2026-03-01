@@ -117,7 +117,7 @@ pub async fn create_file(
                 tracing::error!("IV Mismatch!");
                 return Err(anyhow!("The server is lying to us"));
             }
-            
+
             upload_file(
                 file,
                 metadata_encryption_key,

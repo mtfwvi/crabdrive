@@ -5,10 +5,7 @@ use crabdrive_common::storage::NodeId;
 use leptos::prelude::*;
 
 #[component]
-pub fn PathProvider<C, V>(
-    #[prop(into)] node_id: Signal<NodeId>,
-    children: C,
-) -> impl IntoView
+pub fn PathProvider<C, V>(#[prop(into)] node_id: Signal<NodeId>, children: C) -> impl IntoView
 where
     C: Fn(Signal<Vec<DecryptedNode>>, Callback<()>) -> V + Send + Sync + 'static,
     V: IntoView + 'static,

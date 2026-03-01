@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
-use axum::Json;
 use crabdrive_common::payloads::admin::request::user::PostUserRequest;
 use crabdrive_common::payloads::admin::response::user::{
     DeleteUserResponse, GetUserResponse, PostUserResponse, UserInfo,
