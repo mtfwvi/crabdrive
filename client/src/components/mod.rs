@@ -1,6 +1,6 @@
-pub(crate) mod account_sider;
-pub(crate) mod basic;
-pub(crate) mod content_frame;
+pub mod account_sider;
+pub mod basic;
+pub mod content_frame;
 
 mod data_provider;
 mod file_creation_button;

@@ -1,3 +1,9 @@
+########
+
+# this document was used at the start when designing the api. It was not updated
+# and has no similarities with the current api
+
+########
 openapi: 3.1.0
 info:
   title: Crabdrive server

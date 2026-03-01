@@ -26,7 +26,7 @@ pub struct MetadataV1 {
 }
 
 impl NodeMetadata {
-    pub(crate) fn v1(
+    pub fn v1(
         name: String,
         last_modified: NaiveDateTime,
         created: NaiveDateTime,

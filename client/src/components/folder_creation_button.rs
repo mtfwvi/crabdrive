@@ -6,7 +6,7 @@ use leptos::prelude::*;
 use thaw::{Button, Toast, ToastIntent, ToastOptions, ToastTitle, ToasterInjection};
 
 #[component]
-pub(crate) fn FolderCreationButton(
+pub fn FolderCreationButton(
     #[prop(into)] parent_node: Signal<DecryptedNode>,
     on_created: Callback<()>,
 ) -> impl IntoView {

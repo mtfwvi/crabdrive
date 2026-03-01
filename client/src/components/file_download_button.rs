@@ -10,7 +10,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
+pub fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
     let download_in_progress_toast_id = UUID::random();
     let add_download_in_progress_toast = move || {

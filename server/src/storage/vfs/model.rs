@@ -41,7 +41,7 @@ impl IntoResponse for FileSystemError {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum FileStatus {
+pub enum FileStatus {
     /// Reserved for future usage
     Stale,
     /// File is currently being uploaded
@@ -53,9 +53,9 @@ pub(crate) enum FileStatus {
 }
 
 /// Internal storage key for a file
-pub(crate) type FileKey = RevisionId;
+pub type FileKey = RevisionId;
 
-pub(crate) struct FileChunk {
+pub struct FileChunk {
     pub index: ChunkIndex,
     /// The chunk contents.
     /// The size of the file chunk can be accessed using `FileChunk::data::len()`. It is

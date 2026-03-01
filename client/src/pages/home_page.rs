@@ -8,14 +8,14 @@ use leptos_router::hooks::use_params_map;
 use thaw::{Button, ButtonAppearance, Layout, LayoutSider, ToasterInjection};
 
 #[derive(PartialEq, Clone, Copy)]
-pub(crate) enum HomePageType {
+pub enum HomePageType {
     Folder,
     Shared,
     Trash,
 }
 
 #[component]
-pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl IntoView {
+pub fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl IntoView {
     let node_id: Signal<Option<NodeId>> = Signal::derive(move || {
         let parameter = use_params_map().get().get("id")?;
         UUID::parse_string(&parameter)

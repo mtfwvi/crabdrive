@@ -10,35 +10,11 @@ pub fn is_authenticated() -> Result<bool> {
     Ok(SessionStorage::exists("username")? && SessionStorage::exists("bearer")?)
 }
 
-/// Checks if a username is remembered
-pub fn get_username() -> Result<String> {
-    if !is_authenticated()? {
-        SessionStorage::clear()?;
-        return Err(anyhow!("Unauthenticated"));
-    }
-
-    LocalStorage::get::<String>("username")?.ok_or(anyhow!("Unauthenticated"))
-}
-
-/// Get the last used username for signing in
-pub fn get_last_used_username() -> Result<Option<String>> {
-    LocalStorage::get::<String>("last_user")
-}
-
 /// Checks if a password has the minimum requirements.
 /// Currently:
 /// - Minimum 12 Characters
 pub fn is_valid_password(password: &str) -> bool {
     password.len() >= 12
-}
-
-/// Checks if a username is valid
-/// Currently:
-/// - Minimum 3 Characters
-/// - Maximum 32 Characters
-pub fn is_valid_username(username: &str) -> bool {
-    let len = username.trim().len();
-    len > 2 && len <= 32
 }
 
 /// Creates a Base64 encoded

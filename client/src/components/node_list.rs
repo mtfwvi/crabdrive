@@ -9,7 +9,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn NodeList(
+pub fn NodeList(
     #[prop(into)] nodes: Signal<Vec<DecryptedNode>>,
     #[prop(into)] folders_only: Signal<bool>,
     #[prop(optional, default = "Folder is empty")] no_nodes_message: &'static str,

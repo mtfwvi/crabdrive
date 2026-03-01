@@ -1,5 +1,5 @@
 mod accept_share;
-pub(crate) mod auth;
+pub mod auth;
 mod create_file;
 mod create_folder;
 mod delete;

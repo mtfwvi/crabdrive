@@ -3,7 +3,7 @@ use leptos::prelude::*;
 use thaw::{ComponentRef, Input, InputRef};
 
 #[component]
-pub(crate) fn InputDialog(
+pub fn InputDialog(
     #[prop(into)] open: RwSignal<bool>,
     #[prop(into)] title: Signal<String>,
     #[prop(into, optional)] placeholder: Signal<String>,

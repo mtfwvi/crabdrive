@@ -2,11 +2,11 @@ use crate::model::node::DecryptedNode;
 use chrono::NaiveDateTime;
 use crabdrive_common::storage::NodeType;
 
-pub(crate) fn format_date_time(naive_date_time: NaiveDateTime) -> String {
+pub fn format_date_time(naive_date_time: NaiveDateTime) -> String {
     naive_date_time.format("%d/%m/%Y, %H:%M:%S").to_string()
 }
 
-pub(crate) fn format_number_as_ordinal(number: usize) -> String {
+pub fn format_number_as_ordinal(number: usize) -> String {
     match number {
         1 => "first".to_string(),
         2 => "second".to_string(),
@@ -15,7 +15,7 @@ pub(crate) fn format_number_as_ordinal(number: usize) -> String {
     }
 }
 
-pub(crate) fn shorten_file_name(name: String) -> String {
+pub fn shorten_file_name(name: String) -> String {
     let length = name.len();
     if length > 30 {
         let start = name[..18].to_string();
@@ -26,7 +26,7 @@ pub(crate) fn shorten_file_name(name: String) -> String {
     }
 }
 
-pub(crate) fn get_node_icon(node_type: NodeType, name: String) -> &'static icondata_core::IconData {
+pub fn get_node_icon(node_type: NodeType, name: String) -> &'static icondata_core::IconData {
     let file_extension = name.split('.').last().unwrap_or_default().to_owned();
 
     match node_type {
@@ -50,7 +50,7 @@ pub(crate) fn get_node_icon(node_type: NodeType, name: String) -> &'static icond
     }
 }
 
-pub(crate) fn get_owner_username(node: DecryptedNode) -> Option<String> {
+pub fn get_owner_username(node: DecryptedNode) -> Option<String> {
     let owner_id = node.owner_id;
 
     node.has_access
@@ -59,7 +59,7 @@ pub(crate) fn get_owner_username(node: DecryptedNode) -> Option<String> {
         .map(|(_, username)| username)
 }
 
-pub(crate) fn get_share_acceptor_usernames(node: DecryptedNode) -> Option<Vec<String>> {
+pub fn get_share_acceptor_usernames(node: DecryptedNode) -> Option<Vec<String>> {
     let owner_id = node.owner_id;
 
     let share_acceptor_usernames: Vec<String> = node

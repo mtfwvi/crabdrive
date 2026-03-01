@@ -12,7 +12,7 @@ use thaw::{
 };
 
 #[component]
-pub(crate) fn AccountSider() -> impl IntoView {
+pub fn AccountSider() -> impl IntoView {
     let navigate = use_navigate();
     let navigate_to = navigate.clone();
     let navigate_to = Callback::new(move |path| navigate_to(path, Default::default()));

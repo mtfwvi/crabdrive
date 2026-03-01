@@ -4,7 +4,7 @@ use leptos::prelude::*;
 use thaw::{Button, ButtonAppearance, ButtonSize, Space, SpaceGap, Text};
 
 #[component]
-pub(crate) fn RevisionList(
+pub fn RevisionList(
     revisions: Signal<Vec<FileRevision>>,
     on_select_for_download: Callback<FileRevision>,
 ) -> impl IntoView {
