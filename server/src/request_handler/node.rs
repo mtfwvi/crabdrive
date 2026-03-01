@@ -1,3 +1,7 @@
+use crate::http::AppState;
+use crate::storage::node::persistence::model::node_entity::NodeEntity;
+use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, Query, State};
 use axum::http::StatusCode;
@@ -10,25 +14,47 @@ use crabdrive_common::payloads::node::response::node::{
     GetPathBetweenNodesResponse, PatchNodeResponse, PostMoveNodeOutOfTrashResponse,
     PostMoveNodeResponse, PostMoveNodeToTrashResponse,
 };
-use std::collections::VecDeque;
-
-use crate::http::AppState;
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
-use crate::user::persistence::model::user_entity::UserEntity;
 use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::{EncryptedNode, NodeId};
+use std::collections::VecDeque;
+use tracing::error;
 
 pub async fn delete_node(
-    State(_state): State<AppState>,
-    Path(_node_id): Path<NodeId>,
-    Json(_payload): Json<DeleteNodeRequest>,
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+    Json(payload): Json<DeleteNodeRequest>,
 ) -> (StatusCode, Json<DeleteNodeResponse>) {
-    // (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict))
-    // (StatusCode::NOT_FOUND, Json(DeleteNodeResponse::NotFound))
+    let node = state.node_repository.get_node(node_id).expect("db error");
 
-    //TODO implement
-    (StatusCode::OK, Json(DeleteNodeResponse::Ok))
+    if node.is_none() {
+        return (StatusCode::NOT_FOUND, Json(DeleteNodeResponse::NotFound));
+    }
+
+    let node = node.unwrap();
+
+    if node.owner_id != current_user.id {
+        return (StatusCode::NOT_FOUND, Json(DeleteNodeResponse::NotFound));
+    }
+
+    // will panic when trying to delete root node but thats ok as the client prevents it
+    let parent = state
+        .node_repository
+        .get_node(node.parent_id.unwrap())
+        .expect("db error")
+        .expect("db constraints");
+
+    if parent.metadata_change_counter != payload.parent_change_count {
+        return (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict));
+    }
+
+    match state.node_repository.purge_tree_from_trash(node_id) {
+        Ok(_) => (StatusCode::OK, Json(DeleteNodeResponse::Ok)),
+        Err(err) => {
+            error!("{}", err);
+            (StatusCode::CONFLICT, Json(DeleteNodeResponse::Conflict))
+        }
+    }
 }
 
 pub async fn get_node(
@@ -139,7 +165,13 @@ pub async fn post_move_node(
         return (StatusCode::NOT_FOUND, Json(PostMoveNodeResponse::NotFound));
     }
 
-    //TODO check version (in one transaction)
+    if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
+    }
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (StatusCode::CONFLICT, Json(PostMoveNodeResponse::Conflict));
+    }
 
     state
         .node_repository
@@ -155,27 +187,167 @@ pub async fn post_move_node(
 }
 
 pub async fn post_move_node_to_trash(
-    State(_state): State<AppState>,
-    Path(_node_id): Path<NodeId>,
-    Json(_payload): Json<PostMoveNodeToTrashRequest>,
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+    Json(payload): Json<PostMoveNodeToTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeToTrashResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostMoveNodeToTrashResponse::NotFound))
-    //(StatusCode::CONFLICT, Json(PostMoveNodeToTrashResponse::Conflict))
+    let node = state.node_repository.get_node(node_id).expect("db error");
 
-    //TODO implement
-    (StatusCode::OK, Json(PostMoveNodeToTrashResponse::Ok))
+    if node.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        );
+    }
+
+    let node = node.unwrap();
+
+    if node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        );
+    }
+
+    let from_node = state
+        .node_repository
+        .get_node(node.parent_id.expect("node has no parent"))
+        .expect("db error");
+
+    let trash_node = state
+        .node_repository
+        .get_node(payload.to_node_id)
+        .expect("db error");
+
+    if from_node.is_none() || trash_node.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        );
+    }
+
+    let from_node = from_node.unwrap();
+    let trash_node = trash_node.unwrap();
+
+    if trash_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
+
+    if from_node.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        );
+    }
+
+    if from_node.owner_id != current_user.id || trash_node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeToTrashResponse::NotFound),
+        );
+    }
+
+    match state.node_repository.move_node_to_trash(
+        node_id,
+        from_node.id,
+        payload.from_node_metadata,
+        trash_node.id,
+        payload.to_node_metadata,
+    ) {
+        Ok(_) => (StatusCode::OK, Json(PostMoveNodeToTrashResponse::Ok)),
+        Err(_) => (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeToTrashResponse::Conflict),
+        ),
+    }
 }
 
 pub async fn post_move_node_out_of_trash(
-    State(_state): State<AppState>,
-    Path(_node_id): Path<NodeId>,
-    Json(_payload): Json<PostMoveNodeOutOfTrashRequest>,
+    current_user: UserEntity,
+    State(state): State<AppState>,
+    Path(node_id): Path<NodeId>,
+    Json(payload): Json<PostMoveNodeOutOfTrashRequest>,
 ) -> (StatusCode, Json<PostMoveNodeOutOfTrashResponse>) {
-    //(StatusCode::NOT_FOUND, Json(PostMoveNodeOutOfTrashResponse::NotFound))
-    //(StatusCode::CONFLICT, Json(PostMoveNodeOutOfTrashResponse::Conflict))
+    let node = state.node_repository.get_node(node_id).expect("db error");
 
-    //TODO implement
-    (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok))
+    if node.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    let node = node.unwrap();
+
+    if node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    if node.deleted_on.is_none() {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    let from_trash = state
+        .node_repository
+        .get_node(node.parent_id.expect("node has no parent"))
+        .expect("db error");
+
+    let to_node = state
+        .node_repository
+        .get_node(payload.to_node_id)
+        .expect("db error");
+
+    if from_trash.is_none() || to_node.is_none() {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    let from_trash = from_trash.unwrap();
+    let to_node = to_node.unwrap();
+
+    if from_trash.owner_id != current_user.id || to_node.owner_id != current_user.id {
+        return (
+            StatusCode::NOT_FOUND,
+            Json(PostMoveNodeOutOfTrashResponse::NotFound),
+        );
+    }
+
+    if to_node.metadata_change_counter != payload.to_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    if from_trash.metadata_change_counter != payload.from_node_change_counter {
+        return (
+            StatusCode::CONFLICT,
+            Json(PostMoveNodeOutOfTrashResponse::Conflict),
+        );
+    }
+
+    match state.node_repository.move_node_out_of_trash(
+        node_id,
+        from_trash.id,
+        payload.from_node_metadata,
+        to_node.id,
+        payload.to_node_metadata,
+    ) {
+        Ok(_) => (StatusCode::OK, Json(PostMoveNodeOutOfTrashResponse::Ok)),
+        Err(_) => panic!("db error"),
+    }
 }
 
 pub async fn get_path_between_nodes(

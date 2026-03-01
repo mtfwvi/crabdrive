@@ -1,25 +1,47 @@
-use crate::api::rename_node;
+use crate::api::{create_file_version, move_node, move_node_to_trash, rename_node};
 use crate::components::basic::folder_selection_dialog::FolderSelectionDialog;
 use crate::components::basic::input_dialog::InputDialog;
 use crate::components::file_selection_dialog::FileSelectionDialog;
-use crate::constants::INFINITE_TOAST_TIMEOUT;
+use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
 use crate::model::node::{DecryptedNode, NodeMetadata};
 use crate::utils::ui::shorten_file_name;
 use crabdrive_common::storage::NodeType;
+use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use thaw::{
-    Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Toast, ToastIntent, ToastOptions,
-    ToastTitle, ToasterInjection,
+    Button, Menu, MenuItem, MenuTrigger, MenuTriggerType, Spinner, SpinnerSize, Toast, ToastIntent,
+    ToastOptions, ToastTitle, ToastTitleMedia, ToasterInjection,
 };
 use web_sys::File;
 
 #[component]
 pub(crate) fn ModifyNodeMenu(
     #[prop(into)] node: Signal<DecryptedNode>,
+    #[prop(into)] parent: Signal<DecryptedNode>,
     on_modified: Callback<()>,
 ) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
-    let add_toast = move |text: String| {
+    let upload_in_progress_toast_id = UUID::random();
+    let add_upload_in_progress_toast = move || {
+        toaster.dispatch_toast(
+            move || {
+                view! {
+                    <Toast>
+                        <ToastTitle>
+                            "Uploading new file version..." <ToastTitleMedia slot>
+                                <Spinner size=SpinnerSize::Tiny />
+                            </ToastTitleMedia>
+                        </ToastTitle>
+                    </Toast>
+                }
+            },
+            ToastOptions::default()
+                .with_id(upload_in_progress_toast_id.into())
+                .with_intent(ToastIntent::Info)
+                .with_timeout(INFINITE_TOAST_TIMEOUT),
+        )
+    };
+    let add_toast = move |text: String, intent: ToastIntent| {
         toaster.dispatch_toast(
             move || {
                 view! {
@@ -28,9 +50,13 @@ pub(crate) fn ModifyNodeMenu(
                     </Toast>
                 }
             },
-            ToastOptions::default()
-                .with_intent(ToastIntent::Error)
-                .with_timeout(INFINITE_TOAST_TIMEOUT),
+            ToastOptions::default().with_intent(intent).with_timeout(
+                if matches!(intent, ToastIntent::Error) {
+                    INFINITE_TOAST_TIMEOUT
+                } else {
+                    DEFAULT_TOAST_TIMEOUT
+                },
+            ),
         )
     };
 
@@ -41,14 +67,6 @@ pub(crate) fn ModifyNodeMenu(
         let NodeMetadata::V1(metadata) = node.get().metadata;
         metadata
     });
-
-    let on_select = move |key: &str| match key {
-        "new_revision" => file_selection_dialog_open.set(true),
-        "rename" => input_dialog_open.set(true),
-        "move" => folder_selection_dialog_open.set(true),
-        "move_to_trash" => add_toast("TODO".to_owned()),
-        _ => add_toast("TODO".to_owned()),
-    };
 
     let rename_action = Action::new_local(move |input: &String| {
         let new_name = input.to_owned();
@@ -63,10 +81,93 @@ pub(crate) fn ModifyNodeMenu(
         if status.is_some() {
             match status.unwrap() {
                 Ok(_) => on_modified.run(()),
-                Err(e) => add_toast(format!("Failed to rename: {}", e)),
+                Err(e) => add_toast(format!("Failed to rename: {}", e), ToastIntent::Error),
             }
         }
     });
+
+    let move_action = Action::new_local(move |input: &DecryptedNode| {
+        let target = input.to_owned();
+        async move {
+            move_node(node.get_untracked(), parent.get_untracked(), target)
+                .await
+                .map_err(|err| err.to_string())
+        }
+    });
+    Effect::new(move || {
+        let status = move_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => on_modified.run(()),
+                Err(e) => add_toast(format!("Failed to move: {}", e), ToastIntent::Error),
+            }
+        }
+    });
+
+    let move_to_trash_action = Action::new_local(move |_| async move {
+        move_node_to_trash(node.get_untracked())
+            .await
+            .map_err(|err| err.to_string())
+    });
+    Effect::new(move || {
+        let status = move_to_trash_action.value().get();
+        if status.is_some() {
+            match status.unwrap() {
+                Ok(_) => {
+                    add_toast(
+                        "Moved to trash successfully".to_string(),
+                        ToastIntent::Success,
+                    );
+                    on_modified.run(())
+                }
+                Err(e) => add_toast(
+                    format!("Failed to move to trash: {}", e),
+                    ToastIntent::Error,
+                ),
+            }
+        }
+    });
+
+    let upload_new_version_action = Action::new_local(move |input: &File| {
+        let file = input.to_owned();
+
+        add_upload_in_progress_toast();
+
+        async move {
+            create_file_version(file, node.get_untracked())
+                .await
+                .map_err(|err| err.to_string())
+        }
+    });
+    Effect::new(move || {
+        let status = upload_new_version_action.value().get();
+        if status.is_some() {
+            toaster.dismiss_toast(upload_in_progress_toast_id.into());
+            match status.unwrap() {
+                Ok(_) => {
+                    add_toast(
+                        "Uploaded new version successfully".to_string(),
+                        ToastIntent::Success,
+                    );
+                    on_modified.run(())
+                }
+                Err(e) => add_toast(
+                    format!("Failed to upload new version: {}", e),
+                    ToastIntent::Error,
+                ),
+            }
+        }
+    });
+
+    let on_select = move |key: &str| match key {
+        "rename" => input_dialog_open.set(true),
+        "move" => folder_selection_dialog_open.set(true),
+        "new_revision" => file_selection_dialog_open.set(true),
+        "move_to_trash" => {
+            move_to_trash_action.dispatch(());
+        }
+        _ => add_toast("TODO".to_owned(), ToastIntent::Error),
+    };
 
     view! {
         <Menu on_select trigger_type=MenuTriggerType::Hover>
@@ -75,17 +176,17 @@ pub(crate) fn ModifyNodeMenu(
                     "Modify"
                 </Button>
             </MenuTrigger>
-            <Show when=move || node.get().node_type == NodeType::File>
-                <MenuItem value="new_revision" icon=icondata_mdi::MdiFileReplaceOutline>
-                    "Upload new version"
-                </MenuItem>
-            </Show>
             <MenuItem value="rename" icon=icondata_mdi::MdiRenameOutline>
                 "Rename"
             </MenuItem>
             <MenuItem value="move" icon=icondata_mdi::MdiArrowAll>
                 "Move"
             </MenuItem>
+            <Show when=move || node.get().node_type == NodeType::File>
+                <MenuItem value="new_revision" icon=icondata_mdi::MdiFileReplaceOutline>
+                    "Upload new version"
+                </MenuItem>
+            </Show>
             <MenuItem value="move_to_trash" icon=icondata_mdi::MdiDeleteOutline>
                 "Move to trash"
             </MenuItem>
@@ -101,8 +202,8 @@ pub(crate) fn ModifyNodeMenu(
         />
         <FileSelectionDialog
             open=file_selection_dialog_open
-            on_confirm=Callback::new(move |_files: Vec<File>| {
-                add_toast("TODO".to_owned());
+            on_confirm=Callback::new(move |files: Vec<File>| {
+                upload_new_version_action.dispatch(files.first().unwrap().to_owned());
                 file_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
@@ -112,16 +213,15 @@ pub(crate) fn ModifyNodeMenu(
         />
         <FolderSelectionDialog
             open=folder_selection_dialog_open
-            on_confirm=Callback::new(move |selected_node| {
-                add_toast(format!("TODO: Move to {}", selected_node));
+            on_confirm=Callback::new(move |selected_node: DecryptedNode| {
+                move_action.dispatch(selected_node);
                 folder_selection_dialog_open.set(false)
             })
             title=Signal::derive(move || {
                 format!("Select destination for '{}'", shorten_file_name(metadata.get().name))
             })
             confirm_label="Move here"
-            // parent_id should not be None, since modify-node-menu cannot be opened for root node
-            start_folder=Signal::derive(move || node.get().parent_id.unwrap())
+            start_folder=parent
         />
     }
 }

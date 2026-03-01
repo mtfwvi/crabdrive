@@ -19,7 +19,6 @@ where
         <ResourceWrapper
             resource=accepted_nodes_res
             error_text="Failed to load shared nodes from server"
-            fallback_spinner=false
             children=move |accepted_nodes| children(accepted_nodes, refetch)
         />
     }

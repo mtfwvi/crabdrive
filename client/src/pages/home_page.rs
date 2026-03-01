@@ -1,11 +1,10 @@
 use crate::components::account_sider::AccountSider;
 use crate::components::content_frame::{ContentFrame, ContentViewType};
-use crate::utils::auth::is_authenticated;
 use crate::utils::browser::SessionStorage;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
-use leptos_router::hooks::{use_navigate, use_params_map};
+use leptos_router::hooks::use_params_map;
 use thaw::{Button, ButtonAppearance, Layout, LayoutSider, ToasterInjection};
 
 #[derive(PartialEq, Clone, Copy)]
@@ -23,14 +22,6 @@ pub(crate) fn HomePage(#[prop(into)] view_type: Signal<HomePageType>) -> impl In
     });
 
     let toaster = ToasterInjection::expect_context();
-    let navigate = use_navigate();
-
-    let _redirect_if_not_logged_in = Effect::new(move || {
-        let is_logged_in = is_authenticated().unwrap_or_default();
-        if !is_logged_in {
-            navigate("/login", Default::default())
-        }
-    });
 
     view! {
         <Layout content_style="padding: 30px 40px; height: 100vh" has_sider=true>

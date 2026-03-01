@@ -27,7 +27,6 @@ where
             error_text=Signal::derive(move || {
                 format!("The path to node '{}' could not be loaded from the server", node_id.get())
             })
-            fallback_spinner=false
             children=move |path| children(path, refetch)
         />
     }

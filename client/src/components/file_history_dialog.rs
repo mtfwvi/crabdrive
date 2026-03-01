@@ -1,16 +1,22 @@
 use crate::api::download_file;
+use crate::components::basic::custom_dialog::CustomDialog;
+use crate::components::data_provider::revisions_provider::RevisionsProvider;
+use crate::components::revision_list::RevisionList;
 use crate::constants::{DEFAULT_TOAST_TIMEOUT, INFINITE_TOAST_TIMEOUT};
-use crate::model::node::DecryptedNode;
-use crate::model::node::NodeMetadata;
+use crate::model::node::{DecryptedNode, NodeMetadata};
+use crabdrive_common::storage::FileRevision;
 use crabdrive_common::uuid::UUID;
 use leptos::prelude::*;
 use thaw::{
-    Button, ButtonAppearance, Spinner, SpinnerSize, Toast, ToastIntent, ToastOptions, ToastTitle,
-    ToastTitleMedia, ToasterInjection,
+    Spinner, SpinnerSize, Toast, ToastIntent, ToastOptions, ToastTitle, ToastTitleMedia,
+    ToasterInjection,
 };
 
 #[component]
-pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> impl IntoView {
+pub(crate) fn FileHistoryDialog(
+    #[prop(into)] open: RwSignal<bool>,
+    node: Signal<DecryptedNode>,
+) -> impl IntoView {
     let toaster = ToasterInjection::expect_context();
     let download_in_progress_toast_id = UUID::random();
     let add_download_in_progress_toast = move || {
@@ -56,21 +62,17 @@ pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> i
         metadata.name
     });
 
-    let download_action = Action::new_local(move |input: &DecryptedNode| {
-        let node = input.to_owned();
+    let download_action = Action::new_local(move |input: &(DecryptedNode, FileRevision)| {
+        let (node, revision) = input.to_owned();
 
         add_download_in_progress_toast();
 
         async move {
-            download_file(node, None)
+            download_file(node, Some(revision))
                 .await
                 .map_err(|err| err.to_string())
         }
     });
-    let handle_download = move |_| {
-        download_action.dispatch(node.get_untracked().clone());
-    };
-
     Effect::new(move || {
         let status = download_action.value().get();
         if status.is_some() {
@@ -84,15 +86,21 @@ pub(crate) fn FileDownloadButton(#[prop(into)] node: Signal<DecryptedNode>) -> i
             }
         }
     });
+    let on_select_for_download = Callback::new(move |revision: FileRevision| {
+        tracing::debug!("handling download for revision_id={}", revision.id);
+        download_action.dispatch((node.get_untracked().clone(), revision));
+    });
 
     view! {
-        <Button
-            on_click=handle_download
-            appearance=ButtonAppearance::Primary
-            icon=icondata_mdi::MdiDownload
-            block=true
-        >
-            "Download"
-        </Button>
+        <RevisionsProvider node let:revisions>
+            <CustomDialog
+                open
+                title=Signal::derive(move || format!("Earlier versions of {}", file_name.get()))
+                show_cancel=true
+                show_confirm=false
+            >
+                <RevisionList revisions on_select_for_download />
+            </CustomDialog>
+        </RevisionsProvider>
     }
 }
