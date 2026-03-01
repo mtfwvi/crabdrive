@@ -40,6 +40,21 @@ impl EncryptionKey {
             iv: IV::new([0u8; 12]),
         }
     }
+
+    #[cfg(any(test, feature = "server-tests"))]
+    pub fn random() -> Self {
+        use rand::RngCore;
+
+        let mut rng = rand::rng();
+        let mut key = vec![0u8; 32];
+
+        rng.fill_bytes(&mut key);
+
+        Self {
+            key,
+            iv: IV::random(),
+        }
+    }
 }
 
 #[cfg(feature = "server")]

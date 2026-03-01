@@ -6,5 +6,6 @@ use crate::user::UserKeys;
 pub struct PostRegisterRequest {
     pub username: String,
     pub password: String,
+    pub invite_code: String,
     pub keys: UserKeys,
 }
