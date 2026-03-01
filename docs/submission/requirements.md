@@ -43,6 +43,7 @@ After compiling the client and running the server, the frontend should be availa
 see [docs/features.md](docs/features.md) 
 
 ### (D4) IFI Rule: State all used AI/LLMs and for what purpose they were used
+see [docs/submission/ai-usage](docs/submission/ai-usage)
 
 ### (D6) The documentation describes how the testing was done and explains why the testing method is well founded.
 see [docs/submission/testing.md](docs/submission/testing.md) 
