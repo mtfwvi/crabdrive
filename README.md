@@ -12,11 +12,10 @@ Prerequisites:
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
 ```
 git clone https://github.com/mtfwvi/crabdrive
-cargo build --bin crabdrive-server --release`
 cd ./client
 trunk build --release
 cd ..
-./target/release/crabdrive-server
+cargo build --bin crabdrive-server --release
 ```
 
 # Development
