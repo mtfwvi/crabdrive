@@ -208,11 +208,11 @@ pub fn LoginPage(#[prop(into)] login_type: Signal<LoginType>) -> impl IntoView {
                 />
                 <Show when=move || login_type.get().eq(&LoginType::Register)>
                     <Input
-                    placeholder="Invite code"
-                    class="w-full"
-                    input_type=InputType::Password
-                    value=invite_code
-                />
+                        placeholder="Invite code"
+                        class="w-full"
+                        input_type=InputType::Password
+                        value=invite_code
+                    />
                 </Show>
                 <Show when=move || {
                     !is_password_valid.get() && (login_type.get() == LoginType::Register)
