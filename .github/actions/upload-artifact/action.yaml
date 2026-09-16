@@ -11,18 +11,23 @@ inputs:
         description: "A glob pattern to the artifacts that should be downloaded. Ignored if name is specified."
     path:
         description: "Destination path. Supports basic tilde expansion."
-    archive:
-        description: "Whether to zip the artifact files before upload"
-        default: "true"
 
 runs:
     using: "composite"
     steps:
         - name: Download artifact
+          id: upload
           uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317  # Mar 12 2026
           with:
               name: ${{ inputs.name }}
               artifact-ids: ${{ inputs.artifact-ids }}
               pattern: ${{ inputs.pattern }}
               path: ${{ inputs.path }}
-              archive: ${{ inputs.archive }}
+
+outputs:
+  artifact-id:
+    description: "The ID of the uploaded artifact."
+    value: ${{ steps.upload.outputs.artifact-id }}
+  artifact-url:
+    description: "The URL of the uploaded artifact."
+    value: ${{ steps.upload.outputs.artifact-url }}
