@@ -1,7 +1,5 @@
 # yaml-language-server: $schema=https://www.schemastore.org/github-workflow.json
-
 name: CI (PR)
-
 on:
     workflow_dispatch:
     pull_request:
@@ -13,10 +11,8 @@ on:
             - "CONTRIBUTING.md"
             - ".devcontainer/**"
             - "Dockerfile"
-
 env:
     CARGO_TERM_COLOR: always
-
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
@@ -31,22 +27,21 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
               with:
-                  toolchain: nightly
-                  shared-cache: nightly
+                  components: rustfmt
 
             - name: rs-fmt-check
-              uses: clechasseur/rs-fmt-check@v3.0.1
+              uses: clechasseur/rs-fmt-check@42267c4aa5897129b9887a252b8d074043b732db  # Aug 15 2026
 
             - name: leptosfmt-check
-              uses: LesnyRumcajs/leptosfmt-action@v0.1.0
+              uses: LesnyRumcajs/leptosfmt-action@456cf9f4dbac80b32de678d28962779ecf19989a  # Jun 19 2026
 
-    check-build:
-        name: Check build
+    lint-build:
+        name: Lint build
         runs-on: ubuntu-latest
         if: github.event_name != 'pull_request' || !github.event.pull_request.draft
         permissions:
@@ -54,7 +49,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
             - name: Collect commit information
               id: vars
@@ -65,14 +60,16 @@ jobs:
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
+              with:
+                  components: clippy
 
             - name: Check for linter errors / warnings
               run: cargo clippy --all-targets --all-features --timings
 
             - name: Upload build times
-              uses: actions/upload-artifact@v6
+              uses: ./.github/actions/upload-artifact
               with:
                   name: "Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
                   path: target/cargo-timings/
@@ -86,7 +83,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
             - name: Collect commit information
               id: vars
@@ -96,17 +93,12 @@ jobs:
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
               with:
-                  components: llvm-tools-preview
                   toolchain: nightly-2026-02-20
-                  shared-cache: nightly-2026-02-20
-
-            - name: Install cargo-llvm-cov
-              uses: taiki-e/install-action@v2
-              with:
-                  tool: cargo-llvm-cov,cargo-nextest
+                  components: llvm-tools-preview
+                  tools: cargo-llvm-cov,cargo-nextest
 
             - name: Run tests
               shell: bash
@@ -117,7 +109,7 @@ jobs:
 
             # Upload lcov informations as artifact, used by later job
             - name: Upload Native Coverage Artifact
-              uses: actions/upload-artifact@v6
+              uses: ./.github/actions/upload-artifact
               with:
                   name: lcov-native
                   path: lcov-native.info
@@ -131,7 +123,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
             - name: Collect commit information
               id: vars
@@ -142,7 +134,7 @@ jobs:
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
 
             - name: Detect changes
-              uses: dorny/paths-filter@v3
+              uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d  # Aug 5 2026
               id: filter
               with:
                   filters: |
@@ -153,31 +145,27 @@ jobs:
                       - 'Cargo.lock'
                       - 'Trunk.toml'
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
+            - name: Bail out for non-client changes
               if: steps.filter.outputs.client == 'true'
+              run: |
+                exit
+
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
               with:
                   target: wasm32-unknown-unknown
-
-            - name: Install Trunk
-              uses: jetli/trunk-action@v0.5.0
-              if: steps.filter.outputs.client == 'true'
-              with:
-                  version: "latest"
+                  tools: trunk
 
             - name: Build WASM Target
-              if: steps.filter.outputs.client == 'true'
               run: cargo build --target wasm32-unknown-unknown --release --timings -p crabdrive-client
 
             - name: Build with Trunk
-              if: steps.filter.outputs.client == 'true'
               run: |
                   cd ./client
                   trunk build --release --verbose
 
             - name: Upload build times as artifact
-              if: steps.filter.outputs.client == 'true'
-              uses: actions/upload-artifact@v6
+              uses: ./.github/actions/upload-artifact
               with:
                   name: "WASM Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
                   path: target/cargo-timings/
@@ -200,26 +188,21 @@ jobs:
             CFLAGS_wasm32_unknown_unknown: "-matomics -mbulk-memory"
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
-              with:
-                  toolchain: nightly-2026-02-20
-                  target: wasm32-unknown-unknown
-                  components: llvm-tools-preview
-                  shared-cache: nightly-2026-02-20
-
-            - name: Get wasm-bindgen-version
+            - name: Get wasm-bindgen version from Cargo.toml
               id: bindgen_version
               run: |
                     VERSION=$(cargo tree -p wasm-bindgen --depth 0 | head -n 1 | cut -d' ' -f2 | cut -c 2-)
                     echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-            - name: Install tools
-              uses: taiki-e/install-action@v2
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
               with:
-                  tool: cargo-llvm-cov wasm-bindgen-cli@${{ steps.bindgen_version.outputs.version }}
+                  toolchain: nightly-2026-02-20
+                  components: llvm-tools-preview
+                  target: wasm32-unknown-unknown
+                  tools: cargo-llvm-cov wasm-bindgen-cli@${{ steps.bindgen_version.outputs.version }}
 
             - name: Build project
               run: |
@@ -249,7 +232,7 @@ jobs:
                   cargo llvm-cov report --target wasm32-unknown-unknown --lcov  --output-path lcov-wasm.info
 
             - name: Upload WASM Coverage Artifact
-              uses: actions/upload-artifact@v6
+              uses: ./.github/actions/upload-artifact
               with:
                   name: lcov-wasm
                   path: lcov-wasm.info
@@ -266,7 +249,7 @@ jobs:
             pull-requests: write
         steps:
             - name: Checkout code
-              uses: actions/checkout@v4
+              uses: ./.github/actions/checkout
 
             # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
             - name: Collect commit information
@@ -276,37 +259,23 @@ jobs:
                   echo "sha_short=$SHA_SHORT" >> $GITHUB_OUTPUT
                   BRANCH="${GITHUB_REF_NAME//\//-}"
                   echo "branch_name=$BRANCH" >> $GITHUB_OUTPUT
-                  # If dispatched manually, no event number (PR Number). Changes will be deployed to /man/...
-                  PR_VAL="${{ github.event.number }}"
-                  if [ -z "$PR_VAL" ]; then
-                    PR_ID="man"
-                  else
-                    PR_ID="pr/$PR_VAL"
-                  fi
-                  echo "pr_id=$PR_ID" >> $GITHUB_OUTPUT
-                  DEST_PATH="/data/test-coverage/${PR_ID}/${SHA_SHORT}"
-                  echo "dest_path=$DEST_PATH" >> $GITHUB_OUTPUT
+
+            - name: Setup Environment
+              uses: ./.github/actions/setup-environment
+              with:
+                  components: llvm-tools-preview
+                  tools: cargo-llvm-cov,grcov
 
             - name: Install lcov
               run: sudo apt-get install --no-install-recommends -y lcov
 
-            - name: Setup Rust
-              uses: ./.github/actions/setup-rust
-              with:
-                  components: llvm-tools-preview
-
-            - name: Install cargo-llvm-cov
-              uses: taiki-e/install-action@v2
-              with:
-                  tool: cargo-llvm-cov,grcov
-
             - name: Download Native Coverage
-              uses: actions/download-artifact@v7
+              uses: ./.github/actions/download-artifact
               with:
                   name: lcov-native
 
             - name: Download WASM Coverage
-              uses: actions/download-artifact@v7
+              uses: ./.github/actions/download-artifact
               with:
                   name: lcov-wasm
 
@@ -329,17 +298,18 @@ jobs:
 
             - name: Upload HTML coverage report
               id: upload-html
-              uses: actions/upload-artifact@v6
+              uses: ./.github/actions/upload-artifact
               with:
                   name: "Test Coverage of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
                   path: coverage-html/
 
             - name: Report code coverage to PR
-              uses: zgosalvez/github-actions-report-lcov@v4
+              uses: zgosalvez/github-actions-report-lcov@b481d6d39d8e437a2395fb817a4bf9b9225811ea  # Sep 12 2026
               with:
                   coverage-files: lcov.info
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   update-comment: true
+                  artifact-name: "Test Coverage of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }} (Alt)"
+                  title-prefix: "Crabdrive"
                   additional-message: >
                       [Download Report for commit `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) <br>
-                  minimum-coverage: 0 # TODO: Bump

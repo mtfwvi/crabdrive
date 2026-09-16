@@ -1,0 +1,28 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: "Download artifact"
+description: "Download artifact from Github"
+
+inputs:
+    name:
+        description: "Name of the artifact to download. If unspecified, all artifacts for the run are downloaded."
+    artifact-ids:
+        description: "IDs of the artifacts to download, comma-separated. Either inputs `artifact-ids` or `name` can be used, but not both."
+    pattern:
+        description: "A glob pattern to the artifacts that should be downloaded. Ignored if name is specified."
+    path:
+        description: "Destination path. Supports basic tilde expansion."
+    archive:
+        description: "Whether to zip the artifact files before upload"
+        default: "true"
+
+runs:
+    using: "composite"
+    steps:
+        - name: Download artifact
+          uses: actions/download-artifact@484a0b528fb4d7bd804637ccb632e47a0e638317  # Mar 12 2026
+          with:
+              name: ${{ inputs.name }}
+              artifact-ids: ${{ inputs.artifact-ids }}
+              pattern: ${{ inputs.pattern }}
+              path: ${{ inputs.path }}
+              archive: ${{ inputs.archive }}

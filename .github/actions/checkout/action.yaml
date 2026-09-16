@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: "Checkout code"
+description: "Checkout code from Github"
+
+runs:
+    using: "composite"
+    steps:
+        - name: Checkout code
+          uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
