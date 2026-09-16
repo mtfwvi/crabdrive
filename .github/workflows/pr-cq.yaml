@@ -98,7 +98,7 @@ jobs:
               with:
                   toolchain: nightly-2026-02-20
                   components: llvm-tools-preview
-                  tools: cargo-llvm-cov,cargo-nextest
+                  tools: cargo-llvm-cov cargo-nextest
 
             - name: Run tests
               shell: bash
@@ -145,26 +145,25 @@ jobs:
                       - 'Cargo.lock'
                       - 'Trunk.toml'
 
-            - name: Bail out for non-client changes
-              if: steps.filter.outputs.client == 'true'
-              run: |
-                exit
-
             - name: Setup Environment
+              if: steps.filter.outputs.client == 'true'
               uses: ./.github/actions/setup-environment
               with:
                   target: wasm32-unknown-unknown
                   tools: trunk
 
             - name: Build WASM Target
+              if: steps.filter.outputs.client == 'true'
               run: cargo build --target wasm32-unknown-unknown --release --timings -p crabdrive-client
 
             - name: Build with Trunk
+              if: steps.filter.outputs.client == 'true'
               run: |
                   cd ./client
                   trunk build --release --verbose
 
             - name: Upload build times as artifact
+              if: steps.filter.outputs.client == 'true'
               uses: ./.github/actions/upload-artifact
               with:
                   name: "WASM Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
@@ -264,7 +263,7 @@ jobs:
               uses: ./.github/actions/setup-environment
               with:
                   components: llvm-tools-preview
-                  tools: cargo-llvm-cov,grcov
+                  tools: cargo-llvm-cov grcov
 
             - name: Install lcov
               run: sudo apt-get install --no-install-recommends -y lcov
