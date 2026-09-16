@@ -210,28 +210,27 @@ jobs:
                   components: llvm-tools-preview
                   shared-cache: nightly-2026-02-20
 
-            - name: Install cargo-llvm-cov
-              uses: taiki-e/install-action@cargo-llvm-cov
-
             - name: Get wasm-bindgen-version
               id: bindgen_version
               run: |
                     VERSION=$(cargo tree -p wasm-bindgen --depth 0 | head -n 1 | cut -d' ' -f2 | cut -c 2-)
                     echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-            - name: Install wasm-bindgen-cli+
-              uses: jetli/wasm-bindgen-action@v0.2.0
+            - name: Install tools
+              uses: taiki-e/install-action@v2
               with:
-                  version: ${{ steps.bindgen_version.outputs.version }}
+                  tool: cargo-llvm-cov wasm-bindgen-cli@${{ steps.bindgen_version.outputs.version }}
+
+            - name: Build project
+              run: |
+                  cargo test --target wasm32-unknown-unknown -p crabdrive-client --no-run
 
             - name: Test on Chrome
               env:
                   CHROMEDRIVER: chromedriver
               run: |
                   unset RUSTFLAGS
-                  cargo llvm-cov show-env --sh
                   source <(cargo llvm-cov show-env --sh)
-                  cargo llvm-cov clean
                   cargo test --target wasm32-unknown-unknown -p crabdrive-client
 
             - name: Test on Firefox
