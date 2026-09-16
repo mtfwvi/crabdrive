@@ -181,6 +181,7 @@ jobs:
               with:
                   name: "WASM Build times of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
                   path: target/cargo-timings/
+
     test-wasm-code:
         name: Run WASM tests
         runs-on: ubuntu-latest
@@ -289,12 +290,6 @@ jobs:
               with:
                   components: llvm-tools-preview
 
-            - name: Setup SSH Credentials
-              uses: shimataro/ssh-key-action@v2
-              with:
-                  key: ${{ secrets.SSH_PRIVATE_KEY_COVERAGE_DEPLOY }}
-                  known_hosts: ${{ secrets.SSH_KNOWNHOSTS_COVERAGE_DEPLOY }}
-
             - name: Install cargo-llvm-cov
               uses: taiki-e/install-action@v2
               with:
@@ -334,11 +329,6 @@ jobs:
                   name: "Test Coverage of ${{ steps.vars.outputs.branch_name }} at ${{ steps.vars.outputs.sha_short }}"
                   path: coverage-html/
 
-            - name: Deploy Coverage report
-              run: |
-                  ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "mkdir -p ${{ steps.vars.outputs.dest_path }}"
-                  tar -cz -C ./coverage-html/html/ . | ssh ${{ secrets.SSH_USERHOST_COVERAGE_DEPLOY }} "tar -xz -C ${{ steps.vars.outputs.dest_path }}/"
-
             - name: Report code coverage to PR
               uses: zgosalvez/github-actions-report-lcov@v4
               with:
@@ -346,11 +336,5 @@ jobs:
                   github-token: ${{ secrets.GITHUB_TOKEN }}
                   update-comment: true
                   additional-message: >
-                      [View report for `${{ steps.vars.outputs.sha_short }}`](${{ secrets.SSH_HOST_COVERAGE_DEPLOY }}/${{ steps.vars.outputs.pr_id }}/${{ steps.vars.outputs.sha_short }})
-                      or [Download Report for `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) <br>
-                      <details>
-                      <summary>Authentication</summary>
-                      <p>Authenticate with <code>${{ secrets.DEPLOY_USER }}</code> and password <code>${{ secrets.DEPLOY_PASS }}</code></p>
-                      </details>
-                      <i>This tracks which lines and functions were executed during testing.</i>
+                      [Download Report for commit `${{ steps.vars.outputs.sha_short }}`](${{ steps.upload-html.outputs.artifact-url }}) <br>
                   minimum-coverage: 0 # TODO: Bump
