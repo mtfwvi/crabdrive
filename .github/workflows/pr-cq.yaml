@@ -27,7 +27,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             - name: Setup Environment
               uses: ./.github/actions/setup-environment
@@ -49,7 +49,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             - name: Collect commit information
               id: vars
@@ -83,7 +83,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             - name: Collect commit information
               id: vars
@@ -123,7 +123,7 @@ jobs:
             pull-requests: read
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             - name: Collect commit information
               id: vars
@@ -187,7 +187,7 @@ jobs:
             CFLAGS_wasm32_unknown_unknown: "-matomics -mbulk-memory"
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             - name: Get wasm-bindgen version from Cargo.toml
               id: bindgen_version
@@ -248,7 +248,7 @@ jobs:
             pull-requests: write
         steps:
             - name: Checkout code
-              uses: ./.github/actions/checkout
+              uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a  # Jul 20 2026
 
             # https://stackoverflow.com/questions/59810838/how-to-get-the-short-sha-for-the-github-workflow
             - name: Collect commit information
