@@ -60,6 +60,11 @@ runs:
           with:
               tool: ${{ steps.rust_spec.outputs.spec }}
 
+        - name: Set RUSTUP_TOOLCHAIN
+          shell: bash
+          run: |
+              echo "RUSTUP_TOOLCHAIN=${{ inputs.toolchain }}" >> "$GITHUB_ENV"
+
         - name: Cache registry and build
           uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca  # Jul 15 2026
           with:
