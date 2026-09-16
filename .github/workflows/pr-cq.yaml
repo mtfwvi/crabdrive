@@ -213,10 +213,16 @@ jobs:
             - name: Install cargo-llvm-cov
               uses: taiki-e/install-action@cargo-llvm-cov
 
+            - name: Get wasm-bindgen-version
+              id: bindgen_version
+              run: |
+                    VERSION=$(cargo tree -p wasm-bindgen --depth 0 | head -n 1 | cut -d' ' -f2 | cut -c 2-)
+                    echo "version=$VERSION" >> $GITHUB_OUTPUT
+
             - name: Install wasm-bindgen-cli+
               uses: jetli/wasm-bindgen-action@v0.2.0
               with:
-                  version: "latest"
+                  version: ${{ steps.bindgen_version.outputs.version }}
 
             - name: Test on Chrome
               env:
