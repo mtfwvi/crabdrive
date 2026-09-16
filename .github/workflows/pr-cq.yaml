@@ -35,13 +35,10 @@ jobs:
                   toolchain: nightly-2026-02-20
                   components: rustfmt
 
-            - uses: LoliGothick/rustfmt-check@10dd73adbde28f784c41ddfb04cd41cef9a73978  # Sept 16 2026
-              with:
-                token: ${{ secrets.GITHUB_TOKEN }}
-                toolchain: nightly-2026-02-20
-                flags: --all
+            - name: Check formatting
+              uses: actions-rust-lang/rustfmt@v1
 
-            - name: leptosfmt-check
+            - name: Check formatting of Leptos components
               uses: LesnyRumcajs/leptosfmt-action@456cf9f4dbac80b32de678d28962779ecf19989a  # Jun 19 2026
 
     lint-build:
