@@ -35,8 +35,11 @@ jobs:
                   toolchain: nightly-2026-02-20
                   components: rustfmt
 
-            - name: rs-fmt-check
-              uses: clechasseur/rs-fmt-check@42267c4aa5897129b9887a252b8d074043b732db  # Aug 15 2026
+            - uses: LoliGothick/rustfmt-check@10dd73adbde28f784c41ddfb04cd41cef9a73978  # Sept 16 2026
+              with:
+                token: ${{ secrets.GITHUB_TOKEN }}
+                toolchain: nightly-2026-02-20
+                flags: --all
 
             - name: leptosfmt-check
               uses: LesnyRumcajs/leptosfmt-action@456cf9f4dbac80b32de678d28962779ecf19989a  # Jun 19 2026
