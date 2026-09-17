@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-action.json
+name: "Setup Environment"
+description: "Install Rust toolchain and related tools"
+
+inputs:
+    toolchain:
+        description: "Rust toolchain version"
+        required: false
+        default: "1.85.0"
+    target:
+        description: "Additional target(s) to install (whitespace separated)"
+        required: false
+        default: ""
+    components:
+        description: "Additional component(s) to install (whitespace separated)"
+        required: false
+        default: "clippy"
+    tools:
+        # See https://github.com/taiki-e/install-action/blob/26e9283f268b880168bdbd2c545dfcd60ec2c6ab/TOOLS.md
+        description: "Additional tool(s) to install (whitespace seperated)"
+        required: false
+        default: ""
+    shared-cache:
+        description: "Cache suffix"
+        required: false
+        default: "crabdrive_sc"
+
+runs:
+    using: "composite"
+    steps:
+        - name: Compute Rust install spec
+          id: rust_spec
+          shell: bash
+          run: |
+              set -euo pipefail
+
+              spec="rust"
+              if [ -n "${{ inputs.toolchain }}" ]; then
+                spec="${spec}@${{ inputs.toolchain }}"
+              fi
+
+              components="$(echo "${{ inputs.components }}" )"
+              for component in $components; do
+                [ -n "$component" ] && spec="${spec}+${component}"
+              done
+
+              for target in ${{ inputs.target }}; do
+                [ -n "$target" ] && spec="${spec}+${target}"
+              done
+
+              for tool in ${{ inputs.tools }}; do
+                [ -n "$tool" ] && spec="${spec} ${tool}"
+              done
+
+              echo "Resolved spec: $spec"
+              echo "spec=$spec" >> "$GITHUB_OUTPUT"
+
+        - name: Install Rust toolchain and components
+          uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab  # Sept 15 2026
+          with:
+              tool: ${{ steps.rust_spec.outputs.spec }}
+
+        - name: Set RUSTUP_TOOLCHAIN
+          shell: bash
+          run: |
+              echo "RUSTUP_TOOLCHAIN=${{ inputs.toolchain }}" >> "$GITHUB_ENV"
+
+        - name: Cache registry and build
+          uses: actions/cache@3edfce9056124e459a23f683a21433670d47daca  # Jul 15 2026
+          with:
+              # See also:
+              #  * https://github.com/actions/cache/tree/3edfce9056124e459a23f683a21433670d47daca
+              #  * https://github.com/actions/cache/blob/3edfce9056124e459a23f683a21433670d47daca/examples.md#rust---cargo
+              path: |
+                  ~/.cargo/bin/
+                  ~/.cargo/registry/index/
+                  ~/.cargo/registry/cache/
+                  ~/.cargo/git/db/
+                  target/
+              key: ${{ runner.os }}-cargo-${{ inputs.shared-cache }}-${{ inputs.toolchain }}-${{ hashFiles('**/Cargo.lock') }}
+              restore-keys: |
+                   ${{ runner.os }}-cargo-${{ inputs.shared-cache }}-${{ inputs.toolchain }}-
+                   ${{ runner.os }}-cargo-${{ inputs.shared-cache }}-
