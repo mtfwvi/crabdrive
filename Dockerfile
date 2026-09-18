@@ -1,9 +1,7 @@
-FROM rust:1.85.0-alpine as build
+FROM rust:1.98.1-alpine3.24 as build
 
 # add dev dependencies
 RUN apk update && apk add trunk
-#RUN rustup install 1.85.0
-#RUN rustup default 1.85.0
 RUN rustc --version
 
 WORKDIR /usr/src/crabdrive/
