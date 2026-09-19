@@ -117,7 +117,6 @@ impl NodeRepository for NodeRepositoryImpl {
     ) -> Result<NodeEntity> {
         let mut conn = self.db_pool.get().context("Failed to get db connection")?;
 
-
         let node = NodeEntity {
             id: node_id,
             parent_id: parent.as_ref().map(|(id, _)| id.clone()),
@@ -130,8 +129,7 @@ impl NodeRepository for NodeRepositoryImpl {
         };
 
         if let Some((_, parent_metadata)) = parent {
-            insert_node(&mut conn, &node, &parent_metadata)
-                .context("Failed to insert node")?;
+            insert_node(&mut conn, &node, &parent_metadata).context("Failed to insert node")?;
         } else {
             //TODO this should not be called with encrypted_metadata as the last parameter should be the parent metadata. In this case there is none. It does not cause a bug but is still wrong
             insert_node(&mut conn, &node, &encrypted_metadata)
