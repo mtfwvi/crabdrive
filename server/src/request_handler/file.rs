@@ -73,21 +73,11 @@ pub async fn post_create_file(
         return (StatusCode::CONFLICT, Json(PostCreateFileResponse::Conflict));
     }
 
-    //update the parent
-    state
-        .node_repository
-        .update_node(&NodeEntity {
-            metadata: payload.parent_metadata,
-            metadata_change_counter: parent_node.metadata_change_counter,
-            ..parent_node
-        })
-        .expect("db error");
-
     //create the node
     let node = state
         .node_repository
         .create_node(
-            Some(parent_id),
+            Some((parent_id, payload.parent_metadata)),
             payload.node_metadata,
             // a node should always have the same owner as its parent
             parent_node.owner_id,
