@@ -1,5 +1,6 @@
 use crate::http::AppState;
 use crate::user::persistence::model::user_entity::UserEntity;
+use crate::utils::to_hex_str;
 
 use axum::Json;
 use axum::extract::State;
@@ -17,7 +18,7 @@ use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
 use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
 use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
 use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
-use sha2::Digest;
+use sha2::{Digest, Sha512};
 
 use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
 use crabdrive_common::payloads::auth::response::register::{
@@ -112,7 +113,7 @@ pub async fn post_register(
         );
     }
 
-    let invite_code_hash = format!("{:02x}", sha2::Sha512::digest(invite_code.as_bytes()));
+    let invite_code_hash = to_hex_str(&Sha512::digest(invite_code.as_bytes()));
 
     if !invite_code_hash.eq(&state.config.auth.invite_code_hash) {
         return (
