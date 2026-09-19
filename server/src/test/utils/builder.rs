@@ -1,6 +1,7 @@
 use super::{TestChunk, TestNodeEntity, TestRevisionEntity};
 use crate::http::AppState;
 use crate::storage::vfs::FileChunk;
+use crate::utils::to_hex_str;
 
 use crabdrive_common::da;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
@@ -103,7 +104,7 @@ impl<'a> NodeBuilder<'a> {
                 rng.fill_bytes(&mut bytes);
 
                 test_revision_entity.chunks.push(TestChunk {
-                    checksum: format!("{:x}", Sha256::digest(&bytes)),
+                    checksum: to_hex_str(&Sha256::digest(&bytes)),
                 });
 
                 vfs.write_chunk(

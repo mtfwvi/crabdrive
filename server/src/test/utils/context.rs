@@ -1,5 +1,6 @@
 use crate::http::{AppConfig, AppState};
 use crate::storage::node::NodeRepository;
+use crate::utils::to_hex_str;
 
 use super::TestUserEntity;
 
@@ -66,7 +67,7 @@ impl TestContext {
     }
 
     pub fn validate_checksum(expected: &str, bytes: &Bytes) {
-        assert_eq!(format!("{:x}", Sha256::digest(bytes)), expected)
+        assert_eq!(to_hex_str(&Sha256::digest(bytes)), expected)
     }
 
     pub fn random_range(len_range: Range<usize>) -> usize {
