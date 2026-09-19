@@ -9,7 +9,7 @@ To start the container run `podman compose up --build` / `docker compose up --bu
 Build the client and server on you own machine
 
 Prerequisites:
-- Rust 1.85.0 or later installed.
+- Rust 1.98.1 or later installed.
 - trunk installed (install with `cargo install trunk`)
 - available `wasm32-unknown-unknown` target (add with `rustup target add wasm32-unknown-unknown`)
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
@@ -24,7 +24,7 @@ cargo run --bin crabdrive-server --release
 # Development
 ### Native
 Prerequisites:
-- Rust 1.85.0 or later installed.
+- Rust 1.98.1 or later installed.
 - trunk installed (install with `cargo install trunk`)
 - available `wasm32-unknown-unknown` target (add with `rustup target add wasm32-unknown-unknown`)
 - TCP port `2722` (or port set by `CRABDRIVE_ADDR`) available on the host.
