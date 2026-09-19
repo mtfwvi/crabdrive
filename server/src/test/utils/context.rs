@@ -30,7 +30,7 @@ impl TestContext {
 
         let (router, state) = crate::http::server::create_app(config).await;
 
-        let server = TestServer::new(router).expect("Failed to create test server!");
+        let server = TestServer::try_new(router).expect("Failed to create test server!");
         let arc = Arc::new(server);
 
         let mut users = Vec::with_capacity(amount_users as usize);
