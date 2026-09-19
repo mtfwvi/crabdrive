@@ -4,7 +4,7 @@ use crate::utils;
 use crate::utils::browser::SessionStorage;
 
 use anyhow::{Result, anyhow};
-use argon2::{Algorithm, Argon2, ParamsBuilder, PasswordHasher, Version, password_hash::Salt};
+use argon2::{Algorithm, Argon2, ParamsBuilder, PasswordHasher, Version, password_hash::phc::Salt};
 use base64::Engine;
 use base64::prelude::BASE64_STANDARD;
 
@@ -37,7 +37,7 @@ pub fn derive_from_password(password_hash: &str, salt: &str) -> Result<(String, 
     let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 
     let hash = argon2
-        .hash_password(password_hash.as_bytes(), salt)
+        .hash_password_with_salt(password_hash.as_bytes(), salt.as_ref())
         .unwrap();
 
     let raw_bytes: [u8; 64] = hash.hash.unwrap().as_bytes().try_into()?;

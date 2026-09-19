@@ -49,7 +49,7 @@ impl IV {
 
     #[cfg(any(test, feature = "server-tests"))]
     pub fn random() -> Self {
-        use rand::RngCore;
+        use rand::Rng;
 
         let mut rng = rand::rng();
         let mut iv_buf = [0u8; 12];

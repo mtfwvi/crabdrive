@@ -91,7 +91,7 @@ impl UserKeys {
 
     #[cfg(any(test, feature = "server-tests"))]
     pub fn random() -> Self {
-        use rand::RngCore;
+        use rand::Rng;
 
         let mut public_key = vec![0u8; 32];
         rand::rng().fill_bytes(&mut public_key);

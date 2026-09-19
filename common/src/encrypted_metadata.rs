@@ -41,7 +41,7 @@ impl EncryptedMetadata {
 
     #[cfg(any(test, feature = "server-tests"))]
     pub fn random() -> Self {
-        use rand::Rng;
+        use rand::RngExt;
 
         let mut rng = rand::rng();
         let len = rng.random_range(200..=6000);

@@ -9,6 +9,7 @@ argon2 = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 console_error_panic_hook = { workspace = true }
+getrandom = { version = "0.4.3", features = ["wasm_js"] } # Unused, but feature wasm_js is required for other dependencies
 icondata_core = {workspace = true}
 icondata_mdi = {workspace = true}
 leptos = { workspace = true, features = ["csr"] }

@@ -14,8 +14,6 @@ use crabdrive_common::uuid::UUID;
 use std::sync::Arc;
 
 use anyhow::{Context, Result};
-use argon2::password_hash::SaltString;
-use argon2::password_hash::rand_core::OsRng;
 use argon2::{Argon2, PasswordHasher};
 use argon2::{PasswordHash, PasswordVerifier};
 use chrono::{DateTime, Local, TimeDelta, Utc};
@@ -135,9 +133,8 @@ impl UserRepository for UserRepositoryImpl {
     ) -> Result<UserEntity> {
         let mut conn = self.db_pool.get()?;
 
-        let password_salt = SaltString::generate(&mut OsRng);
         let password_hash = Argon2::default()
-            .hash_password(password.as_bytes(), &password_salt)
+            .hash_password(password.as_bytes())
             .unwrap()
             .to_string();
 
