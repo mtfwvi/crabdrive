@@ -9,7 +9,7 @@ use std::sync::Arc;
 use axum_test::TestServer;
 use bytes::Bytes;
 use crabdrive_common::uuid::UUID;
-use rand::{Rng, distr::Alphanumeric};
+use rand::{RngExt, distr::Alphanumeric};
 use sha2::{Digest, Sha256};
 use tracing::Level;
 

@@ -9,7 +9,7 @@ use crabdrive_common::storage::{ChunkIndex, NodeId, NodeType};
 use crabdrive_common::uuid::UUID;
 
 use bytes::BytesMut;
-use rand::{Rng, RngCore};
+use rand::{Rng, RngExt};
 use sha2::{Digest, Sha256};
 
 pub struct NodeBuilder<'a> {
