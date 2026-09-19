@@ -309,6 +309,14 @@ impl NodeRepository for NodeRepositoryImpl {
             .context("Failed to get database connection")?;
 
         conn.transaction(|conn| {
+            let top_node = self
+                .get_node(id)
+                .expect("db error")
+                .expect("the node was deleted between here and the previous check");
+            if top_node.deleted_on.is_none() {
+                anyhow::bail!("Cannot purge node tree that is not in trash");
+            }
+
             let mut all_nodes = Vec::new();
             let mut all_revisions = Vec::new();
 
@@ -321,10 +329,6 @@ impl NodeRepository for NodeRepositoryImpl {
                     .filter(NodeDsl::id.eq(node_id))
                     .first::<NodeEntity>(conn)
                     .context("Node not found")?;
-
-                if node.deleted_on.is_none() {
-                    anyhow::bail!("Cannot purge node tree that is not in trash");
-                }
 
                 let children = NodeDsl::Node
                     .filter(NodeDsl::parent_id.eq(node_id))
