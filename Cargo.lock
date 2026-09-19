@@ -691,6 +691,7 @@ dependencies = [
  "chrono",
  "console_error_panic_hook",
  "crabdrive-common",
+ "getrandom 0.4.3",
  "icondata_core",
  "icondata_mdi",
  "leptos",
