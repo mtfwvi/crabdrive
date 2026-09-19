@@ -43,7 +43,7 @@ impl EncryptionKey {
 
     #[cfg(any(test, feature = "server-tests"))]
     pub fn random() -> Self {
-        use rand::RngCore;
+        use rand::Rng;
 
         let mut rng = rand::rng();
         let mut key = vec![0u8; 32];
