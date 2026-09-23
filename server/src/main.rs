@@ -3,6 +3,7 @@ mod http;
 mod request_handler;
 mod storage;
 mod user;
+mod utils;
 
 #[cfg(test)]
 mod test;

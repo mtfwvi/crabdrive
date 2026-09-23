@@ -1,5 +1,6 @@
 use crate::http::{AppConfig, AppState};
 use crate::storage::node::NodeRepository;
+use crate::utils::to_hex_str;
 
 use super::TestUserEntity;
 
@@ -9,7 +10,7 @@ use std::sync::Arc;
 use axum_test::TestServer;
 use bytes::Bytes;
 use crabdrive_common::uuid::UUID;
-use rand::{Rng, distr::Alphanumeric};
+use rand::{RngExt, distr::Alphanumeric};
 use sha2::{Digest, Sha256};
 use tracing::Level;
 
@@ -29,7 +30,7 @@ impl TestContext {
 
         let (router, state) = crate::http::server::create_app(config).await;
 
-        let server = TestServer::new(router).expect("Failed to create test server!");
+        let server = TestServer::try_new(router).expect("Failed to create test server!");
         let arc = Arc::new(server);
 
         let mut users = Vec::with_capacity(amount_users as usize);
@@ -66,7 +67,7 @@ impl TestContext {
     }
 
     pub fn validate_checksum(expected: &str, bytes: &Bytes) {
-        assert_eq!(format!("{:x}", Sha256::digest(bytes)), expected)
+        assert_eq!(to_hex_str(&Sha256::digest(bytes)), expected)
     }
 
     pub fn random_range(len_range: Range<usize>) -> usize {

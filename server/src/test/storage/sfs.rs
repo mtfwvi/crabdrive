@@ -8,7 +8,7 @@ mod tests {
     use crabdrive_common::data::DataAmount;
     use crabdrive_common::uuid::UUID;
 
-    use rand::{Rng, rng};
+    use rand::{RngExt, rng};
     use tempfile::TempDir;
 
     use crate::storage::vfs::model::FileStatus;
