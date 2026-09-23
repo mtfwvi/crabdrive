@@ -58,7 +58,7 @@ impl<'a> NodeBuilder<'a> {
             .state
             .node_repository
             .create_node(
-                self.parent_id,
+                self.parent_id.map(|id| (id, EncryptedMetadata::random())),
                 EncryptedMetadata::random(),
                 self.owner_id,
                 self.node_type,
