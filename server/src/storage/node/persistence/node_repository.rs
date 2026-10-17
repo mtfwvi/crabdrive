@@ -21,7 +21,7 @@ use std::sync::Arc;
 pub trait NodeRepository {
     fn create_node(
         &self,
-        parent: Option<NodeId>,
+        parent: Option<(NodeId, EncryptedMetadata)>,
         encrypted_metadata: EncryptedMetadata,
         owner: UserId,
         node_type: crabdrive_common::storage::NodeType,
@@ -109,7 +109,7 @@ impl NodeRepositoryImpl {
 impl NodeRepository for NodeRepositoryImpl {
     fn create_node(
         &self,
-        parent: Option<NodeId>,
+        parent: Option<(NodeId, EncryptedMetadata)>,
         encrypted_metadata: EncryptedMetadata,
         owner: UserId,
         node_type: NodeType,
@@ -119,7 +119,7 @@ impl NodeRepository for NodeRepositoryImpl {
 
         let node = NodeEntity {
             id: node_id,
-            parent_id: parent,
+            parent_id: parent.as_ref().map(|(id, _)| id.clone()),
             owner_id: owner,
             metadata: encrypted_metadata.clone(),
             deleted_on: None,
@@ -128,14 +128,10 @@ impl NodeRepository for NodeRepositoryImpl {
             node_type,
         };
 
-        if let Some(parent_id) = parent {
-            let parent_node = select_node(&mut conn, parent_id)
-                .context("Failed to select parent node")?
-                .context("Parent node not found")?;
-
-            insert_node(&mut conn, &node, &parent_node.metadata)
-                .context("Failed to insert node")?;
+        if let Some((_, parent_metadata)) = parent {
+            insert_node(&mut conn, &node, &parent_metadata).context("Failed to insert node")?;
         } else {
+            //TODO this should not be called with encrypted_metadata as the last parameter should be the parent metadata. In this case there is none. It does not cause a bug but is still wrong
             insert_node(&mut conn, &node, &encrypted_metadata)
                 .context("Failed to insert root node")?;
         }
