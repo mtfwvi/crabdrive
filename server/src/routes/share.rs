@@ -1,19 +1,15 @@
 use crate::http::AppState;
-use crate::routes::node::entity_to_encrypted_node;
-use crate::user::persistence::model::user_entity::UserEntity;
+use crate::user::UserEntity;
+
+use crabdrive_common::payloads::node::request::share::*;
+use crabdrive_common::payloads::node::response::share::*;
+use crabdrive_common::encryption_key::EncryptionKey;
+use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::Utc;
-use crabdrive_common::encryption_key::EncryptionKey;
-use crabdrive_common::payloads::node::request::share::{
-    PostAcceptShareRequest, PostShareNodeRequest,
-};
-use crabdrive_common::payloads::node::response::share::{
-    GetAcceptShareInfoResponse, GetAcceptedSharedResponse, GetNodeShareInfo,
-    PostAcceptShareResponse, PostShareNodeResponse, ShareEncryptionInfo,
-};
-use crabdrive_common::storage::{EncryptedNode, NodeId, ShareId};
 use tracing::error;
 
 pub async fn post_share_node(
@@ -220,7 +216,7 @@ pub async fn get_accepted_shared_nodes(
                 unreachable!("a node is marked as accepted but there is no key")
             }
 
-            let node = entity_to_encrypted_node(node.unwrap(), &state).expect("db error");
+            let node = node.unwrap().to_encrypted_node(&state).expect("db error");
 
             (share_entity.accepted_encryption_key.clone().unwrap(), node)
         })

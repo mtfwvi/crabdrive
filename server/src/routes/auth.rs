@@ -2,6 +2,18 @@ use crate::http::AppState;
 use crate::user::persistence::model::user_entity::UserEntity;
 use crate::utils::to_hex_str;
 
+use crabdrive_common::da;
+use crabdrive_common::payloads::auth::response::info::*;
+use crabdrive_common::payloads::auth::request::login::*;
+use crabdrive_common::payloads::auth::response::login::*;
+use crabdrive_common::payloads::auth::request::register::*;
+use crabdrive_common::payloads::auth::response::refresh::*;
+use crabdrive_common::payloads::auth::response::register::*;
+use crabdrive_common::encrypted_metadata::EncryptedMetadata;
+use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::user::UserKeys;
+use crabdrive_common::routes::auth::ROUTE_REFRESH;
+
 use axum::Json;
 use axum::extract::State;
 use axum::http::header::SET_COOKIE;
@@ -11,22 +23,7 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use axum_extra::headers::Authorization;
 use axum_extra::headers::authorization::Bearer;
-use crabdrive_common::da;
-use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::payloads::auth::request::login::PostLoginRequest;
-use crabdrive_common::payloads::auth::request::register::PostRegisterRequest;
-use crabdrive_common::payloads::auth::response::info::{GetSelfInfoResponse, SelfUserInfo};
-use crabdrive_common::payloads::auth::response::login::LoginDeniedReason::Username;
-use crabdrive_common::payloads::auth::response::login::{LoginSuccess, PostLoginResponse};
 use sha2::{Digest, Sha512};
-
-use crabdrive_common::payloads::auth::response::refresh::{PostRefreshResponse, RefreshBody};
-use crabdrive_common::payloads::auth::response::register::{
-    PostRegisterResponse, RegisterConflictReason,
-};
-use crabdrive_common::routes::auth::ROUTE_REFRESH;
-use crabdrive_common::storage::{NodeId, NodeType};
-use crabdrive_common::user::UserKeys;
 
 pub async fn post_login(
     State(state): State<AppState>,
@@ -48,7 +45,7 @@ pub async fn post_login(
         return (
             StatusCode::UNAUTHORIZED,
             [(SET_COOKIE, "".to_string())],
-            Json(PostLoginResponse::Unauthorized(Username)),
+            Json(PostLoginResponse::Unauthorized(LoginDeniedReason::Password)),
         );
     }
 

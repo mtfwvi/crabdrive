@@ -1,15 +1,18 @@
 use crate::http::AppState;
+use crate::user::UserEntity;
 use crate::storage::FileChunk;
 use crate::storage::FileSystemError;
-use crate::user::persistence::model::user_entity::UserEntity;
+
+use crabdrive_common::data::{DataAmount, DataUnit};
+use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
+
+use std::ops::Add;
+
 use axum::Json;
 use axum::body::Body;
 use axum::extract::{Path, State};
 use axum::http::{Response, StatusCode};
 use axum::response::IntoResponse;
-use crabdrive_common::data::{DataAmount, DataUnit};
-use crabdrive_common::storage::{ChunkIndex, NodeId, RevisionId};
-use std::ops::Add;
 
 pub async fn post_chunk(
     current_user: UserEntity,

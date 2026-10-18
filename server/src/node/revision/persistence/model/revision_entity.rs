@@ -2,6 +2,7 @@ use crate::node::NodeEntity;
 
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;
+use crabdrive_common::storage::FileRevision;
 use crabdrive_common::storage::NodeId;
 use crabdrive_common::storage::RevisionId;
 
@@ -42,4 +43,16 @@ pub struct RevisionEntity {
     pub iv: IV,
 
     pub chunk_count: ChunkIndex,
+}
+
+impl RevisionEntity {
+    pub fn to_file_revision(&self) -> FileRevision {
+        FileRevision {
+            id: self.id,
+            upload_ended_on: self.upload_ended_on,
+            upload_started_on: self.upload_started_on,
+            iv: self.iv,
+            chunk_count: self.chunk_count,
+        }
+    }
 }

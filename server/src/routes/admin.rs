@@ -1,3 +1,5 @@
+//! TODO: Implement this
+
 use axum::Json;
 use axum::extract::Path;
 use axum::http::StatusCode;
@@ -7,8 +9,7 @@ use crabdrive_common::payloads::admin::response::user::{
 };
 use crabdrive_common::user::{UserId, UserType};
 
-//TODO remove this
-pub fn get_example_user_info() -> UserInfo {
+fn get_example_user_info() -> UserInfo {
     UserInfo {
         username: "admin".to_string(),
         user_type: UserType::User,

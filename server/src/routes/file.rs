@@ -1,23 +1,16 @@
 use crate::http::AppState;
-use crate::routes::node::{entity_to_encrypted_node, entity_to_file_revision};
 use crate::node::NodeEntity;
 use crate::user::UserEntity;
+
+use crabdrive_common::payloads::node::request::file::*;
+use crabdrive_common::payloads::node::response::file::*;
+use crabdrive_common::storage::{NodeType, NodeId, RevisionId};
+use crabdrive_common::uuid::UUID;
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
 use chrono::Utc;
-use crabdrive_common::payloads::node::request::file::{
-    PostCreateFileRequest, PostUpdateFileRequest,
-};
-use crabdrive_common::payloads::node::response::file::CommitFileError::{
-    AlreadyCommitted, MissingChunks,
-};
-use crabdrive_common::payloads::node::response::file::{
-    GetVersionsResponse, PostCommitFileResponse, PostCreateFileResponse, PostUpdateFileResponse,
-};
-use crabdrive_common::storage::NodeType;
-use crabdrive_common::storage::{NodeId, RevisionId};
-use crabdrive_common::uuid::UUID;
 
 #[axum::debug_handler]
 pub async fn post_create_file(
@@ -124,8 +117,8 @@ pub async fn post_create_file(
             .expect("how does that happen? - File system error!");
     }
 
-    let response_node =
-        entity_to_encrypted_node(node_with_revision.clone(), &state).expect("db error");
+    let response_node = node_with_revision.to_encrypted_node(&state).expect("db error");
+
     (
         StatusCode::CREATED,
         Json(PostCreateFileResponse::Created(response_node)),
@@ -188,9 +181,7 @@ pub async fn post_update_file(
 
     (
         StatusCode::OK,
-        Json(PostUpdateFileResponse::Ok(entity_to_file_revision(
-            revision,
-        ))),
+        Json(PostUpdateFileResponse::Ok(revision.to_file_revision())),
     )
 }
 
@@ -231,7 +222,7 @@ pub async fn post_commit_file(
     if revision.upload_ended_on.is_some() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(AlreadyCommitted)),
+            Json(PostCommitFileResponse::BadRequest(CommitFileError::AlreadyCommitted)),
         );
     }
 
@@ -244,7 +235,7 @@ pub async fn post_commit_file(
     if !missing_chunks.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(MissingChunks(
+            Json(PostCommitFileResponse::BadRequest(CommitFileError::MissingChunks(
                 missing_chunks,
             ))),
         );
@@ -264,7 +255,7 @@ pub async fn post_commit_file(
         .update_node(&node_entity)
         .expect("db error");
 
-    let node = entity_to_encrypted_node(node_entity, &state).expect("db error");
+    let node = node_entity.to_encrypted_node(&state).expect("db error");
 
     {
         let mut vfs = state.vfs.write().await;
@@ -300,7 +291,7 @@ pub async fn get_file_versions(
 
     let versions = version_entities
         .iter()
-        .map(|&entity| entity_to_file_revision(entity))
+        .map(|&entity| entity.to_file_revision())
         .collect();
 
     (StatusCode::OK, Json(GetVersionsResponse::Ok(versions)))

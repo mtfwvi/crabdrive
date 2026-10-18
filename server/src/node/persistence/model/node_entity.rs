@@ -1,10 +1,12 @@
+use crate::http::AppState;
 use crate::user::UserEntity;
 
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
-use crabdrive_common::storage::RevisionId;
+use crabdrive_common::storage::{EncryptedNode, RevisionId};
 use crabdrive_common::storage::{NodeId, NodeType};
 use crabdrive_common::user::UserId;
 
+use anyhow::Result;
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -54,4 +56,29 @@ pub struct NodeEntity {
     pub current_revision: Option<RevisionId>,
 
     pub node_type: NodeType,
+}
+
+impl NodeEntity {
+    pub fn to_encrypted_node(&self, state: &AppState) -> Result<EncryptedNode> {
+        Ok(EncryptedNode {
+            id: self.id,
+            change_count: self.metadata_change_counter,
+            parent_id: self.parent_id,
+            owner_id: self.owner_id,
+            deleted_on: self.deleted_on,
+            node_type: self.node_type,
+            current_revision: match self.current_revision {
+                Some(id) => {
+                    let entity = state
+                        .revision_repository
+                        .get_revision(id)?
+                        .expect("Inconsistent data between node and revision");
+                    Some(entity.to_file_revision())
+                }
+                None => None,
+            },
+            encrypted_metadata: self.metadata.clone(),
+            has_access: state.node_repository.get_access_list(self.id)?,
+        })
+    }
 }

@@ -1,23 +1,16 @@
 use crate::http::AppState;
 use crate::node::NodeEntity;
-use crate::node::revision::RevisionEntity;
-use crate::user::persistence::model::user_entity::UserEntity;
+use crate::user::UserEntity;
+
+use crabdrive_common::payloads::node::request::node::*;
+use crabdrive_common::payloads::node::response::node::*;
+use crabdrive_common::storage::{EncryptedNode, NodeId, NodeType};
+
+use std::collections::VecDeque;
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use crabdrive_common::payloads::node::request::node::{
-    DeleteNodeRequest, PatchNodeRequest, PostMoveNodeOutOfTrashRequest, PostMoveNodeRequest,
-    PostMoveNodeToTrashRequest,
-};
-use crabdrive_common::payloads::node::response::node::{
-    DeleteNodeResponse, GetAccessiblePathResponse, GetNodeChildrenResponse, GetNodeResponse,
-    PatchNodeResponse, PostMoveNodeOutOfTrashResponse, PostMoveNodeResponse,
-    PostMoveNodeToTrashResponse,
-};
-use std::collections::VecDeque;
-
-use crabdrive_common::storage::{EncryptedNode, NodeId};
-use crabdrive_common::storage::{FileRevision, NodeType};
 
 pub async fn delete_node(
     current_user: UserEntity,
@@ -74,7 +67,7 @@ pub async fn get_node(
         return (StatusCode::NOT_FOUND, Json(GetNodeResponse::NotFound));
     }
 
-    let node = entity_to_encrypted_node(node_entity, &state).unwrap();
+    let node = node_entity.to_encrypted_node(&state).unwrap();
 
     (StatusCode::OK, Json(GetNodeResponse::Ok(node)))
 }
@@ -120,7 +113,7 @@ pub async fn patch_node(
         .update_node(&updated_node)
         .expect("db error");
 
-    let updated_node = entity_to_encrypted_node(updated_node_entity, &state).expect("db error");
+    let updated_node = updated_node_entity.to_encrypted_node(&state).expect("db error");
     (StatusCode::OK, Json(PatchNodeResponse::Ok(updated_node)))
 }
 
@@ -411,7 +404,7 @@ pub async fn get_node_children(
 
     let children = children
         .iter()
-        .map(|entity| entity_to_encrypted_node(entity.clone(), &state).unwrap());
+        .map(|entity| entity.to_encrypted_node(&state).unwrap());
 
     (
         StatusCode::OK,
@@ -452,48 +445,11 @@ pub async fn get_accessible_path(
 
     let encrypted_node_path: Vec<EncryptedNode> = path_list
         .iter()
-        .map(|entity| entity_to_encrypted_node(entity.clone(), &state).unwrap())
+        .map(|node| node.to_encrypted_node(&state).unwrap())
         .collect();
 
     (
         StatusCode::OK,
         Json(GetAccessiblePathResponse::Ok(encrypted_node_path)),
     )
-}
-
-pub fn entity_to_encrypted_node(
-    node: NodeEntity,
-    state: &AppState,
-) -> anyhow::Result<EncryptedNode> {
-    let current_revision = match node.current_revision {
-        Some(id) => {
-            let entity = state
-                .revision_repository
-                .get_revision(id)?
-                .expect("data is not consistent");
-            Some(entity_to_file_revision(entity))
-        }
-        None => None,
-    };
-    Ok(EncryptedNode {
-        id: node.id,
-        change_count: node.metadata_change_counter,
-        parent_id: node.parent_id,
-        owner_id: node.owner_id,
-        deleted_on: node.deleted_on,
-        node_type: node.node_type,
-        current_revision,
-        encrypted_metadata: node.metadata,
-        has_access: state.node_repository.get_access_list(node.id)?,
-    })
-}
-
-pub fn entity_to_file_revision(revision: RevisionEntity) -> FileRevision {
-    FileRevision {
-        id: revision.id,
-        upload_ended_on: revision.upload_ended_on,
-        upload_started_on: revision.upload_started_on,
-        iv: revision.iv,
-        chunk_count: revision.chunk_count,
-    }
 }

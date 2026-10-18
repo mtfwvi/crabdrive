@@ -1,14 +1,15 @@
 use crate::http::AppState;
-use crate::routes::node::entity_to_encrypted_node;
 use crate::node::NodeEntity;
-use crate::user::persistence::model::user_entity::UserEntity;
+use crate::user::UserEntity;
+
+use crabdrive_common::payloads::node::request::folder::*;
+use crabdrive_common::payloads::node::response::folder::*;
+use crabdrive_common::storage::{NodeId, NodeType};
+use crabdrive_common::uuid::UUID;
+
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use crabdrive_common::payloads::node::request::folder::PostCreateFolderRequest;
-use crabdrive_common::payloads::node::response::folder::PostCreateFolderResponse;
-use crabdrive_common::storage::{NodeId, NodeType};
-use crabdrive_common::uuid::UUID;
 
 pub async fn post_create_folder(
     current_user: UserEntity,
@@ -83,7 +84,7 @@ pub async fn post_create_folder(
         )
         .expect("db error");
 
-    let response_node = entity_to_encrypted_node(node, &state).expect("db error");
+    let response_node = node.to_encrypted_node(&state).expect("db error");
     (
         StatusCode::CREATED,
         Json(PostCreateFolderResponse::Created(response_node)),
