@@ -1,4 +1,4 @@
-use crate::storage::vfs::model::{FileChunk, FileKey, FileStatus, FileSystemError};
+use super::{FileChunk, FileKey, FileStatus, FileSystemError};
 use crabdrive_common::storage::ChunkIndex;
 
 #[async_trait::async_trait]

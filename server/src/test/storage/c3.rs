@@ -1,6 +1,6 @@
-use crate::storage::vfs::backend::c3::model::{FileTransfer, FileTransferState};
-use crate::storage::vfs::backend::c3::*;
-use crate::storage::vfs::{FileChunk, FileRepository, FileStatus, FileSystemError};
+use crate::storage::backend::c3::model::{FileTransfer, FileTransferState};
+use crate::storage::backend::c3::*;
+use crate::storage::{FileChunk, FileRepository, FileStatus, FileSystemError};
 use crate::test::utils::TestContext;
 
 use bytes::Bytes;

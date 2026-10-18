@@ -1,6 +1,8 @@
 mod db;
 mod http;
-mod request_handler;
+mod routes;
+mod node;
+mod share;
 mod storage;
 mod user;
 mod utils;

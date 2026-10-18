@@ -1,6 +1,6 @@
 use crate::db::connection::DbPool;
 use crate::db::operations::share::*;
-use crate::storage::share::ShareEntity;
+use crate::share::ShareEntity;
 
 use crabdrive_common::encryption_key::EncryptionKey;
 use crabdrive_common::storage::{NodeId, ShareId};

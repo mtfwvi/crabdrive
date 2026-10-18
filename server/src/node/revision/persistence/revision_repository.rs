@@ -2,7 +2,7 @@ use crate::db::connection::DbPool;
 use crate::db::operations::revision::{
     delete_revision, get_all_revisions_by_node, insert_revision, select_revision, update_revision,
 };
-use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use crate::node::revision::RevisionEntity;
 use anyhow::{Context, Result};
 use chrono::NaiveDateTime;
 use crabdrive_common::iv::IV;

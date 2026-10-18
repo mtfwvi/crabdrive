@@ -1,5 +1,5 @@
 use crate::http::AppState;
-use crate::request_handler::node::entity_to_encrypted_node;
+use crate::routes::node::entity_to_encrypted_node;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};

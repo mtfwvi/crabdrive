@@ -1,4 +1,4 @@
-use crate::storage::node::NodeEntity;
+use crate::node::NodeEntity;
 
 use crabdrive_common::iv::IV;
 use crabdrive_common::storage::ChunkIndex;

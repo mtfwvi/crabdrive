@@ -1,6 +1,6 @@
 use super::{TestChunk, TestNodeEntity, TestRevisionEntity};
 use crate::http::AppState;
-use crate::storage::vfs::FileChunk;
+use crate::storage::FileChunk;
 use crate::utils::to_hex_str;
 
 use crabdrive_common::da;

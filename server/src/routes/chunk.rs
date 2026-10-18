@@ -1,6 +1,6 @@
 use crate::http::AppState;
-use crate::storage::vfs::FileChunk;
-use crate::storage::vfs::model::FileSystemError;
+use crate::storage::FileChunk;
+use crate::storage::FileSystemError;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::body::Body;

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use bytes::Bytes;
 use uuid::Uuid;
 
-use crate::storage::vfs::FileSystemError;
+use crate::storage::FileSystemError;
 
 /// Generates a nested directory path by sharding a UUID.
 ///

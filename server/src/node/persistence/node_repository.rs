@@ -5,8 +5,8 @@ use crate::db::operations::node::{
     update_node,
 };
 use crate::db::operations::share::{get_access_list_parent_tree, has_access};
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
-use crate::storage::revision::persistence::model::revision_entity::RevisionEntity;
+use crate::node::NodeEntity;
+use crate::node::revision::RevisionEntity;
 use anyhow::{Context, Ok, Result};
 use chrono::NaiveDateTime;
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;

@@ -3,7 +3,7 @@ pub mod utils;
 
 use crate::db::connection::DbPool;
 use crate::db::operations::revision::get_all_uncommitted_revisions;
-use crate::storage::vfs::{FileChunk, FileKey, FileRepository, FileStatus, FileSystemError};
+use crate::storage::{FileChunk, FileKey, FileRepository, FileStatus, FileSystemError};
 use model::{CachedChunk, FileTransfer, FileTransferState};
 
 use crabdrive_common::storage::ChunkIndex;

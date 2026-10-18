@@ -1,4 +1,4 @@
-use crate::storage::node::NodeEntity;
+use crate::node::NodeEntity;
 use crate::user::UserEntity;
 
 use crabdrive_common::encryption_key::EncryptionKey;

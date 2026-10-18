@@ -1,4 +1,4 @@
-use crate::storage::vfs::{FileChunk, FileKey, FileRepository};
+use crate::storage::{FileChunk, FileKey, FileRepository};
 use bytes::BytesMut;
 use crabdrive_common::{da, storage::ChunkIndex};
 use std::{
@@ -7,7 +7,7 @@ use std::{
 };
 use tracing::{debug, error, instrument};
 
-use crate::storage::vfs::model::{FileStatus, FileSystemError};
+use crate::storage::model::{FileStatus, FileSystemError};
 use crabdrive_common::storage::RevisionId;
 use std::{collections::HashMap, path::PathBuf};
 

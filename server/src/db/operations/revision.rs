@@ -1,5 +1,5 @@
 use crate::db::{NodeDsl, RevisionDsl};
-use crate::storage::revision::RevisionEntity;
+use crate::node::revision::RevisionEntity;
 
 use crabdrive_common::storage::{NodeId, RevisionId};
 
