@@ -1,7 +1,7 @@
 mod db;
 mod http;
-mod routes;
 mod node;
+mod routes;
 mod share;
 mod storage;
 mod user;

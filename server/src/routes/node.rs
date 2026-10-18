@@ -113,7 +113,9 @@ pub async fn patch_node(
         .update_node(&updated_node)
         .expect("db error");
 
-    let updated_node = updated_node_entity.to_encrypted_node(&state).expect("db error");
+    let updated_node = updated_node_entity
+        .to_encrypted_node(&state)
+        .expect("db error");
     (StatusCode::OK, Json(PatchNodeResponse::Ok(updated_node)))
 }
 

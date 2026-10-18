@@ -4,7 +4,7 @@ use crate::user::UserEntity;
 
 use crabdrive_common::payloads::node::request::file::*;
 use crabdrive_common::payloads::node::response::file::*;
-use crabdrive_common::storage::{NodeType, NodeId, RevisionId};
+use crabdrive_common::storage::{NodeId, NodeType, RevisionId};
 use crabdrive_common::uuid::UUID;
 
 use axum::Json;
@@ -117,7 +117,9 @@ pub async fn post_create_file(
             .expect("how does that happen? - File system error!");
     }
 
-    let response_node = node_with_revision.to_encrypted_node(&state).expect("db error");
+    let response_node = node_with_revision
+        .to_encrypted_node(&state)
+        .expect("db error");
 
     (
         StatusCode::CREATED,
@@ -222,7 +224,9 @@ pub async fn post_commit_file(
     if revision.upload_ended_on.is_some() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(CommitFileError::AlreadyCommitted)),
+            Json(PostCommitFileResponse::BadRequest(
+                CommitFileError::AlreadyCommitted,
+            )),
         );
     }
 
@@ -235,9 +239,9 @@ pub async fn post_commit_file(
     if !missing_chunks.is_empty() {
         return (
             StatusCode::BAD_REQUEST,
-            Json(PostCommitFileResponse::BadRequest(CommitFileError::MissingChunks(
-                missing_chunks,
-            ))),
+            Json(PostCommitFileResponse::BadRequest(
+                CommitFileError::MissingChunks(missing_chunks),
+            )),
         );
     }
 
