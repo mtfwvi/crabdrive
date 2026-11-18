@@ -1,6 +1,5 @@
 use crate::http::AppState;
 use crate::request_handler::node::entity_to_encrypted_node;
-use crate::storage::node::persistence::model::node_entity::NodeEntity;
 use crate::user::persistence::model::user_entity::UserEntity;
 use axum::Json;
 use axum::extract::{Path, State};
@@ -61,21 +60,11 @@ pub async fn post_create_folder(
         );
     }
 
-    //update the parent
-    state
-        .node_repository
-        .update_node(&NodeEntity {
-            metadata: payload.parent_metadata,
-            metadata_change_counter: parent_node.metadata_change_counter,
-            ..parent_node
-        })
-        .expect("db error");
-
     //create the node
     let node = state
         .node_repository
         .create_node(
-            Some(parent_id),
+            Some((parent_id, payload.parent_metadata)),
             payload.node_metadata,
             parent_node.owner_id,
             NodeType::Folder,
