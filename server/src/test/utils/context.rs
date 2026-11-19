@@ -1,5 +1,5 @@
 use crate::http::{AppConfig, AppState};
-use crate::storage::node::NodeRepository;
+use crate::node::NodeRepository;
 use crate::utils::to_hex_str;
 
 use super::TestUserEntity;

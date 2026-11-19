@@ -1,19 +1,16 @@
 use crate::http::AppState;
 
-use crate::request_handler::admin::*;
-use crate::request_handler::auth::*;
-use crate::request_handler::chunk::*;
-use crate::request_handler::file::*;
-use crate::request_handler::folder::*;
-use crate::request_handler::node::*;
+use crate::routes::admin::*;
+use crate::routes::auth::*;
+use crate::routes::chunk::*;
+use crate::routes::file::*;
+use crate::routes::folder::*;
+use crate::routes::node::*;
+use crate::routes::share::*;
 
 use crabdrive_common::da;
 use crabdrive_common::routes;
 
-use crate::request_handler::share::{
-    get_accept_share_info, get_accepted_shared_nodes, get_node_share_info, post_accept_share,
-    post_share_node,
-};
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};

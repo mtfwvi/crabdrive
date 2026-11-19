@@ -1,4 +1,4 @@
-use crate::{db::NodeDsl, storage::node::NodeEntity};
+use crate::{db::NodeDsl, node::NodeEntity};
 
 use crabdrive_common::encrypted_metadata::EncryptedMetadata;
 use crabdrive_common::storage::NodeId;

@@ -1,8 +1,8 @@
 #[cfg(test)]
 mod tests {
-    use crate::storage::vfs::FileChunk;
-    use crate::storage::vfs::FileRepository;
-    use crate::storage::vfs::backend::Sfs;
+    use crate::storage::FileChunk;
+    use crate::storage::FileRepository;
+    use crate::storage::backend::Sfs;
 
     use crabdrive_common::da;
     use crabdrive_common::data::DataAmount;
@@ -11,7 +11,7 @@ mod tests {
     use rand::{RngExt, rng};
     use tempfile::TempDir;
 
-    use crate::storage::vfs::model::FileStatus;
+    use crate::storage::model::FileStatus;
     use pretty_assertions::assert_eq;
 
     #[tokio::test]

@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::db::ShareDsl;
 use crate::db::operations::node::{get_path_between_nodes, select_node};
 use crate::db::operations::user::select_user;
-use crate::storage::share::ShareEntity;
+use crate::share::ShareEntity;
 
 use crabdrive_common::storage::{NodeId, ShareId};
 use crabdrive_common::user::UserId;

@@ -1,5 +1,5 @@
 use crate::http::AppState;
-use crate::storage::node::NodeEntity;
+use crate::node::NodeEntity;
 use crate::user::UserEntity;
 
 use super::{NodeBuilder, TestNodeEntity};
